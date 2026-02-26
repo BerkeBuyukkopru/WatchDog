@@ -1,0 +1,42 @@
+services:
+  # 1. Veritabanı Servisi
+  watchdog-db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: watchdog-sql
+    environment:
+      - ACCEPT_EULA=Y
+      # .env dosyasındaki SQL_SA_PASSWORD değerini buraya çeker
+      - MSSQL_SA_PASSWORD=${SQL_SA_PASSWORD}
+    ports:
+      - "1433:1433"
+    volumes:
+      - sql_data:/var/opt/mssql
+
+  # 2. API Servisi
+  watchdog-api:
+    build:
+      context: .
+      dockerfile: src/Presentation/Watchdog.Api/Dockerfile
+    container_name: watchdog-api
+    ports:
+      # .env dosyasındaki API_PORT değerini (5000) dış port olarak kullanır
+      - "${API_PORT}:8080"
+    environment:
+      # Veritabanı adını ve şifresini .env'den alıp bağlantı metnine ekler
+      - ConnectionStrings__DefaultConnection=Server=watchdog-db;Database=${DB_NAME};User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True
+    depends_on:
+      - watchdog-db
+
+  # 3. Worker Servisi
+  watchdog-worker:
+    build:
+      context: .
+      dockerfile: src/Presentation/Watchdog.Worker/Dockerfile
+    container_name: watchdog-worker
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=watchdog-db;Database=${DB_NAME};User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True
+    depends_on:
+      - watchdog-db
+
+volumes:
+  sql_data:

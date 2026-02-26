@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\..\1.Core\Watchdog.Application\Watchdog.Application.csproj" />
+    <ProjectReference Include="..\..\Core\Watchdog.Application\Watchdog.Application.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
