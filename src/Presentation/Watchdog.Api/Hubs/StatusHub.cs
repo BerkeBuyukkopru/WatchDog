@@ -1,8 +1,6 @@
-﻿using System;
-
-public class Class1
+﻿namespace Watchdog.Api.Hubs
 {
-	public Class1()
-	{
-	}
+    public class StatusHub
+    {
+    }
 }

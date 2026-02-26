@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Text;
 
-public class Class1
+namespace Watchdog.Domain.Entities
 {
-	public Class1()
-	{
-	}
+    internal class HealthSnapshot
+    {
+    }
 }
