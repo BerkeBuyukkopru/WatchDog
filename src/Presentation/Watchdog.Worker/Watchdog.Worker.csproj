@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\1.Core\Watchdog.Application\Watchdog.Application.csproj" />
-    <ProjectReference Include="..\..\2.Infrastructure\Watchdog.Infrastructure\Watchdog.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Core\Watchdog.Application\Watchdog.Application.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\Watchdog.Infrastructure\Watchdog.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

@@ -1,9 +1,6 @@
-﻿using System;
-
-public class Class1
+﻿namespace Watchdog.Api.Controller
 {
-	public Class1()
-	{
-		//fsdgfodkjgojogjgkjo
-	}
+    public class AppsController
+    {
+    }
 }

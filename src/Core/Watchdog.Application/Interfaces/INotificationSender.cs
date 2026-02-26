@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Text;
 
-public class Class1
+namespace Watchdog.Application.Interfaces
 {
-	public Class1()
-	{
-	}
+    internal interface INotificationSender
+    {
+    }
 }
