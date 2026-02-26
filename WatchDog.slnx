@@ -7,14 +7,14 @@
   </Folder>
   <Folder Name="/src/" />
   <Folder Name="/src/Core/">
-    <Project Path="src/1.Core/Watchdog.Application/Watchdog.Application.csproj" />
-    <Project Path="src/1.Core/Watchdog.Domain/Watchdog.Domain.csproj" />
+    <Project Path="src/Core/Watchdog.Application/Watchdog.Application.csproj" />
+    <Project Path="src/Core/Watchdog.Domain/Watchdog.Domain.csproj" />
   </Folder>
   <Folder Name="/src/Infrastructure/">
-    <Project Path="src/2.Infrastructure/Watchdog.Infrastructure/Watchdog.Infrastructure.csproj" />
+    <Project Path="src/Infrastructure/Watchdog.Infrastructure/Watchdog.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/src/Presentation/">
-    <Project Path="src/3.Presentation/Watchdog.Api/Watchdog.Api.csproj" />
-    <Project Path="src/3.Presentation/Watchdog.Worker/Watchdog.Worker.csproj" />
+    <Project Path="src/Presentation/Watchdog.Api/Watchdog.Api.csproj" />
+    <Project Path="src/Presentation/Watchdog.Worker/Watchdog.Worker.csproj" />
   </Folder>
 </Solution>
