@@ -1,5 +1,7 @@
 <Solution>
   <Folder Name="/modules/">
+    <Project Path="HealthChecks.Heartbeat/HealthChecks.Heartbeat.csproj" Id="ac9727cf-01c8-4178-81ac-dd04d90e65b2" />
+    <Project Path="HealthChecks.RabbitMQ/HealthChecks.RabbitMQ.csproj" Id="4d771a6e-3cdb-4dcd-b534-85fe76bb77a3" />
     <Project Path="modules/HealthChecks.Abstractions/HealthChecks.Abstractions.csproj" />
     <Project Path="modules/HealthChecks.Http/HealthChecks.Http.csproj" />
     <Project Path="modules/HealthChecks.MongoDb/HealthChecks.MongoDb.csproj" />
