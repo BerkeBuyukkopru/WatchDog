@@ -1,10 +1,10 @@
 <Solution>
   <Folder Name="/modules/">
-    <Project Path="HealthChecks.Heartbeat/HealthChecks.Heartbeat.csproj" Id="ac9727cf-01c8-4178-81ac-dd04d90e65b2" />
-    <Project Path="HealthChecks.RabbitMQ/HealthChecks.RabbitMQ.csproj" Id="4d771a6e-3cdb-4dcd-b534-85fe76bb77a3" />
     <Project Path="modules/HealthChecks.Abstractions/HealthChecks.Abstractions.csproj" />
+    <Project Path="modules/HealthChecks.Heartbeat/HealthChecks.Heartbeat.csproj" Id="958cd02e-6396-4431-8189-b1a970ff5c54" />
     <Project Path="modules/HealthChecks.Http/HealthChecks.Http.csproj" />
     <Project Path="modules/HealthChecks.MongoDb/HealthChecks.MongoDb.csproj" />
+    <Project Path="modules/HealthChecks.RabbitMQ/HealthChecks.RabbitMQ.csproj" Id="088eb09e-3746-4ae5-a5f0-3a0a2f881bea" />
     <Project Path="modules/HealthChecks.Redis/HealthChecks.Redis.csproj" />
     <Project Path="modules/HealthChecks.SqlServer/HealthChecks.SqlServer.csproj" />
     <Project Path="modules/HealthChecks.Ssl/HealthChecks.Ssl.csproj" Id="0ed38311-16fd-45ca-bffd-b573f9709d73" />

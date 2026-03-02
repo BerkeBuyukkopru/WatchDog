@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\modules\HealthChecks.Abstractions\HealthChecks.Abstractions.csproj" />
+    <ProjectReference Include="..\HealthChecks.Abstractions\HealthChecks.Abstractions.csproj" />
   </ItemGroup>
 
 </Project>
