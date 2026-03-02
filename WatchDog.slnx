@@ -5,6 +5,8 @@
     <Project Path="modules/HealthChecks.MongoDb/HealthChecks.MongoDb.csproj" />
     <Project Path="modules/HealthChecks.Redis/HealthChecks.Redis.csproj" />
     <Project Path="modules/HealthChecks.SqlServer/HealthChecks.SqlServer.csproj" />
+    <Project Path="modules/HealthChecks.Ssl/HealthChecks.Ssl.csproj" Id="0ed38311-16fd-45ca-bffd-b573f9709d73" />
+    <Project Path="modules/HealthChecks.Tcp/HealthChecks.Tcp.csproj" />
   </Folder>
   <Folder Name="/src/" />
   <Folder Name="/src/Core/">
