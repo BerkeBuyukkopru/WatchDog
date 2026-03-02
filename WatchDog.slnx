@@ -2,6 +2,7 @@
   <Folder Name="/modules/">
     <Project Path="modules/HealthChecks.Abstractions/HealthChecks.Abstractions.csproj" />
     <Project Path="modules/HealthChecks.Http/HealthChecks.Http.csproj" />
+    <Project Path="modules/HealthChecks.MongoDb/HealthChecks.MongoDb.csproj" />
     <Project Path="modules/HealthChecks.Redis/HealthChecks.Redis.csproj" />
     <Project Path="modules/HealthChecks.SqlServer/HealthChecks.SqlServer.csproj" />
   </Folder>
