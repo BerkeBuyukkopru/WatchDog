@@ -11,6 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\modules\HealthChecks.System\HealthChecks.System.csproj" />
     <ProjectReference Include="..\..\Core\Watchdog.Application\Watchdog.Application.csproj" />
     <ProjectReference Include="..\..\Infrastructure\Watchdog.Infrastructure\Watchdog.Infrastructure.csproj" />
   </ItemGroup>

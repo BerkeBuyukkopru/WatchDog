@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using HealthChecks.Abstractions.Enums;
 
@@ -11,18 +11,18 @@ namespace HealthChecks.Abstractions
         public TimeSpan Duration { get; set; }
         public Exception? Exception { get; set; }
 
-        // YENİ: Donanım metrikleri veya SQL detayları gibi ekstra parametreleri taşıyacak çanta
-        public Dictionary<string, object> Data { get; set; } = new();
+        // WDG014 Kuralı: Donanım metriklerini (CPU, RAM vb.) taşıyacak veri sözlüğü
+        public Dictionary<string, object> Data { get; set; } = new Dictionary<string, object>();
 
         // Kullanımı kolaylaştıran yardımcı metodlar
         public static HealthCheckResult Healthy(string description = "Healthy", Dictionary<string, object>? data = null)
             => new() { Status = HealthStatus.Healthy, Description = description, Data = data ?? new Dictionary<string, object>() };
 
-        // YENİ: Sistemin çalıştığı ama yavaşladığı durumlar için (Örn: CPU %90)
+        // Sistemin çalıştığı ama yavaşladığı durumlar için (Örn: CPU %90)
         public static HealthCheckResult Degraded(string description, Exception? exception = null, Dictionary<string, object>? data = null)
             => new() { Status = HealthStatus.Degraded, Description = description, Exception = exception, Data = data ?? new Dictionary<string, object>() };
 
         public static HealthCheckResult Unhealthy(string description, Exception? exception = null, Dictionary<string, object>? data = null)
-            => new() { Status = HealthStatus.Unhealthy, Description = description, Exception = exception, Data = data ?? new Dictionary<string, object>() };
+            => new() { Status = HealthStatus.Unhealthy, Description = description, Exception = exception, Data = data ?? new() };
     }
 }
