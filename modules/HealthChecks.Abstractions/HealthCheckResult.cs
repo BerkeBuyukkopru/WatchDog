@@ -19,11 +19,16 @@ namespace HealthChecks.Abstractions
         // Eğer bir hata (Exception) fırladıysa, hatanın kendisi
         public Exception? Exception { get; set; }
 
+        // WDG014 Kuralı: Donanım metriklerini (CPU, RAM vb.) taşıyacak veri sözlüğü
+        public Dictionary<string, object> Data { get; set; } = new Dictionary<string, object>();
+
         // Kullanımı kolaylaştıran yardımcı metodlar
         public static HealthCheckResult Healthy(string description = "Healthy")
             => new() { Status = HealthStatus.Healthy, Description = description };
 
         public static HealthCheckResult Unhealthy(string description, Exception? exception = null)
             => new() { Status = HealthStatus.Unhealthy, Description = description, Exception = exception };
+        public static HealthCheckResult Degraded(string description, Dictionary<string, object>? data = null)
+            => new() { Status = HealthStatus.Degraded, Description = description, Data = data ?? new() };
     }
 }
