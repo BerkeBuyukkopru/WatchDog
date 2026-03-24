@@ -1,22 +1,26 @@
 ﻿using HealthChecks.Abstractions;
+using HealthChecks.Abstractions.Enums;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace HealthChecks.MongoDb
 {
-    public class MongoDbHealthCheck: IHealthCheck
+    public class MongoDbHealthCheck : IHealthCheck
     {
-        private readonly string _connectionString;
+        // MongoClient artık her ping'de yeniden yaratılmayacak, dışarıdan hazır gelecek
+        private readonly IMongoClient _mongoClient;
 
         public string Name => "MongoDb_Check";
 
-        public MongoDbHealthCheck(string connectionString)
+        // Constructor: Sadece connectionString yerine, bağlantı havuzunu yöneten Client'ı alıyoruz
+        public MongoDbHealthCheck(IMongoClient mongoClient)
         {
-            _connectionString = connectionString;
+            _mongoClient = mongoClient;
         }
 
         public async Task<HealthCheckResult> CheckHealthAsync(CancellationToken cancellationToken = default)
@@ -25,25 +29,30 @@ namespace HealthChecks.MongoDb
 
             try
             {
-                //MongoDb yi bağlıyoruz.
-                var mongoClient = new MongoClient(_connectionString);
+                // Varsayılan olarak admin veritabanına bağlanırız.
+                var database = _mongoClient.GetDatabase("admin");
 
-                //varsayılan olarak admin veritabanına bağlanırız.
-                var database = mongoClient.GetDatabase("admin");
+                // Ping komutunu hazırlıyoruz.
+                var pingCommand = new BsonDocument("ping", 1);
 
-                //ping komutunu hazırlıyoruz.
-                var pingCommand = new BsonDocument ("ping", 1);
-
-                //Komutu sunucuya fırlatıyoruz.
+                // Komutu sunucuya fırlatıyoruz.
                 await database.RunCommandAsync<BsonDocument>(pingCommand, cancellationToken: cancellationToken);
 
                 stopwatch.Stop();
 
-                var result = HealthCheckResult.Healthy("MongoDB bağlantısı başarılı ve ping yanıtı alındı.");
+                // YENİ: AI için güvenli metrik verisi oluşturuyoruz (Şifre vb. sızdırmadan)
+                var telemetryData = new Dictionary<string, object>
+                {
+                    { "ClusterStatus", "Connected" },
+                    { "TargetDatabase", "admin" }
+                };
+
+                var result = HealthCheckResult.Healthy("MongoDB bağlantısı başarılı ve ping yanıtı alındı.", data: telemetryData);
                 result.Duration = stopwatch.Elapsed;
                 return result;
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 stopwatch.Stop();
                 var unhealthyResult = HealthCheckResult.Unhealthy($"MongoDB bağlantı hatası: {ex.Message}", ex);
                 unhealthyResult.Duration = stopwatch.Elapsed;
