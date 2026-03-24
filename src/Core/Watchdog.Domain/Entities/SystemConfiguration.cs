@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Watchdog.Domain.Entities
 {
-    internal class InsightType
+    internal class SystemConfiguration
     {
     }
 }
