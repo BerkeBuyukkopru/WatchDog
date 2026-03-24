@@ -1,21 +1,23 @@
 ﻿using HealthChecks.Abstractions;
 using HealthChecks.Abstractions.Enums;
 using System.Diagnostics;
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace HealthChecks.Heartbeat;
 
 public class HeartbeatHealthCheck : IHealthCheck
 {
-    // İşçinin son imza attığı saati getirecek olan temsilci (Fonksiyon)
-    private readonly Func<Task<DateTime?>> _getLastPulseAsync;
+    // İşçinin son imza attığı saati getirecek olan temsilci (İptal token'ı alacak şekilde güncellendi)
+    private readonly Func<CancellationToken, Task<DateTime?>> _getLastPulseAsync;
 
-    // İşçinin ne kadar süredir kayıp olursa alarm verileceği (Örn: 15 dakika)
     private readonly TimeSpan _tolerance;
 
-    public string Name => "Background Worker Monitor";
+    public string Name => "Background_Worker_Pulse";
 
-    // İnşaatçı: Bekçi bu uzmanı işe alırken ona "Defterin yerini" ve "Tolerans süresini" verir
-    public HeartbeatHealthCheck(Func<Task<DateTime?>> getLastPulseAsync, TimeSpan tolerance)
+    public HeartbeatHealthCheck(Func<CancellationToken, Task<DateTime?>> getLastPulseAsync, TimeSpan tolerance)
     {
         _getLastPulseAsync = getLastPulseAsync;
         _tolerance = tolerance;
@@ -26,38 +28,47 @@ public class HeartbeatHealthCheck : IHealthCheck
         var watch = Stopwatch.StartNew();
         try
         {
-            // Defterdeki son imza saatini okuyoruz
-            var lastPulse = await _getLastPulseAsync();
-
+            // Defterdeki son imza saatini okuyoruz (Token'ı içeri aktararak)
+            var lastPulse = await _getLastPulseAsync(cancellationToken);
             watch.Stop();
 
-            // Eğer defter boşsa (hiç imza atılmamışsa)
             if (!lastPulse.HasValue)
             {
-                return new HealthCheckResult { Status = HealthStatus.Unhealthy, Duration = watch.Elapsed, Description = "İşçiden henüz hiç nabız alınamadı!" };
+                var result = HealthCheckResult.Unhealthy("İşçiden henüz hiç nabız alınamadı!");
+                result.Duration = watch.Elapsed;
+                return result;
             }
 
-            // Şu anki saatten, son imza saatini çıkarıp ne kadar zaman geçtiğini buluyoruz
             var timeSinceLastPulse = DateTime.UtcNow - lastPulse.Value;
 
-            // Eğer geçen zaman, bizim toleransımızdan (örn 15 dk) fazlaysa alarm ver!
+            // YENİ: Metrik verisini Data Dictionary içine koyuyoruz
+            var telemetryData = new Dictionary<string, object>
+            {
+                { "MinutesSinceLastPulse", Math.Round(timeSinceLastPulse.TotalMinutes, 2) },
+                { "ToleranceMinutes", _tolerance.TotalMinutes }
+            };
+
+            // Eğer geçen zaman, toleransımızdan fazlaysa
             if (timeSinceLastPulse > _tolerance)
             {
-                return new HealthCheckResult
-                {
-                    Status = HealthStatus.Unhealthy,
-                    Duration = watch.Elapsed,
-                    Description = $"Kritik: Arka plan işçisi en son {timeSinceLastPulse.TotalMinutes} dakika önce çalıştı. Sistem durmuş olabilir!"
-                };
+                var result = HealthCheckResult.Unhealthy(
+                    $"Kritik: Arka plan işçisi en son {timeSinceLastPulse.TotalMinutes:F1} dakika önce çalıştı. Sistem durmuş olabilir!",
+                    data: telemetryData); // Data'yı gönderiyoruz
+                result.Duration = watch.Elapsed;
+                return result;
             }
 
             // Her şey yolundaysa
-            return new HealthCheckResult { Status = HealthStatus.Healthy, Duration = watch.Elapsed, Description = "Arka plan işçisi düzenli çalışıyor." };
+            var healthyResult = HealthCheckResult.Healthy("Arka plan işçisi düzenli çalışıyor.", data: telemetryData);
+            healthyResult.Duration = watch.Elapsed;
+            return healthyResult;
         }
         catch (Exception ex)
         {
             watch.Stop();
-            return new HealthCheckResult { Status = HealthStatus.Unhealthy, Description = $"Nabız kontrol hatası: {ex.Message}", Duration = watch.Elapsed, Exception = ex };
+            var result = HealthCheckResult.Unhealthy($"Nabız kontrol hatası: {ex.Message}", ex);
+            result.Duration = watch.Elapsed;
+            return result;
         }
     }
 }

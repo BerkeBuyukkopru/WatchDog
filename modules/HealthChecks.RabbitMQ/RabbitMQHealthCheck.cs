@@ -1,20 +1,25 @@
 ﻿using HealthChecks.Abstractions;
 using HealthChecks.Abstractions.Enums;
 using RabbitMQ.Client; // Kurye şirketinin özel maymuncuğu
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace HealthChecks.RabbitMQ;
 
 public class RabbitMQHealthCheck : IHealthCheck
 {
-    private readonly string _connectionString;
+    private readonly ConnectionFactory _factory;
 
     // Kural 1: Yakasında Kurye Denetmeni yazar
     public string Name => "RabbitMQ Monitor";
 
     public RabbitMQHealthCheck(string connectionString)
     {
-        _connectionString = connectionString; // Kurye odasının adresi
+        // Kurye fabrikasına (ConnectionFactory) adresi bir kere veriyoruz (Performans)
+        _factory = new ConnectionFactory { Uri = new Uri(connectionString) };
     }
 
     // Kural 2: Denetim Başlıyor
@@ -23,32 +28,34 @@ public class RabbitMQHealthCheck : IHealthCheck
         var watch = Stopwatch.StartNew();
         try
         {
-            // Kurye fabrikasına (ConnectionFactory) adresi veriyoruz
-            var factory = new ConnectionFactory { Uri = new Uri(_connectionString) };
+            // Kapıyı açmayı (CreateConnection) BEKLEYEREK deniyoruz (await eklendi)
+            using var connection = await _factory.CreateConnectionAsync(cancellationToken);
 
-            // Kapıyı açmayı (CreateConnection) deniyoruz
-            using var connection = factory.CreateConnection();
+            // GEREKSİNİM WDG020: Sadece kapı yetmez, dağıtım bandı (Channel) da açık mı?
+            using var channel = await connection.CreateChannelAsync(cancellationToken: cancellationToken);
 
-            // Eğer kod buraya ulaştıysa ve hata vermediyse kapı açıktır!
             watch.Stop();
-            return new HealthCheckResult
+
+            // AI Motorumuz için telemetri verisi (Zero-Trust için şifre içermeyen bilgiler)
+            var telemetryData = new Dictionary<string, object>
             {
-                Status = HealthStatus.Healthy,
-                Duration = watch.Elapsed,
-                Description = "RabbitMQ kurye hattı sorunsuz çalışıyor."
+                { "HostName", _factory.HostName },
+                { "VirtualHost", _factory.VirtualHost },
+                { "ChannelIsOpen", channel.IsOpen }
             };
+
+            // Her şey sağlamsa kendi statik metodumuzla dönüyoruz
+            var result = HealthCheckResult.Healthy("RabbitMQ bağlantısı (Connection) ve kanalı (Channel) sorunsuz çalışıyor.", data: telemetryData);
+            result.Duration = watch.Elapsed;
+            return result;
         }
         catch (Exception ex)
         {
             // Kapı kilitliyse veya kuryeler grevdeyse (çöktüyse) buraya düşer
             watch.Stop();
-            return new HealthCheckResult
-            {
-                Status = HealthStatus.Unhealthy,
-                Description = $"RabbitMQ Hatası: {ex.Message}",
-                Duration = watch.Elapsed,
-                Exception = ex
-            };
+            var unhealthyResult = HealthCheckResult.Unhealthy($"RabbitMQ Hatası: {ex.Message}", ex);
+            unhealthyResult.Duration = watch.Elapsed;
+            return unhealthyResult;
         }
     }
 }

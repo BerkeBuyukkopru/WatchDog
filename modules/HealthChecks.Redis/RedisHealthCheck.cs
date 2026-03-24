@@ -7,34 +7,44 @@ namespace HealthChecks.Redis;
 
 public class RedisHealthCheck : IHealthCheck
 {
-    private readonly string _connectionString;
+    // Bağlantı dizesi yerine doğrudan multiplexer'ı alıyoruz
+    private readonly IConnectionMultiplexer _connectionMultiplexer;
 
-    // Kural 1: Sözleşmenin istediği 'Name' (İsim) özelliği
     public string Name => "Redis Monitor";
 
-    public RedisHealthCheck(string connectionString)
+    public RedisHealthCheck(IConnectionMultiplexer connectionMultiplexer)
     {
-        _connectionString = connectionString;
+        _connectionMultiplexer = connectionMultiplexer;
     }
 
-    // Kural 2: Sözleşmenin istediği 'CheckHealthAsync' metodu
     public async Task<HealthCheckResult> CheckHealthAsync(CancellationToken cancellationToken = default)
     {
         var watch = Stopwatch.StartNew();
         try
         {
-            using var redisConnection = await ConnectionMultiplexer.ConnectAsync(_connectionString);
-            var db = redisConnection.GetDatabase();
+            // Yeni bağlantı açmıyoruz, var olan singleton bağlantı üzerinden DB'yi alıyoruz
+            var db = _connectionMultiplexer.GetDatabase();
 
             await db.PingAsync();
 
             watch.Stop();
-            return new HealthCheckResult { Status = HealthStatus.Healthy, Duration = watch.Elapsed, Description = "Redis ayakta." };
+            return new HealthCheckResult
+            {
+                Status = HealthStatus.Healthy,
+                Duration = watch.Elapsed,
+                Description = "Redis ayakta."
+            };
         }
         catch (Exception ex)
         {
             watch.Stop();
-            return new HealthCheckResult { Status = HealthStatus.Unhealthy, Description = $"Redis Hatası: {ex.Message}", Duration = watch.Elapsed, Exception = ex };
+            return new HealthCheckResult
+            {
+                Status = HealthStatus.Unhealthy,
+                Description = $"Redis Hatası: {ex.Message}",
+                Duration = watch.Elapsed,
+                Exception = ex
+            };
         }
     }
 }

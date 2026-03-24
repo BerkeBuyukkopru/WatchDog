@@ -9,7 +9,6 @@ public class SqlServerHealthCheck : IHealthCheck
 {
     private readonly string _connectionString;
 
-    // Kural 1: Sözleşmenin istediği 'Name' (İsim) özelliği
     public string Name => "SQL Server Monitor";
 
     public SqlServerHealthCheck(string connectionString)
@@ -17,7 +16,6 @@ public class SqlServerHealthCheck : IHealthCheck
         _connectionString = connectionString;
     }
 
-    // Kural 2: Sözleşmenin istediği 'CheckHealthAsync' metodu
     public async Task<HealthCheckResult> CheckHealthAsync(CancellationToken cancellationToken = default)
     {
         var watch = Stopwatch.StartNew();
@@ -28,15 +26,36 @@ public class SqlServerHealthCheck : IHealthCheck
 
             using var command = connection.CreateCommand();
             command.CommandText = "SELECT 1";
+
+            // Sağlık kontrolü sorgusunun asılı kalmasını önlemek için 5 saniyelik limit (opsiyonel)
+            command.CommandTimeout = 5;
+
             await command.ExecuteScalarAsync(cancellationToken);
 
-            watch.Stop();
-            return new HealthCheckResult { Status = HealthStatus.Healthy, Duration = watch.Elapsed, Description = "SQL Server ayakta." };
+            return new HealthCheckResult
+            {
+                Status = HealthStatus.Healthy,
+                Duration = watch.Elapsed,
+                Description = "SQL Server ayakta."
+            };
         }
         catch (Exception ex)
         {
-            watch.Stop();
-            return new HealthCheckResult { Status = HealthStatus.Unhealthy, Description = $"SQL Hatası: {ex.Message}", Duration = watch.Elapsed, Exception = ex };
+            return new HealthCheckResult
+            {
+                Status = HealthStatus.Unhealthy,
+                Description = $"SQL Hatası: {ex.Message}",
+                Duration = watch.Elapsed,
+                Exception = ex
+            };
+        }
+        finally
+        {
+            // İşlem başarılı da olsa hata da verse süreyi her halükarda durduruyoruz.
+            if (watch.IsRunning)
+            {
+                watch.Stop();
+            }
         }
     }
 }

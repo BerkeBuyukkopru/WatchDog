@@ -1,8 +1,11 @@
 ﻿using HealthChecks.Abstractions;
+using HealthChecks.Abstractions.Enums;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace HealthChecks.Http
 {
@@ -11,10 +14,8 @@ namespace HealthChecks.Http
         private readonly HttpClient _httpClient;
         private readonly string _url;
 
-        // Modülün adı, dışarıdan verilen URL'e göre dinamik olacak
         public string Name => $"HTTP_Check_{_url}";
 
-        // Constructor: İşi yapacak olan HttpClient ve gidilecek URL'i dışarıdan alıyoruz
         public HttpHealthCheck(HttpClient httpClient, string url)
         {
             _httpClient = httpClient;
@@ -23,32 +24,40 @@ namespace HealthChecks.Http
 
         public async Task<HealthCheckResult> CheckHealthAsync(CancellationToken cancellationToken = default)
         {
-            // Kronometreyi başlatıyoruz (Sistemin ne kadar hızlı yanıt verdiğini ölçeceğiz)
             var stopwatch = Stopwatch.StartNew();
 
             try
             {
-                // URL'e GET isteği atıyoruz
-                var response = await _httpClient.GetAsync(_url, cancellationToken);
+                // Sadece Header'ları okuyarak gövdeyi (Body) indirmekten kurtuluyoruz (Performans Artışı)
+                using var request = new HttpRequestMessage(HttpMethod.Get, _url);
+                using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+
                 stopwatch.Stop();
 
-                if (response.IsSuccessStatusCode)
+                // Telemetri verilerini hazırlıyoruz
+                var telemetryData = new Dictionary<string, object>
                 {
-                    var result = HealthCheckResult.Healthy($"Status Code: {(int)response.StatusCode}");
-                    result.Duration = stopwatch.Elapsed;
-                    return result;
+                    { "StatusCode", (int)response.StatusCode },
+                    { "Url", _url }
+                };
+
+                // Mentör Özel Revizyonu: SADECE 404 ise Unhealthy say!
+                if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    var unhealthyResult = HealthCheckResult.Unhealthy($"HTTP isteği başarısız oldu. Sadece 404 Not Found alındı.", data: telemetryData);
+                    unhealthyResult.Duration = stopwatch.Elapsed;
+                    return unhealthyResult;
                 }
 
-                // Eğer sunucu hata döndüyse
-                var unhealthyResult = HealthCheckResult.Unhealthy($"HTTP isteği başarısız oldu. Status Code: {(int)response.StatusCode}");
-                unhealthyResult.Duration = stopwatch.Elapsed;
-                return unhealthyResult;
+                // 404 harici tüm yanıtlarda (500 dahil) uç noktanın var olduğu kabul edilir
+                var result = HealthCheckResult.Healthy($"Uç nokta yanıt verdi. Status Code: {(int)response.StatusCode}", data: telemetryData);
+                result.Duration = stopwatch.Elapsed;
+                return result;
             }
             catch (Exception ex)
             {
-                // Site hiç yoksa, internet koptuysa veya timeout olduysa buraya düşer
                 stopwatch.Stop();
-                var exceptionResult = HealthCheckResult.Unhealthy($"HTTP isteği sırasında hata oluştu: {ex.Message}", ex);
+                var exceptionResult = HealthCheckResult.Unhealthy($"HTTP isteği sırasında bağlantı hatası: {ex.Message}", ex);
                 exceptionResult.Duration = stopwatch.Elapsed;
                 return exceptionResult;
             }
