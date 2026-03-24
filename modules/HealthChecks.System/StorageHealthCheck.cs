@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Watchdog.Application.UseCases
+namespace HealthChecks.System
 {
-    internal class PollSingleAppUseCas
+    internal class StorageHealthCheck
     {
     }
 }
