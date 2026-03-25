@@ -1,10 +1,17 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Watchdog.Domain.Entities
 {
-    internal class Incident
+    public class Incident
     {
+        public Guid Id { get; set; } = Guid.NewGuid();
+
+        public Guid AppId { get; set; }
+
+        public DateTime StartedAt { get; set; } = DateTime.UtcNow;
+
+        public DateTime? ResolvedAt { get; set; }
+
+        public string ErrorMessage { get; set; } = string.Empty;
     }
 }
