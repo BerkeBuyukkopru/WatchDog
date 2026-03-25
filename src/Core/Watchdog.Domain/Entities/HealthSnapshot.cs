@@ -1,4 +1,5 @@
 ﻿using System;
+using Watchdog.Domain.Enums;
 
 namespace Watchdog.Domain.Entities
 {
@@ -6,9 +7,10 @@ namespace Watchdog.Domain.Entities
     {
         public Guid Id { get; set; } = Guid.NewGuid();
         public Guid AppId { get; set; }
+        public virtual MonitoredApp? App { get; set; }
 
         // C# uyarılarını gidermek için varsayılan değer atıyoruz
-        public string Status { get; set; } = string.Empty;
+        public HealthStatus Status { get; set; }
 
         public long TotalDuration { get; set; }
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;

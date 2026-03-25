@@ -8,6 +8,8 @@ namespace Watchdog.Domain.Entities
 
         public Guid AppId { get; set; }
 
+        public virtual MonitoredApp? App { get; set; }
+
         public DateTime StartedAt { get; set; } = DateTime.UtcNow;
 
         public DateTime? ResolvedAt { get; set; }
