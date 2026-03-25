@@ -4,7 +4,10 @@ using System.Text;
 
 namespace Watchdog.Domain.Enums
 {
-    internal class HealthStatus
+    public enum HealthStatus
     {
+        Healthy = 1,
+        Degraded = 2,
+        Unhealthy = 3
     }
 }
