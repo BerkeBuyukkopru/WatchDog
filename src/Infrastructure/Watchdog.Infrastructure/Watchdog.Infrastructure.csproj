@@ -1,7 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.5" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.5" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\Core\Watchdog.Application\Watchdog.Application.csproj" />
+    <ProjectReference Include="..\..\Core\Watchdog.Domain\Watchdog.Domain.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
