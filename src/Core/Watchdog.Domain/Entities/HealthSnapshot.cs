@@ -16,7 +16,7 @@ namespace Watchdog.Domain.Entities
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 
         public double CpuUsage { get; set; }
-        public double RamUsageMb { get; set; }
+        public double RamUsage { get; set; }
         public double FreeDiskGb { get; set; }
 
         // JSON detayı boş gelebileceği için ? (nullable) işareti koyuyoruz

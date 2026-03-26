@@ -1,5 +1,7 @@
 ﻿using System;
 
+//Panelde görülen url, uygulama ismi, ve tek seferlik bir apı key gösterilir karşı projeye göndermek için.
+
 namespace Watchdog.Domain.Entities
 {
     public class MonitoredApp

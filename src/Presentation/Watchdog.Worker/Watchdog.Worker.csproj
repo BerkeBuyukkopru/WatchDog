@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Worker">
+﻿<Project Sdk="Microsoft.NET.Sdk.Worker">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -8,11 +8,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.5" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.3" />
+    <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="10.0.5" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Core\Watchdog.Application\Watchdog.Application.csproj" />
+    <ProjectReference Include="..\..\Core\Watchdog.Domain\Watchdog.Domain.csproj" />
     <ProjectReference Include="..\..\Infrastructure\Watchdog.Infrastructure\Watchdog.Infrastructure.csproj" />
   </ItemGroup>
 </Project>
