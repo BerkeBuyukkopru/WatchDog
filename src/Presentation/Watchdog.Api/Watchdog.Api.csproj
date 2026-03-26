@@ -12,11 +12,13 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.5" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\modules\HealthChecks.Abstractions\HealthChecks.Abstractions.csproj" />
     <ProjectReference Include="..\..\..\modules\HealthChecks.System\HealthChecks.System.csproj" />
-    <ProjectReference Include="..\..\Core\Watchdog.Application\Watchdog.Application.csproj" />
+    <ProjectReference Include="..\..\Core\Watchdog.Domain\Watchdog.Domain.csproj" />
     <ProjectReference Include="..\..\Infrastructure\Watchdog.Infrastructure\Watchdog.Infrastructure.csproj" />
   </ItemGroup>
 

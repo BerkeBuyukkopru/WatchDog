@@ -1,21 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Diagnostics;
+using System.IO; // EKLENDİ: Derleme hatasını çözen kütüphane
 using System.Threading;
 using System.Threading.Tasks;
 using HealthChecks.Abstractions;
 using HealthChecks.Abstractions.Enums;
-using System.Diagnostics;
 
 namespace HealthChecks.System
 {
-    internal class StorageHealthCheck: IHealthCheck
+    // DÜZELTİLDİ: internal yerine public yapıldı
+    public class StorageHealthCheck : IHealthCheck
     {
         private readonly float _minFreeSpaceGb;
 
         public string Name => "System.Storage";
 
-        public StorageHealthCheck(float minFreeSpaceGb = 1024f)
+        // DÜZELTİLDİ: Varsayılan değer 1 TB yerine 5 GB yapıldı
+        public StorageHealthCheck(float minFreeSpaceGb = 5f)
         {
             _minFreeSpaceGb = minFreeSpaceGb;
         }
@@ -26,7 +28,7 @@ namespace HealthChecks.System
             {
                 var drivePath = Path.GetPathRoot(Directory.GetCurrentDirectory());
 
-                if(string.IsNullOrEmpty(drivePath))
+                if (string.IsNullOrEmpty(drivePath))
                 {
                     drivePath = Path.DirectorySeparatorChar.ToString();
                 }
@@ -40,7 +42,7 @@ namespace HealthChecks.System
 
                 if (freeSpaceGb <= _minFreeSpaceGb)
                 {
-                    status = HealthStatus.Unhealthy;
+                    status = HealthStatus.Degraded; // Çökmüş (Unhealthy) yerine Degraded (Yavaşlamış/Riskli) demek mimari açıdan daha doğrudur
                     message = $"Kritik: Diskte yeterli boş alan kalmadı! Kalan: {freeSpaceGb} GB";
                 }
 

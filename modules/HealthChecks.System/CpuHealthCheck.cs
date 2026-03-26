@@ -15,7 +15,7 @@ namespace HealthChecks.System
         private readonly double _serverCpuThreshold;
         private readonly double _appCpuThreshold;
 
-        public string Name => "Syste.CPU";
+        public string Name => "System.CPU";
 
         public CpuHealthCheck(double serverCpuThreshold = 90.0, double appCpuThreshold = 90.0)
         {

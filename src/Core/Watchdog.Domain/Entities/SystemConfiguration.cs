@@ -1,5 +1,7 @@
 ﻿using System;
 
+// Bu sınıf panel kısmına yönetici olarka girdiğinde cpu eşiği, yapay zeka çeşitleri, ram eşik değeri gibi şeyleri ayrlamak içindir.
+
 namespace Watchdog.Domain.Entities
 {
     public class SystemConfiguration
@@ -14,6 +16,6 @@ namespace Watchdog.Domain.Entities
 
         public double CriticalCpuThreshold { get; set; } = 90.0;
 
-        public double MaxRamThresholdMb { get; set; } = 2048.0;
+        public double CriticalRamThreshold { get; set; } = 90.0;
     }
 }

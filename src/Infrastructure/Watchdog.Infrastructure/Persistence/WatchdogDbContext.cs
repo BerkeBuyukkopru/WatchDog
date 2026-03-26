@@ -79,7 +79,7 @@ namespace Watchdog.Infrastructure.Persistence
                     Id = 1,
                     ActiveAiProvider = "Ollama", // Varsayılan yapay zeka
                     CriticalCpuThreshold = 90.0, // %90 CPU sınırı
-                    MaxRamThresholdMb = 2048.0   // 2GB RAM sınırı
+                    CriticalRamThreshold = 90.0  // 2GB RAM sınırı
                 });
             });
         }
