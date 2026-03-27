@@ -53,7 +53,7 @@ namespace Watchdog.Worker
                     // --- YAZILIMCI HİLESİ (KENDİ API'MİZİ EKLİYORUZ) ---
                     // Arkadaşın test etmek isterse bu yorum satırını açabilir.
                     
-                   /* if (!await dbContext.MonitoredApps.AnyAsync(a => a.Name == "Benim Sensörlü API'm", stoppingToken))
+                    if (!await dbContext.MonitoredApps.AnyAsync(a => a.Name == "Benim Sensörlü API'm", stoppingToken))
                     {
                         var myApi = new MonitoredApp
                         {
@@ -67,7 +67,7 @@ namespace Watchdog.Worker
                         await dbContext.SaveChangesAsync(stoppingToken);
                         _logger.LogInformation("Sensörlü API veritabanına eklendi!");
                     }
-                    */
+                    
 
                     var appsInDb = await dbContext.MonitoredApps.ToListAsync(stoppingToken);
 

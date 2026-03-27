@@ -17,5 +17,8 @@ namespace Watchdog.Domain.Entities
         public double CriticalCpuThreshold { get; set; } = 90.0;
 
         public double CriticalRamThreshold { get; set; } = 90.0;
+
+        // Kurumsal takip için eklenen tarih damgası:
+        public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
     }
 }
