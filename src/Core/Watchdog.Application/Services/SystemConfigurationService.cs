@@ -6,10 +6,12 @@ using Watchdog.Domain.Entities;
 
 namespace Watchdog.Application.Services
 {
+    // Dashboard'daki 'Ayarlar' sayfasının iş mantığını (Logic) yönetir.
     public class SystemConfigurationService : ISystemConfigurationService
     {
         private readonly ISystemConfigurationRepository _repository;
 
+        // Veritabanı teknik detaylarını (SQL/NoSQL) bilmez, sadece interface ile konuşur.
         public SystemConfigurationService(ISystemConfigurationRepository repository)
         {
             _repository = repository;
@@ -17,11 +19,12 @@ namespace Watchdog.Application.Services
 
         public async Task<SystemConfigDto?> GetConfigAsync()
         {
+            // Veritabanındaki tekil (Singleton-like) ayar kaydını getirir.
             var config = await _repository.GetAsync();
 
             if (config == null) return null;
 
-            // Entity nesnesini, React'in anlayacağı DTO'ya çeviriyoruz
+            // MAPPING: Domain Entity nesnesini DTO'ya çeviriyoruz. Bu sayede veritabanı şeması Dashboard'a sızmaz, sadece DTO'daki alanlar gider
             return new SystemConfigDto
             {
                 ActiveAiProvider = config.ActiveAiProvider,
@@ -34,6 +37,7 @@ namespace Watchdog.Application.Services
 
         public async Task<bool> UpdateConfigAsync(SystemConfigDto dto)
         {
+            // Mevcut ayarları çekiyoruz.
             var existingConfig = await _repository.GetAsync();
 
             // Eğer veritabanında hiç ayar yoksa (Seed data çalışmamışsa) yeni oluşturur

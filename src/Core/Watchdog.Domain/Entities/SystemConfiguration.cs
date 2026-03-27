@@ -6,6 +6,7 @@ namespace Watchdog.Domain.Entities
 {
     public class SystemConfiguration
     {
+        // Veritabanında her zaman 1. satırda kalması için varsayılan değer verildi.
         public int Id { get; set; } = 1;
 
         public string ActiveAiProvider { get; set; } = string.Empty;
