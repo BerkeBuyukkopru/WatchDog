@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.SignalR.Client; // Geliştirici 2'nin eklediği SignalR Kütüphanesi
+using Microsoft.AspNetCore.SignalR.Client; // SignalR Kütüphanesi
 using Polly;
 using Polly.Timeout;
 using System;
@@ -32,7 +32,7 @@ namespace Watchdog.Worker
         // Çoklu Görev Yöneticisi: Hangi uygulamanın motoru çalışıyor takip etmek için (UC-1 Silme İşlemi Entegrasyonu)
         private readonly ConcurrentDictionary<Guid, CancellationTokenSource> _activeTasks = new();
 
-        // YENİ: API'mizdeki yayın odasına bağlanacak olan köprü (Tünel)
+        // API'mizdeki yayın odasına bağlanacak olan köprü (Tünel)
         private readonly HubConnection _hubConnection;
 
         public Worker(ILogger<Worker> logger, IServiceProvider serviceProvider)
@@ -44,7 +44,7 @@ namespace Watchdog.Worker
             // POLLY KURALI: Bir siteye ping attığımızda 5 saniye içinde cevap gelmezse bekleme, fişini çek! (Timeout)
             _timeoutPolicy = Policy.TimeoutAsync(5, TimeoutStrategy.Pessimistic);
 
-            // === ADIM 4.1: SİGNALR KÖPRÜSÜNÜN İNŞASI ===
+            // === SİGNALR KÖPRÜSÜNÜN İNŞASI ===
             // Not: Buradaki port numarasının Watchdog.Api'nin çalıştığı port (örn: 7054) olduğuna emin ol.
             _hubConnection = new HubConnectionBuilder()
                 .WithUrl("https://localhost:7054/statushub")
@@ -52,7 +52,7 @@ namespace Watchdog.Worker
                 .Build();
         }
 
-        // === ADIM 4.2: KÖPRÜYÜ AKTİF ETME ===
+        // === KÖPRÜYÜ AKTİF ETME ===
         // Worker servisi başlarken tünele bağlanıyoruz.
         public override async Task StartAsync(CancellationToken cancellationToken)
         {
@@ -83,7 +83,7 @@ namespace Watchdog.Worker
 
                     var appsInDb = await dbContext.MonitoredApps.ToListAsync(stoppingToken);
 
-                    // A) YENİ EKLENEN UYGULAMALARI BUL VE MOTORLARINI ÇALIŞTIR
+                    // YENİ EKLENEN UYGULAMALARI BUL VE MOTORLARINI ÇALIŞTIR
                     foreach (var app in appsInDb)
                     {
                         if (!_activeTasks.ContainsKey(app.Id))
@@ -99,7 +99,7 @@ namespace Watchdog.Worker
                         }
                     }
 
-                    // B) SİLİNEN UYGULAMALARI BUL VE MOTORLARINI DURDUR
+                    // SİLİNEN UYGULAMALARI BUL VE MOTORLARINI DURDUR
                     var dbAppIds = appsInDb.Select(a => a.Id).ToList();
                     var tasksToRemove = _activeTasks.Keys.Except(dbAppIds).ToList();
 
@@ -148,12 +148,12 @@ namespace Watchdog.Worker
         // --- 3. PING ATMA VE JSON OKUMA METODU (V3) ---
         private async Task CheckAppHealthAsync(MonitoredApp app, WatchdogDbContext dbContext, Watchdog.Application.UseCases.AnalyzeSystemHealthUseCase analyzeUseCase, CancellationToken token)
         {
-            var stopwatch = Stopwatch.StartNew(); // WDG015: Yanıt süresini ölçmek için kronometre başlat.
+            var stopwatch = Stopwatch.StartNew(); // Yanıt süresini ölçmek için kronometre başlat.
             HealthStatus currentStatus;
 
             // Başlangıç metrikleri (Sıfırlama)
             double realCpu = 0;
-            double realRamPercent = 0; // YENİ: Artık yüzdeyi tutacak
+            double realRamPercent = 0;
             double realDisk = 0;
             string dependencyDetailsJson = null;
 
@@ -181,7 +181,7 @@ namespace Watchdog.Worker
                         {
                             if (metricsElement.TryGetProperty("cpu_usage", out var cpuProp)) realCpu = cpuProp.GetDouble();
 
-                            // YENİ: JSON'dan "ram_usage_percent" değerini çekiyoruz
+                            // JSON'dan "ram_usage_percent" değerini çekiyoruz
                             if (metricsElement.TryGetProperty("ram_usage_percent", out var ramProp)) realRamPercent = ramProp.GetDouble();
 
                             if (metricsElement.TryGetProperty("free_disk_gb", out var diskProp)) realDisk = diskProp.GetDouble();
@@ -227,13 +227,13 @@ namespace Watchdog.Worker
             dbContext.HealthSnapshots.Add(snapshot);
             await dbContext.SaveChangesAsync(token);
 
-            // YENİ: Konsola yazdırırken artık "RAM: 45MB" değil "RAM: %45" yazdırıyoruz
+            // Konsola yazdırırken artık "RAM: 45MB" değil "RAM: %45" yazdırıyoruz
             _logger.LogInformation("{AppName} kontrol edildi. Durum: {Status}. CPU: %{Cpu}, RAM: %{Ram}", app.Name, currentStatus, realCpu, realRamPercent);
 
-            // 1. Geliştirici 1 (Senin) Kodun: Kural motorunu tetikler (Incident/Email kontrolü)
+            //  Kural motorunu tetikler (Incident/Email kontrolü)
             await analyzeUseCase.ExecuteAsync(snapshot);
 
-            // 2. Geliştirici 2 (Arkadaşının) Kodu: Canlı yayını tetikler (React arayüzü için)
+            // Canlı yayını tetikler (React arayüzü için)
             if (_hubConnection.State == HubConnectionState.Connected)
             {
                 await _hubConnection.InvokeAsync("BroadcastNewStatus", snapshot, token);
