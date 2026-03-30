@@ -7,14 +7,21 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
-// === 1. SWAGGER ARAYÜZÜ İÇİN GEREKLİ SERVİSLER (Ekip Arkadaşının Yazdığı) ===
+
+// === 1. SWAGGER ARAYÜZÜ İÇİN GEREKLİ SERVİSLER ===
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddOpenApi(); 
+builder.Services.AddOpenApi();
+
+
 
 // Scoped: Her bir HTTP isteği için yeni bir örnek oluşturur (Ekip Arkadaşının Yazdığı)
 builder.Services.AddScoped<IAppService, Watchdog.Application.Services.AppService>();
 builder.Services.AddScoped<IMonitoredAppRepository, Watchdog.Infrastructure.Persistence.Repositories.MonitoredAppRepository>();
+
+
+// SENSÖRLERİ SİSTEME DAHİL EDİYORUZ (UC-3 Entegrasyonu)
+
 
 // Sistem Konfigürasyon Servisleri
 builder.Services.AddScoped<Watchdog.Application.Interfaces.ISystemConfigurationRepository, Watchdog.Infrastructure.Persistence.Repositories.SystemConfigurationRepository>();
