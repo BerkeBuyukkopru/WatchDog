@@ -79,7 +79,10 @@ namespace Watchdog.Infrastructure.Persistence
                     Id = 1,
                     ActiveAiProvider = "Ollama", // Varsayılan yapay zeka
                     CriticalCpuThreshold = 90.0, // %90 CPU sınırı
-                    CriticalRamThreshold = 90.0  // 2GB RAM sınırı
+                    CriticalRamThreshold = 90.0, // 2GB RAM sınırı
+
+                    // EF Core kızmasın diye sabit bir tarih veriyoruz (Örn: 1 Ocak 2026)
+                    LastUpdated = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
                 });
             });
         }

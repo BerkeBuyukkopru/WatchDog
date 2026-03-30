@@ -12,11 +12,17 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddOpenApi();
 
-// Scoped: Her bir HTTP isteği için yeni bir örnek oluşturur (Ekip Arkadaşının Yazdığı)
+// --- Servis Kayıtları (Dependency Injection) ---
+
+// Uygulama ve Repository Servisleri
 builder.Services.AddScoped<IAppService, Watchdog.Application.Services.AppService>();
 builder.Services.AddScoped<IMonitoredAppRepository, Watchdog.Infrastructure.Persistence.Repositories.MonitoredAppRepository>();
 
-// SENSÖRLERİ SİSTEME DAHİL EDİYORUZ (UC-3 Entegrasyonu)
+// Sistem Konfigürasyon Servisleri (Gelen Değişiklikler)
+builder.Services.AddScoped<ISystemConfigurationRepository, Watchdog.Infrastructure.Persistence.Repositories.SystemConfigurationRepository>();
+builder.Services.AddScoped<ISystemConfigurationService, Watchdog.Application.Services.SystemConfigurationService>();
+
+// SENSÖRLERİ SİSTEME DAHİL EDİYORUZ (UC-3 Entegrasyonu - Senin Yazdığın)
 builder.Services.AddSystemHealthChecks(
     serverCpuThreshold: 90.0,
     appCpuThreshold: 90.0,
@@ -25,7 +31,7 @@ builder.Services.AddSystemHealthChecks(
     minFreeSpaceGb: 5f
 );
 
-// SQL Server Bağlantısı (ConnectionString appsettings'ten geliyor).
+// SQL Server Bağlantısı
 builder.Services.AddDbContext<WatchdogDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
