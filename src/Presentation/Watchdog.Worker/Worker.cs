@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.SignalR.Client; // YENİ: SignalR İstemci Kütüphanesi
 using Polly;
 using Polly.Timeout;
 using Watchdog.Domain.Entities;
@@ -29,6 +30,9 @@ namespace Watchdog.Worker
         // Çoklu Görev Yöneticisi: Hangi uygulamanın motoru çalışıyor takip etmek için (UC-1 Silme İşlemi Entegrasyonu)
         private readonly ConcurrentDictionary<Guid, CancellationTokenSource> _activeTasks = new();
 
+        // YENİ: API'mizdeki yayın odasına bağlanacak olan köprü (Tünel)
+        private readonly HubConnection _hubConnection;
+
         public Worker(ILogger<Worker> logger, IServiceProvider serviceProvider)
         {
             _logger = logger;
@@ -37,6 +41,30 @@ namespace Watchdog.Worker
 
             // POLLY KURALI: Bir siteye ping attığımızda 5 saniye içinde cevap gelmezse bekleme, fişini çek! (Timeout)
             _timeoutPolicy = Policy.TimeoutAsync(5, TimeoutStrategy.Pessimistic);
+
+            // === ADIM 4.1: SİGNALR KÖPRÜSÜNÜN İNŞASI ===
+            // Not: Buradaki port numarasının Watchdog.Api'nin çalıştığı port (örn: 7054) olduğuna emin ol.
+            _hubConnection = new HubConnectionBuilder()
+                .WithUrl("https://localhost:7054/statushub")
+                .WithAutomaticReconnect() // API geçici olarak kapansa bile otomatik tekrar dener
+                .Build();
+        }
+
+        // === ADIM 4.2: KÖPRÜYÜ AKTİF ETME ===
+        // Worker servisi başlarken tünele bağlanıyoruz.
+        public override async Task StartAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                await _hubConnection.StartAsync(cancellationToken);
+                _logger.LogInformation("Worker, API'nin SignalR tüneline (StatusHub) başarıyla bağlandı.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("SignalR tüneline bağlanılamadı. API şu an ayakta olmayabilir. Detay: {Message}", ex.Message);
+            }
+
+            await base.StartAsync(cancellationToken);
         }
 
         // --- 1. ANA YÖNETİCİ DÖNGÜ (Orkestra Şefi) ---
@@ -51,8 +79,7 @@ namespace Watchdog.Worker
                     var dbContext = scope.ServiceProvider.GetRequiredService<WatchdogDbContext>();
 
                     // --- YAZILIMCI HİLESİ (KENDİ API'MİZİ EKLİYORUZ) ---
-                    // Arkadaşın test etmek isterse bu yorum satırını açabilir.
-                    
+                    /* Arkadaşın test etmek isterse bu yorum satırını açabilir.
                     if (!await dbContext.MonitoredApps.AnyAsync(a => a.Name == "Benim Sensörlü API'm", stoppingToken))
                     {
                         var myApi = new MonitoredApp
@@ -67,7 +94,7 @@ namespace Watchdog.Worker
                         await dbContext.SaveChangesAsync(stoppingToken);
                         _logger.LogInformation("Sensörlü API veritabanına eklendi!");
                     }
-                    
+                    */
 
                     var appsInDb = await dbContext.MonitoredApps.ToListAsync(stoppingToken);
 
@@ -205,6 +232,14 @@ namespace Watchdog.Worker
 
             // YENİ: Konsola yazdırırken artık "RAM: 45MB" değil "RAM: %45" yazdırıyoruz
             _logger.LogInformation("{AppName} kontrol edildi. Durum: {Status}. CPU: %{Cpu}, RAM: %{Ram}", app.Name, currentStatus, realCpu, realRamPercent);
+
+            // === ADIM 4.3: CANLI YAYINI TETİKLEME ===
+            // Veritabanına kayıt başarılı oldu, şimdi veriyi API üzerinden Frontend'e fırlatıyoruz!
+            if (_hubConnection.State == HubConnectionState.Connected)
+            {
+                await _hubConnection.InvokeAsync("BroadcastNewStatus", snapshot, token);
+                // Console'da kalabalık yapmaması için buraya istersen _logger koymayabilirsin, ama verinin gittiğinden eminiz.
+            }
         }
     }
 }
