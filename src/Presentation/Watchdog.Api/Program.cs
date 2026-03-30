@@ -2,24 +2,20 @@ using HealthChecks.System;
 using Microsoft.EntityFrameworkCore;
 using Watchdog.Application.Interfaces;
 using Watchdog.Infrastructure.Persistence;
-using HealthChecks.System;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
-<<<<<<< HEAD
 // === 1. SWAGGER ARAYÜZÜ İÇİN GEREKLİ SERVİSLER ===
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-// === 1. SWAGGER ARAYÜZÜ İÇİN GEREKLİ SERVİSLER ===
+builder.Services.AddOpenApi();
 
 // Scoped: Her bir HTTP isteği için yeni bir örnek oluşturur.
 builder.Services.AddScoped<IAppService, Watchdog.Application.Services.AppService>();
 builder.Services.AddScoped<IMonitoredAppRepository, Watchdog.Infrastructure.Persistence.Repositories.MonitoredAppRepository>();
 
-// SQL Server Bağlantısı (ConnectionString appsettings'ten geliyor).
-=======
 // SENSÖRLERİ SİSTEME DAHİL EDİYORUZ (UC-3 Entegrasyonu)
 builder.Services.AddSystemHealthChecks(
     serverCpuThreshold: 90.0,
@@ -29,18 +25,10 @@ builder.Services.AddSystemHealthChecks(
     minFreeSpaceGb: 5f
 );
 
->>>>>>> furkan
+// SQL Server Bağlantısı (ConnectionString appsettings'ten geliyor).
 builder.Services.AddDbContext<WatchdogDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
-
-
-<<<<<<< HEAD
-builder.Services.AddOpenApi();
-builder.Services.AddSystemHealthChecks();
-=======
-
->>>>>>> furkan
 
 var app = builder.Build();
 
