@@ -1,3 +1,10 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Polly;
+using Polly.Timeout;
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -5,25 +12,20 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Polly;
-using Polly.Timeout;
 using Watchdog.Domain.Entities;
 using Watchdog.Domain.Enums;
 using Watchdog.Infrastructure.Persistence;
 
 namespace Watchdog.Worker
 {
+    // Sistemin 7/24 uyanık kalan tek hücresi. BackgroundService sayesinde uygulama kapanana kadar asenkron döngüsünü sürdürür.
     public class Worker : BackgroundService
     {
         private readonly ILogger<Worker> _logger;
         private readonly IServiceProvider _serviceProvider;
         private readonly HttpClient _httpClient;
 
-        // POLLY: Güvenlik Kalkanımız
+        // POLLY: Güvenlik Kalkanımız. Bir site "zombi" olursa (bağlantı açık ama veri yok), Polly 5. saniyede fişi çeker. Sistemin tıkanmasını önler.
         private readonly AsyncTimeoutPolicy _timeoutPolicy;
 
         // Çoklu Görev Yöneticisi: Hangi uygulamanın motoru çalışıyor takip etmek için (UC-1 Silme İşlemi Entegrasyonu)
@@ -46,6 +48,7 @@ namespace Watchdog.Worker
 
             while (!stoppingToken.IsCancellationRequested)
             {
+                // BackgroundService(Singleton) içinden DbContext(Scoped) çağırmak için 'Scope' açıyoruz. Bu hamle, her döngüde temiz bir veritabanı bağlantısı sağlar (Memory Leak'i önler).
                 using (var scope = _serviceProvider.CreateScope())
                 {
                     var dbContext = scope.ServiceProvider.GetRequiredService<WatchdogDbContext>();
@@ -76,9 +79,11 @@ namespace Watchdog.Worker
                     {
                         if (!_activeTasks.ContainsKey(app.Id))
                         {
+                            // Ana durdurma sinyali (stoppingToken) ile bağlı bir alt sinyal oluşturuyoruz.
                             var cts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
                             _activeTasks.TryAdd(app.Id, cts);
 
+                            // Task.Run: Her uygulama kendi bağımsız 'Thread'inde (kanalında) koşar. Bir uygulamanın yavaşlığı diğerlerini asla etkilemez.
                             _ = Task.Run(() => StartPollingAppAsync(app.Id, cts.Token), cts.Token);
 
                             _logger.LogInformation("Yeni izleme görevi başlatıldı: {AppName} (Her {Interval} saniyede bir)", app.Name, app.PollingIntervalSeconds);
@@ -93,12 +98,12 @@ namespace Watchdog.Worker
                     {
                         if (_activeTasks.TryRemove(idToRemove, out var cts))
                         {
-                            cts.Cancel();
+                            cts.Cancel(); // Uygulamanın sonsuz döngüsüne "Dur!" sinyali gönderir.
                             _logger.LogWarning("Uygulama silindiği için izleme görevi iptal edildi: {AppId}", idToRemove);
                         }
                     }
                 }
-
+                // 15 saniyede bir veritabanında yeni uygulama var mı diye kontrol et.
                 await Task.Delay(15000, stoppingToken);
             }
         }
@@ -113,25 +118,31 @@ namespace Watchdog.Worker
                 using (var scope = _serviceProvider.CreateScope())
                 {
                     var dbContext = scope.ServiceProvider.GetRequiredService<WatchdogDbContext>();
+
+                    // Kural motorumuzu DI (Resepsiyonist) üzerinden çağırıyoruz
+                    var analyzeUseCase = scope.ServiceProvider.GetRequiredService<Watchdog.Application.UseCases.AnalyzeSystemHealthUseCase>();
+
                     var app = await dbContext.MonitoredApps.FindAsync(new object[] { appId }, token);
 
                     if (app == null) break;
 
                     intervalSeconds = app.PollingIntervalSeconds;
 
-                    await CheckAppHealthAsync(app, dbContext, token);
+                    // Asıl ping ve veritabanı kayıt işlemi burada başlar.
+                    await CheckAppHealthAsync(app, dbContext, analyzeUseCase, token);
                 }
-
+                // Uygulamanın kendi ayarındaki süre (Örn: 10sn) kadar uyu.
                 await Task.Delay(intervalSeconds * 1000, token);
             }
         }
 
         // --- 3. PING ATMA VE JSON OKUMA METODU (V3) ---
-        private async Task CheckAppHealthAsync(MonitoredApp app, WatchdogDbContext dbContext, CancellationToken token)
+        private async Task CheckAppHealthAsync(MonitoredApp app, WatchdogDbContext dbContext, Application.UseCases.AnalyzeSystemHealthUseCase analyzeUseCase, CancellationToken token)
         {
-            var stopwatch = Stopwatch.StartNew();
+            var stopwatch = Stopwatch.StartNew(); // WDG015: Yanıt süresini ölçmek için kronometre başlat.
             HealthStatus currentStatus;
 
+            // Başlangıç metrikleri (Sıfırlama)
             double realCpu = 0;
             double realRamPercent = 0; // YENİ: Artık yüzdeyi tutacak
             double realDisk = 0;
@@ -139,6 +150,7 @@ namespace Watchdog.Worker
 
             try
             {
+                // Polly kalkanı altında HTTP isteğini fırlatıyoruz.
                 var response = await _timeoutPolicy.ExecuteAsync(async () =>
                 {
                     return await _httpClient.GetAsync(app.HealthUrl, token);
@@ -153,6 +165,7 @@ namespace Watchdog.Worker
 
                     try
                     {
+                        //Gelen JSON raporunu parse ediyoruz.
                         using var jsonDoc = System.Text.Json.JsonDocument.Parse(jsonString);
 
                         if (jsonDoc.RootElement.TryGetProperty("metrics", out var metricsElement))
@@ -172,11 +185,12 @@ namespace Watchdog.Worker
                 }
                 else
                 {
-                    currentStatus = HealthStatus.Degraded;
+                    currentStatus = HealthStatus.Degraded; // Site ayakta ama hata kodu (Örn: 500) dönüyor.
                 }
             }
             catch (TimeoutRejectedException)
             {
+                // Timeout veya DNS hatası gibi durumlarda sistem 'Unhealthy' (Kırmızı) olur.
                 currentStatus = HealthStatus.Unhealthy;
                 _logger.LogWarning("{AppName} zaman aşımına uğradı (Timeout)!", app.Name);
             }
@@ -200,11 +214,14 @@ namespace Watchdog.Worker
                 DependencyDetails = dependencyDetailsJson
             };
 
+            // Veritabanına fiziksel kaydı yapıyoruz.
             dbContext.HealthSnapshots.Add(snapshot);
             await dbContext.SaveChangesAsync(token);
 
             // YENİ: Konsola yazdırırken artık "RAM: 45MB" değil "RAM: %45" yazdırıyoruz
             _logger.LogInformation("{AppName} kontrol edildi. Durum: {Status}. CPU: %{Cpu}, RAM: %{Ram}", app.Name, currentStatus, realCpu, realRamPercent);
+
+            await analyzeUseCase.ExecuteAsync(snapshot);
         }
     }
 }
