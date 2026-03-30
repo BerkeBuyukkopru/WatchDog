@@ -30,11 +30,11 @@ namespace HealthChecks.System
                 var process = Process.GetCurrentProcess();
                 var appWorkingSetMb = Math.Round(process.WorkingSet64 / (1024f * 1024f), 2);
 
-                // 2. Sunucudaki BOŞ RAM (MB)
+                // 2. Sunucudaki toplam "Kullanılabilir" (Free) belleği okuyoruz.
                 using var ramCounter = new PerformanceCounter("Memory", "Available MBytes");
                 var serverAvailableRamMb = Math.Round(ramCounter.NextValue(), 2);
 
-                // 3. YENİ: Sistemin TOPLAM RAM'ini okuma (.NET'in kendi özelliği)
+                // 3. GC.GetGCMemoryInfo() sayesinde sisteme kaç GB RAM takılı olduğunu karmaşık Windows API'leri olmadan öğrenebiliyoruz.
                 var gcMemoryInfo = GC.GetGCMemoryInfo();
                 var totalPhysicalMemoryMb = Math.Round(gcMemoryInfo.TotalAvailableMemoryBytes / (1024.0 * 1024.0), 2);
 

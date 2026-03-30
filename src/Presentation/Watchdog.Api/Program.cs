@@ -23,6 +23,11 @@ builder.Services.AddScoped<IMonitoredAppRepository, Watchdog.Infrastructure.Pers
 // SENSÖRLERİ SİSTEME DAHİL EDİYORUZ (UC-3 Entegrasyonu)
 
 
+// Sistem Konfigürasyon Servisleri
+builder.Services.AddScoped<Watchdog.Application.Interfaces.ISystemConfigurationRepository, Watchdog.Infrastructure.Persistence.Repositories.SystemConfigurationRepository>();
+builder.Services.AddScoped<Watchdog.Application.Interfaces.ISystemConfigurationService, Watchdog.Application.Services.SystemConfigurationService>();
+
+// SENSÖRLERİ SİSTEME DAHİL EDİYORUZ (UC-3 Entegrasyonu) (Senin Yazdığın)
 builder.Services.AddSystemHealthChecks(
     serverCpuThreshold: 90.0,
     appCpuThreshold: 90.0,
