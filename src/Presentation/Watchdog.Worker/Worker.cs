@@ -157,6 +157,11 @@ namespace Watchdog.Worker
             double realDisk = 0;
             string dependencyDetailsJson = null;
 
+            // TEST İÇİN YENİ: Konsolda görmek için uygulama metriklerini tutacak değişkenler
+            double processCpu = 0;
+            double processRamMb = 0;
+
+
             try
             {
                 // Polly kalkanı altında HTTP isteğini fırlatıyoruz.
@@ -179,12 +184,14 @@ namespace Watchdog.Worker
 
                         if (jsonDoc.RootElement.TryGetProperty("metrics", out var metricsElement))
                         {
-                            if (metricsElement.TryGetProperty("cpu_usage", out var cpuProp)) realCpu = cpuProp.GetDouble();
-
-                            // JSON'dan "ram_usage_percent" değerini çekiyoruz
-                            if (metricsElement.TryGetProperty("ram_usage_percent", out var ramProp)) realRamPercent = ramProp.GetDouble();
-
+                            // YENİ: Veritabanı (Grafikler) için Ana Sunucu Metriklerini Çekiyoruz
+                            if (metricsElement.TryGetProperty("system_cpu_percent", out var cpuProp)) realCpu = cpuProp.GetDouble();
+                            if (metricsElement.TryGetProperty("system_ram_percent", out var ramProp)) realRamPercent = ramProp.GetDouble();
                             if (metricsElement.TryGetProperty("free_disk_gb", out var diskProp)) realDisk = diskProp.GetDouble();
+
+                            // TEST İÇİN YENİ: Log ekranında görmek için Uygulama Metriklerini de çekiyoruz
+                            if (metricsElement.TryGetProperty("process_cpu_percent", out var pCpuProp)) processCpu = pCpuProp.GetDouble();
+                            if (metricsElement.TryGetProperty("process_ram_mb", out var pRamProp)) processRamMb = pRamProp.GetDouble();
                         }
                     }
                     catch
@@ -210,7 +217,7 @@ namespace Watchdog.Worker
 
             stopwatch.Stop();
 
-            // Veritabanı modelinde sütun adı "RamUsageMb" kalsa bile içine yüzde değerini basıyoruz
+            // Veritabanı modelinde sütun adı "RamUsage" kalsa bile içine Sistem Yüzde değerini basıyoruz
             var snapshot = new HealthSnapshot
             {
                 AppId = app.Id,
@@ -218,17 +225,19 @@ namespace Watchdog.Worker
                 Status = currentStatus,
                 TotalDuration = stopwatch.ElapsedMilliseconds,
                 CpuUsage = realCpu,
-                RamUsage = realRamPercent, // Veri artık yüzde olarak kaydediliyor!
+                RamUsage = realRamPercent, // Veri artık sistem geneli yüzde olarak kaydediliyor!
                 FreeDiskGb = realDisk,
-                DependencyDetails = dependencyDetailsJson
+                DependencyDetails = dependencyDetailsJson // Uygulamanın kendi CPU ve RAM'i bu JSON'ın içinde gizli (AI için)
             };
 
             // Veritabanına fiziksel kaydı yapıyoruz.
             dbContext.HealthSnapshots.Add(snapshot);
             await dbContext.SaveChangesAsync(token);
 
-            // Konsola yazdırırken artık "RAM: 45MB" değil "RAM: %45" yazdırıyoruz
-            _logger.LogInformation("{AppName} kontrol edildi. Durum: {Status}. CPU: %{Cpu}, RAM: %{Ram}", app.Name, currentStatus, realCpu, realRamPercent);
+            // Konsola yazdırırken ana sunucu metriklerini gösteriyoruz
+            _logger.LogInformation(
+                     "{AppName} kontrol edildi. Durum: {Status}. Sistem CPU: %{SysCpu}, Sistem RAM: %{SysRam}, Boş Disk: {Disk}GB | Uygulama CPU: %{AppCpu}, Uygulama RAM: {AppRam}MB",
+                     app.Name, currentStatus, realCpu, realRamPercent, realDisk, processCpu, processRamMb);
 
             //  Kural motorunu tetikler (Incident/Email kontrolü)
             await analyzeUseCase.ExecuteAsync(snapshot);
@@ -237,7 +246,6 @@ namespace Watchdog.Worker
             if (_hubConnection.State == HubConnectionState.Connected)
             {
                 await _hubConnection.InvokeAsync("BroadcastNewStatus", snapshot, token);
-                // Console'da kalabalık yapmaması için buraya istersen _logger koymayabilirsin, ama verinin gittiğinden eminiz.
             }
         }
     }
