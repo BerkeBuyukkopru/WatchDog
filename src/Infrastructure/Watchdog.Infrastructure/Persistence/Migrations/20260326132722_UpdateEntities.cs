@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace Watchdog.Infrastructure.Migrations
+namespace Watchdog.Infrastructure.Persistence.Migrations
 {
     /// <inheritdoc />
     public partial class UpdateEntities : Migration

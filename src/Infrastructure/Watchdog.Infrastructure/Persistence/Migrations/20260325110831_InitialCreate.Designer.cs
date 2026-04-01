@@ -9,7 +9,7 @@ using Watchdog.Infrastructure.Persistence;
 
 #nullable disable
 
-namespace Watchdog.Infrastructure.Migrations
+namespace Watchdog.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(WatchdogDbContext))]
     [Migration("20260325110831_InitialCreate")]

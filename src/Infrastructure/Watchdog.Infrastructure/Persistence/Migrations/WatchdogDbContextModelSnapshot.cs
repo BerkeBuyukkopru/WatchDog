@@ -3,20 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Watchdog.Infrastructure.Persistence;
 
 #nullable disable
 
-namespace Watchdog.Infrastructure.Migrations
+namespace Watchdog.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(WatchdogDbContext))]
-    [Migration("20260326132722_UpdateEntities")]
-    partial class UpdateEntities
+    partial class WatchdogDbContextModelSnapshot : ModelSnapshot
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -175,6 +172,9 @@ namespace Watchdog.Infrastructure.Migrations
                     b.Property<double>("CriticalRamThreshold")
                         .HasColumnType("float");
 
+                    b.Property<DateTime>("LastUpdated")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("Id");
 
                     b.ToTable("SystemConfigurations");
@@ -185,7 +185,8 @@ namespace Watchdog.Infrastructure.Migrations
                             Id = 1,
                             ActiveAiProvider = "Ollama",
                             CriticalCpuThreshold = 90.0,
-                            CriticalRamThreshold = 90.0
+                            CriticalRamThreshold = 90.0,
+                            LastUpdated = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
                 });
 
