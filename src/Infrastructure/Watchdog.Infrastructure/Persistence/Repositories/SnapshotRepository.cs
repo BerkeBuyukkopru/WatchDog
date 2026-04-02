@@ -34,5 +34,14 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
                 .Take(count) // 3. Sadece ihtiyacımız olan kadarını (Örn: 3) RAM'e çek.
                 .ToListAsync();
         }
+
+        public async Task<IEnumerable<HealthSnapshot>> GetLatestGlobalAsync(int count)
+        {
+            return await _context.HealthSnapshots
+                .Include(s => s.App) // <--- KRİTİK: Uygulama bilgilerini JOIN ile getirir.
+                .OrderByDescending(s => s.Timestamp)
+                .Take(count)
+                .ToListAsync();
+        }
     }
 }

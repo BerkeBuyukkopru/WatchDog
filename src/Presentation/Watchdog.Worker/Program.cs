@@ -5,10 +5,10 @@ using Microsoft.Extensions.Hosting;
 using Watchdog.Infrastructure.Persistence;
 using Watchdog.Worker;
 
-// 1. Usta İnşaatçıyı (Builder) Başlat. Worker Service Builder'ı başlatıyoruz. WebApplication.CreateBuilder'dan farkı; içinde Controller veya Swagger gibi ağır web yükleri taşımaz, sadece saf performans odaklı bir "Host" oluşturur.
+// 1. Usta İnşaatçıyı (Builder) Başlat.
 var builder = Host.CreateApplicationBuilder(args);
 
-// 2. EKSİK OLAN PARÇA: Resepsiyoniste Veritabanını (DbContext) Tanıtıyoruz! API projesiyle aynı veritabanına bağlanıyoruz. Üretilen sağlık Snapshot'larını bu kanal üzerinden kaydedeceğiz.
+// 2. Resepsiyoniste Veritabanını (DbContext) Tanıtıyoruz!
 builder.Services.AddDbContext<WatchdogDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -17,7 +17,13 @@ builder.Services.AddScoped<Watchdog.Application.Interfaces.ISnapshotRepository, 
 builder.Services.AddScoped<Watchdog.Application.Interfaces.IIncidentRepository, Watchdog.Infrastructure.Persistence.Repositories.IncidentRepository>();
 builder.Services.AddScoped<Watchdog.Application.Interfaces.INotificationSender, Watchdog.Infrastructure.Notifications.MailSender>();
 builder.Services.AddScoped<Watchdog.Application.Interfaces.IMonitoredAppRepository, Watchdog.Infrastructure.Persistence.Repositories.MonitoredAppRepository>();
-builder.Services.AddScoped<Watchdog.Application.UseCases.AnalyzeSystemHealthUseCase>();
+
+// Use Case Kayıtları
+builder.Services.AddScoped<Watchdog.Application.Interfaces.IUseCaseAsync<Watchdog.Domain.Entities.HealthSnapshot>, Watchdog.Application.UseCases.AnalyzeSystemHealthUseCase>();
+
+// YENİ EKLENEN KAYITLAR: Ping Elçisi ve Orkestra Şefi
+builder.Services.AddHttpClient<Watchdog.Application.Interfaces.IHealthProbeClient, Watchdog.Infrastructure.Probing.HealthProbeHttpClient>();
+builder.Services.AddScoped<Watchdog.Application.Interfaces.IUseCaseAsync<Watchdog.Application.DTOs.PollSingleAppRequest, Watchdog.Domain.Entities.HealthSnapshot?>, Watchdog.Application.UseCases.PollSingleAppUseCase>();
 
 // 3. 7/24 Çalışacak Motorumuzu (Worker) Sisteme Kaydediyoruz
 builder.Services.AddHostedService<Worker>();

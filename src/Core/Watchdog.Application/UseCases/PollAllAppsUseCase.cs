@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Watchdog.Application.UseCases
 {
-    internal class PollAllAppsUseCase
+    public class PollAllAppsUseCase
     {
     }
 }

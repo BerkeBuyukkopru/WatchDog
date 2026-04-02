@@ -1,10 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Threading;
+using System.Threading.Tasks;
+using Watchdog.Application.DTOs;
 
 namespace Watchdog.Application.Interfaces
 {
-    internal interface IHealthProbeClient
+    public interface IHealthProbeClient
     {
+        Task<ProbeResult> CheckHealthAsync(string healthUrl, CancellationToken cancellationToken = default);
     }
 }

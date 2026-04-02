@@ -13,5 +13,8 @@ namespace Watchdog.Application.Interfaces
 
         // IncidentRules'un (3-Strike Kuralı) çalışabilmesi için veritabanından en taze "count" kadar kaydı getirir. (Hangi uygulama kontrol ediliyor? Son kaç kayda bakacağız?)
         Task<List<HealthSnapshot>> GetLatestSnapshotsAsync(Guid appId, int count);
+
+        // Swagger ve React geçmişi için tüm sistemin son kayıtlarını getirir.
+        Task<IEnumerable<HealthSnapshot>> GetLatestGlobalAsync(int count);
     }
 }

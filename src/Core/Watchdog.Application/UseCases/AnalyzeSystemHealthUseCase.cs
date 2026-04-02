@@ -9,7 +9,7 @@ using Watchdog.Domain.Rules;
 namespace Watchdog.Application.UseCases
 {
     // Sistem Sağlık Analizi. Worker'dan gelen her ping sonucu bu süzgeçten geçer.
-    public class AnalyzeSystemHealthUseCase
+    public class AnalyzeSystemHealthUseCase : IUseCaseAsync<HealthSnapshot>
     {
         private readonly ISnapshotRepository _snapshotRepository;
         private readonly IIncidentRepository _incidentRepository;

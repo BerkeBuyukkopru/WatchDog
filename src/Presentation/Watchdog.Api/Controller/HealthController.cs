@@ -40,13 +40,7 @@ namespace Watchdog.Api.Controllers
                 }
             }
 
-            // 2. WORKER MOTORUNUN BEKLEDİĞİ İSİMLERE ÇEVİR (MAPPING)
-            metrics["cpu_usage"] = metrics.ContainsKey("app_cpu_percent") ? metrics["app_cpu_percent"] : 0;
-
-            // YENİ GÜNCELLEME: Worker'a artık MB yerine Yüzdelik (%) RAM kullanımını veriyoruz
-            metrics["ram_usage_percent"] = metrics.ContainsKey("ram_usage_percent") ? metrics["ram_usage_percent"] : 0;
-
-            // 3. RAPORU JSON OLARAK DIŞARIYA SUN! (GTD WDG014 Kuralı)
+            // 2. RAPORU JSON OLARAK DIŞARIYA SUN! (GTD WDG014 Kuralı)
             var response = new
             {
                 status = isHealthy ? "Healthy" : "Degraded",

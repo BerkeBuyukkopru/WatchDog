@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Watchdog.Application.UseCases
 {
-    internal class ArchiveSnapshotsUseCase
+    public class ArchiveSnapshotsUseCase
     {
     }
 }

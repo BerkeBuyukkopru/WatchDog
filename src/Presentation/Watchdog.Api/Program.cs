@@ -17,10 +17,15 @@ builder.Services.AddOpenApi();
 // Uygulama ve Repository Servisleri
 builder.Services.AddScoped<IAppService, Watchdog.Application.Services.AppService>();
 builder.Services.AddScoped<IMonitoredAppRepository, Watchdog.Infrastructure.Persistence.Repositories.MonitoredAppRepository>();
+builder.Services.AddScoped<IUseCaseAsync<Watchdog.Application.DTOs.GetLatestStatusesRequest, IEnumerable<Watchdog.Application.DTOs.LatestStatusDto>>, Watchdog.Application.UseCases.GetLatestStatusesUseCase>();
 
 // Sistem Konfigürasyon Servisleri (Gelen Değişiklikler)
 builder.Services.AddScoped<ISystemConfigurationRepository, Watchdog.Infrastructure.Persistence.Repositories.SystemConfigurationRepository>();
 builder.Services.AddScoped<ISystemConfigurationService, Watchdog.Application.Services.SystemConfigurationService>();
+
+
+// SnapshotRepository'yi API projesine tanıtıyoruz
+builder.Services.AddScoped<Watchdog.Application.Interfaces.ISnapshotRepository, Watchdog.Infrastructure.Persistence.Repositories.SnapshotRepository>();
 
 // SENSÖRLERİ SİSTEME DAHİL EDİYORUZ (UC-3 Entegrasyonu - Senin Yazdığın)
 builder.Services.AddSystemHealthChecks(
