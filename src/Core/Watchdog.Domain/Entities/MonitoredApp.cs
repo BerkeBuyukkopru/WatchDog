@@ -11,8 +11,11 @@ namespace Watchdog.Domain.Entities
         // Uyarıları gidermek için = string.Empty; ekledik
         public string Name { get; set; } = string.Empty;
         public string HealthUrl { get; set; } = string.Empty;
-
         public int PollingIntervalSeconds { get; set; }
+
+        // YENİ: Bildirim gidecek kişilerin listesi (Virgülle ayrılmış)
+        // Örn: "berke@test.com, ekip-lideri@test.com"
+        public string? NotificationEmails { get; set; }
 
         // ApiKey başlangıçta boş olabileceği için nullable (?) yapıyoruz
         public string? ApiKey { get; set; }

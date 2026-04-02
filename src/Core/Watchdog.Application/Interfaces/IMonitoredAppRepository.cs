@@ -19,6 +19,9 @@ namespace Watchdog.Application.Interfaces
 
         Task<bool> DeleteAsync(Guid id);
 
+        // Uygulamayı veritabanında günceller.
+        Task<bool> UpdateAsync(MonitoredApp app);
+
         //Aynı URL'in iki kez eklenmesini önleme.
         Task<bool> IsUrlExistAsync(string healthUrl);
     }

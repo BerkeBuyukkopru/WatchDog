@@ -1,49 +1,109 @@
 ﻿using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
+using Microsoft.Extensions.Options;
 using System.Text;
+using System.Text.Json;
+using System.Linq; // .Select() ve .ToArray() için gerekli
 using Watchdog.Application.Interfaces;
 using Watchdog.Domain.Entities;
 
 namespace Watchdog.Infrastructure.Notifications
 {
-    // Bildirim Gönderim Servisi. Infrastructure katmanında yer alarak dış dünya (SMTP) ile iletişim kurar.
-    public class MailSender: INotificationSender
+    public class MailSender : INotificationSender
     {
         private readonly ILogger<MailSender> _logger;
+        private readonly MailSettings _settings;
+        private readonly HttpClient _httpClient;
 
-        public MailSender(ILogger<MailSender> logger)
+        public MailSender(ILogger<MailSender> logger, IOptions<MailSettings> settings)
         {
             _logger = logger;
+            _settings = settings.Value;
+            _httpClient = new HttpClient();
         }
 
-        // Kesinti oluştuğunda (3-Strike sonrası) çalışır.
+        // === 1. SİSTEM ÇÖKTÜĞÜNDE ÇALIŞAN METOT (DOWNTIME) ===
         public async Task SendDowntimeAlertAsync(Incident incident, MonitoredApp app)
         {
-            string subject = $"🚨 KRİTİK KESİNTİ ALARMI: {app.Name} Yanıt Vermiyor!";
-            string body = $"İzlenen sistemlerden '{app.Name}' ({app.HealthUrl}) adresine ulaşılamıyor veya üst üste 3 kez hata alındı (3-Strike).\nÇöküş Zamanı: {incident.StartedAt}\nHata Detayı: {incident.ErrorMessage}";
+            _logger.LogWarning("===> [API] {AppName} için HTTP üzerinden DOWNTIME maili hazırlanıyor...", app.Name);
 
-            await SendEmailAsync(subject, body);
+            // Alıcı yönetimi (Fallback mantığı aynı)
+            var targetEmails = !string.IsNullOrWhiteSpace(app.NotificationEmails)
+                ? app.NotificationEmails.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries).Select(e => e.Trim())
+                : new[] { _settings.ToEmail };
 
-            // Terminal üzerinden takibi kolaylaştırmak için Error seviyesinde log atıyoruz.
-            _logger.LogError(">>> E-POSTA GÖNDERİLDİ: DOWNTIME ALERT -> {AppName}", app.Name);
+            // Mailtrap API beklediği JSON formatı
+            var emailData = new
+            {
+                from = new { email = _settings.From, name = _settings.DisplayName },
+                to = targetEmails.Select(e => new { email = e }).ToArray(),
+                subject = $"🚨 KRİTİK KESİNTİ: {app.Name}",
+                html = $"<h3>Sistem Çöktü!</h3><p><b>Uygulama:</b> {app.Name}</p><p><b>Hata:</b> {incident.ErrorMessage}</p><p><b>Zaman:</b> {incident.StartedAt:dd.MM.yyyy HH:mm:ss} (UTC)</p>"
+            };
+
+            await SendViaApiAsync(emailData, app.Name);
         }
 
-        //Sistem düzeldiğinde yöneticiye "Rahat uyu" mesajı gönderir.
+        // === 2. SİSTEM DÜZELDİĞİNDE ÇALIŞAN METOT (RECOVERY) ===
         public async Task SendRecoveryAlertAsync(Incident incident, MonitoredApp app)
         {
-            string subject = $"SİSTEM KURTARILDI: {app.Name} Yeniden Ayakta!";
-            string body = $"Kesinti yaşayan '{app.Name}' ({app.HealthUrl}) uygulaması tekrar sağlıklı yanıt vermeye başlamıştır.\nÇözülme Zamanı: {incident.ResolvedAt}";
+            _logger.LogWarning("===> [API] {AppName} için HTTP üzerinden KURTARMA maili hazırlanıyor...", app.Name);
 
-            await SendEmailAsync(subject, body);
+            var targetEmails = !string.IsNullOrWhiteSpace(app.NotificationEmails)
+                ? app.NotificationEmails.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries).Select(e => e.Trim())
+                : new[] { _settings.ToEmail };
 
-            _logger.LogInformation(">>> E-POSTA GÖNDERİLDİ: RECOVERY -> {AppName}", app.Name);
+            var emailData = new
+            {
+                from = new { email = _settings.From, name = _settings.DisplayName },
+                to = targetEmails.Select(e => new { email = e }).ToArray(),
+                subject = $"✅ SİSTEM KURTARILDI: {app.Name}",
+                html = $@"
+                    <div style='font-family: Arial, sans-serif; padding: 20px; border: 1px solid #dff0d8; border-radius: 10px;'>
+                        <h3 style='color: #3c763d;'>Sistem Tekrar Ayakta!</h3>
+                        <p><b>Uygulama:</b> {app.Name}</p>
+                        <p><b>Düzelme Zamanı:</b> {incident.ResolvedAt:dd.MM.yyyy HH:mm:ss} (UTC)</p>
+                        <p>Sistem şu an sağlıklı yanıt veriyor.</p>
+                        <hr style='border: 0; border-top: 1px solid #dff0d8;'>
+                        <p style='font-size: 11px; color: #999;'>WatchDog Otomatik Bildirim Sistemi</p>
+                    </div>"
+            };
+
+            await SendViaApiAsync(emailData, app.Name);
         }
 
-        private async Task SendEmailAsync(string subject, string body)
+        // === 3. ORTAK API GÖNDERİM MOTORU ===
+        private async Task SendViaApiAsync(object payload, string appName)
         {
-            // Not: Gerçek SMTP (SmtpClient) kodları buraya gelecek. 
-            await Task.CompletedTask;
+            try
+            {
+                var json = JsonSerializer.Serialize(payload);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                // Mailtrap API Endpoint (InboxID appsettings'ten okunuyor)
+                var request = new HttpRequestMessage(HttpMethod.Post, $"https://sandbox.api.mailtrap.io/api/send/{_settings.InboxId}");
+
+                // Hazırladığımız içeriği request'e bağlıyoruz
+                request.Content = content;
+
+                // API Token'ı header'a ekliyoruz (appsettings'ten okunuyor)
+                request.Headers.Add("Api-Token", _settings.ApiToken);
+
+                var response = await _httpClient.SendAsync(request);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    _logger.LogInformation(">>> E-POSTA API ÜZERİNDEN BAŞARIYLA GÖNDERİLDİ: {AppName}", appName);
+                }
+                else
+                {
+                    var errorDetail = await response.Content.ReadAsStringAsync();
+                    _logger.LogCritical("!!! API HATASI: {Code} | Detay: {Detail}", response.StatusCode, errorDetail);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogCritical("!!! HTTP GÖNDERİM HATASI: {Message}", ex.Message);
+            }
         }
     }
 }

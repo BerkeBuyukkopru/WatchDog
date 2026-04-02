@@ -7,8 +7,8 @@ using Watchdog.Domain.Entities;
 
 namespace Watchdog.Application.Services
 {
-    //Bussines Logic, Veritabanına veri akydetme işlemleri. Veritabanı (Repository) ile dış dünya (API) arasındaki köprüdür.
-    public class AppService: IAppService
+    //Bussines Logic, Veritabanına veri kaydetme işlemleri. Veritabanı (Repository) ile dış dünya (API) arasındaki köprüdür.
+    public class AppService : IAppService
     {
         private readonly IMonitoredAppRepository _repository;
 
@@ -30,7 +30,9 @@ namespace Watchdog.Application.Services
                 Name = a.Name,
                 HealthUrl = a.HealthUrl,
                 PollingIntervalSeconds = a.PollingIntervalSeconds,
-                CreatedAt = a.CreatedAt
+                CreatedAt = a.CreatedAt,
+                // YENİ EKLENEN: Veritabanındaki virgüllü mail metnini (null ise boş string) DTO'ya aktarıyoruz
+                NotificationEmails = a.NotificationEmails ?? string.Empty
             });
         }
 
@@ -57,8 +59,8 @@ namespace Watchdog.Application.Services
                 HealthUrl = dto.HealthUrl,
                 PollingIntervalSeconds = dto.PollingIntervalSeconds,
                 CreatedAt = DateTime.UtcNow,
-               // Uygulamaya özel API Key üretiyoruz.
-                ApiKey = Guid.NewGuid().ToString("N") 
+                // Uygulamaya özel API Key üretiyoruz.
+                ApiKey = Guid.NewGuid().ToString("N")
             };
 
             // Repository üzerinden veritabanına yazıyoruz.

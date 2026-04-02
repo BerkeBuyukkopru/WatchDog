@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 using Watchdog.Application.DTOs;
 using Watchdog.Application.Interfaces;
 
@@ -25,30 +26,18 @@ namespace Watchdog.Api.Controller
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreatedAppDto dto)
+        public async Task<IActionResult> Create(
+            [FromBody] CreateMonitoredAppRequest request,
+            [FromServices] IUseCaseAsync<CreateMonitoredAppRequest, CreateMonitoredAppResponse> useCase)
         {
-            // Tuple Deconstruction: Servisten gelen 5'li paketi burada açıyoruz.
-            var result = await _appService.AddAppAsync(dto);
+            var result = await useCase.ExecuteAsync(request);
 
             if (!result.IsSuccess)
             {
-                // Aynı URL varsa 409 Conflict (Çakışma) fırlatıyoruz.
-                if (result.ErrorCode == "URL_ALREADY_EXISTS")
-                {
-                    return Conflict(new { errorCode = result.ErrorCode, message = result.ErrorMessage });
-                }
-
-                // Diğer her türlü hata için 400 Bad Request döneriz
-                return BadRequest(new { errorCode = result.ErrorCode, message = result.ErrorMessage });
+                return BadRequest(new { message = result.ErrorMessage });
             }
 
-            // Başarılı kayıtta 201 Created ve "Üretilen API Key" Dashboard'a fırlatılır.
-            return Created("", new
-            {
-                id = result.Id,
-                message = "Uygulama başarıyla eklendi.",
-                apiKey = result.ApiKey
-            });
+            return CreatedAtAction(nameof(GetAll), new { id = result.Id }, result);
         }
 
         [HttpDelete("{id:guid}")]
@@ -60,6 +49,29 @@ namespace Watchdog.Api.Controller
                 return NotFound(new { message = "Silinecek uygulama bulunamadı." });
             }
             // 204 No Content: "Sildim, artık böyle bir şey yok" mesajıdır.
+            return NoContent();
+        }
+
+        [HttpPatch("{id:guid}/emails")]
+        public async Task<IActionResult> UpdateEmails(
+                    Guid id,
+                    [FromBody] UpdateAppEmailsRequest request,
+                    [FromServices] IUseCaseAsync<UpdateAppEmailsRequest, (bool IsSuccess, string ErrorMessage)> useCase)
+        {
+            request.AppId = id;
+            var result = await useCase.ExecuteAsync(request);
+
+            if (!result.IsSuccess)
+            {
+                // Eğer hata mesajı 'bulunamadı' kelimesi içeriyorsa 404 dön, yoksa Regex hatasıdır 400 dön.
+                if (result.ErrorMessage.Contains("bulunamadı"))
+                {
+                    return NotFound(new { message = result.ErrorMessage });
+                }
+
+                return BadRequest(new { message = result.ErrorMessage });
+            }
+
             return NoContent();
         }
     }

@@ -1,6 +1,8 @@
 using HealthChecks.System;
 using Microsoft.EntityFrameworkCore;
+using Watchdog.Application.DTOs;
 using Watchdog.Application.Interfaces;
+using Watchdog.Application.UseCases;
 using Watchdog.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -23,9 +25,15 @@ builder.Services.AddScoped<IUseCaseAsync<Watchdog.Application.DTOs.GetLatestStat
 builder.Services.AddScoped<ISystemConfigurationRepository, Watchdog.Infrastructure.Persistence.Repositories.SystemConfigurationRepository>();
 builder.Services.AddScoped<ISystemConfigurationService, Watchdog.Application.Services.SystemConfigurationService>();
 
+builder.Services.Configure<Watchdog.Infrastructure.Notifications.MailSettings>(
+    builder.Configuration.GetSection("MailSettings"));
 
 // SnapshotRepository'yi API projesine tanıtıyoruz
 builder.Services.AddScoped<Watchdog.Application.Interfaces.ISnapshotRepository, Watchdog.Infrastructure.Persistence.Repositories.SnapshotRepository>();
+
+builder.Services.AddScoped<IUseCaseAsync<CreateMonitoredAppRequest, CreateMonitoredAppResponse>, CreateMonitoredAppUseCase>();
+
+builder.Services.AddScoped<IUseCaseAsync<UpdateAppEmailsRequest, (bool IsSuccess, string ErrorMessage)>, UpdateAppEmailsUseCase>();
 
 // SENSÖRLERİ SİSTEME DAHİL EDİYORUZ (UC-3 Entegrasyonu - Senin Yazdığın)
 builder.Services.AddSystemHealthChecks(

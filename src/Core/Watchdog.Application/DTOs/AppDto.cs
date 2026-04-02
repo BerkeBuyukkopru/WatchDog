@@ -13,5 +13,8 @@ namespace Watchdog.Application.DTOs
         // Tarama sıklığını saniye cinsinden belirten özellik.
         public int PollingIntervalSeconds { get; set; }
         public DateTime CreatedAt { get; set; }
+
+        // YENİ EKLENEN: Arayüzde (React/Swagger) mailleri göstermek için gereken alan
+        public string NotificationEmails { get; set; } = string.Empty;
     }
 }

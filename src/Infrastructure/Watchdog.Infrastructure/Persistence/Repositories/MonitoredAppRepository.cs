@@ -44,6 +44,13 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
             var result = await _context.SaveChangesAsync();
             return result > 0;
         }
+
+        public async Task<bool> UpdateAsync(MonitoredApp app)
+        {
+            _context.MonitoredApps.Update(app);
+            return await _context.SaveChangesAsync() > 0;
+        }
+
         // URL zaten var mı diye bakar.
         public async Task<bool> IsUrlExistAsync(string healthUrl)
         {
