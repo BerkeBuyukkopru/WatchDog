@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
-using Watchdog.Application.Interfaces;
+using Watchdog.Application.Interfaces.Repositories;
 using Watchdog.Domain.Entities;
 
 namespace Watchdog.Infrastructure.Persistence.Repositories

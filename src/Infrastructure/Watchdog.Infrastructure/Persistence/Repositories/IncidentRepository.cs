@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using Watchdog.Application.Interfaces;
 using Watchdog.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Watchdog.Application.Interfaces.Repositories;
 
 namespace Watchdog.Infrastructure.Persistence.Repositories
 {

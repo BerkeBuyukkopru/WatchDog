@@ -7,9 +7,10 @@ using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Watchdog.Application.Interfaces;
-using Watchdog.Application.DTOs;
 using Watchdog.Domain.Entities;
+using Watchdog.Application.DTOs.Monitoring;
+using Watchdog.Application.Interfaces.Repositories;
+using Watchdog.Application.Interfaces.Common;
 
 namespace Watchdog.Worker
 {

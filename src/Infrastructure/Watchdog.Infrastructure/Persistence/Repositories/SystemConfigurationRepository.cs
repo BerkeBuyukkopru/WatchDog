@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using Watchdog.Application.Interfaces;
+using Watchdog.Application.Interfaces.Repositories;
 using Watchdog.Domain.Entities;
 using Watchdog.Infrastructure.Persistence;
 

@@ -3,8 +3,8 @@ using Microsoft.Extensions.Options;
 using System.Text;
 using System.Text.Json;
 using System.Linq; // .Select() ve .ToArray() için gerekli
-using Watchdog.Application.Interfaces;
 using Watchdog.Domain.Entities;
+using Watchdog.Application.Interfaces.ExternalClients;
 
 namespace Watchdog.Infrastructure.Notifications
 {

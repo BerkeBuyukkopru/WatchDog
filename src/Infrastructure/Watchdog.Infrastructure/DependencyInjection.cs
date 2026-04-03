@@ -3,13 +3,14 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Watchdog.Application.Interfaces;
 using Watchdog.Infrastructure.Notifications;
 using Watchdog.Infrastructure.Persistence;
 using Watchdog.Infrastructure.Persistence.Repositories;
 using Watchdog.Infrastructure.Probing;
 using Microsoft.EntityFrameworkCore;
 using HealthChecks.System;
+using Watchdog.Application.Interfaces.Repositories;
+using Watchdog.Application.Interfaces.ExternalClients;
 
 namespace Watchdog.Infrastructure
 {

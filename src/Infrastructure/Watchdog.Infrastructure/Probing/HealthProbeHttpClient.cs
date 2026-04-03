@@ -5,9 +5,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Polly;
 using Polly.Timeout;
-using Watchdog.Application.Interfaces;
-using Watchdog.Application.DTOs; // <-- YENİ EKLENEN DTO REFERANSI
 using Watchdog.Domain.Enums;
+using Watchdog.Application.DTOs.Monitoring;
+using Watchdog.Application.DTOs;
+using Watchdog.Application.Interfaces.ExternalClients;
 
 namespace Watchdog.Infrastructure.Probing
 {
