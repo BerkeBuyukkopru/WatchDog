@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Core\Watchdog.Application\Watchdog.Application.csproj" />
     <ProjectReference Include="..\..\Core\Watchdog.Domain\Watchdog.Domain.csproj" />
     <ProjectReference Include="..\..\Infrastructure\Watchdog.Infrastructure\Watchdog.Infrastructure.csproj" />
   </ItemGroup>
