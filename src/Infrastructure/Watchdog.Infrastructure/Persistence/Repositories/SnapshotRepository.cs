@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq; // YENİ EKLENDİ: Where, OrderBy vb. LINQ metotları için gereklidir.
 using System.Text;
+using System.Threading.Tasks; // YENİ EKLENDİ: Task yapısı için gereklidir.
 using Microsoft.EntityFrameworkCore;
 using Watchdog.Application.Interfaces.Repositories;
 using Watchdog.Domain.Entities;
@@ -8,7 +10,7 @@ using Watchdog.Domain.Entities;
 namespace Watchdog.Infrastructure.Persistence.Repositories
 {
     // Sağlık Kayıtları Deposu. EF Core üzerinden SQL Server ile en performanslı şekilde konuşur.
-    public class SnapshotRepository: ISnapshotRepository
+    public class SnapshotRepository : ISnapshotRepository
     {
         private readonly WatchdogDbContext _context;
 
@@ -19,7 +21,7 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
 
         public async Task AddAsync(HealthSnapshot snapshot)
         {
-            //Her ping sonucu buraya bir satır olarak mühürlenir.
+            // Her ping sonucu buraya bir satır olarak mühürlenir.
             await _context.HealthSnapshots.AddAsync(snapshot);
             await _context.SaveChangesAsync();
         }
@@ -41,6 +43,16 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
                 .Include(s => s.App) // <--- KRİTİK: Uygulama bilgilerini JOIN ile getirir.
                 .OrderByDescending(s => s.Timestamp)
                 .Take(count)
+                .ToListAsync();
+        }
+
+        // --- YENİ EKLENEN METOT (CS0535 Hatasının Çözümü) ---
+        // Worker'ın rutin yapay zeka analizi için geçmişe dönük 1 saatlik (veya istenen sürelik) veriyi getirir.
+        public async Task<List<HealthSnapshot>> GetSnapshotsSinceAsync(Guid appId, DateTime since)
+        {
+            return await _context.HealthSnapshots
+                .Where(s => s.AppId == appId && s.Timestamp >= since)
+                .OrderByDescending(s => s.Timestamp)
                 .ToListAsync();
         }
     }

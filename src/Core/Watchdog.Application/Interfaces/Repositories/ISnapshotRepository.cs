@@ -16,5 +16,8 @@ namespace Watchdog.Application.Interfaces.Repositories
 
         // Swagger ve React geçmişi için tüm sistemin son kayıtlarını getirir.
         Task<IEnumerable<HealthSnapshot>> GetLatestGlobalAsync(int count);
+
+        // Rutin Yapay Zeka analizi için, belirli bir tarihten (örneğin son 1 saat) bu yana olan kayıtları getirir.
+        Task<List<HealthSnapshot>> GetSnapshotsSinceAsync(Guid appId, DateTime since);
     }
 }

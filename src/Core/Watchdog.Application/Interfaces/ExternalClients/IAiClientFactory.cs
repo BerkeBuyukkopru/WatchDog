@@ -4,7 +4,10 @@ using System.Text;
 
 namespace Watchdog.Application.Interfaces.ExternalClients
 {
-    internal class IAiClientFactory
+    public interface IAiClientFactory
     {
+        /// Veritabanındaki SystemConfiguration ayarlarına (ActiveAiProvider) bakar.
+        /// Ayarlara göre arka planda LocalOllamaClient veya OpenAiClient üretip döner.
+        Task<IAiAdvisorClient> CreateClientAsync();
     }
 }
