@@ -8,19 +8,16 @@ using Watchdog.Application.Interfaces.Repositories;
 using Watchdog.Domain.Entities;
 using Watchdog.Domain.Enums;
 using Watchdog.Domain.Rules;
-using Watchdog.Application.UseCases.AI; // ÇÖZÜM 1: PromptBuilder'ın tanınması için eklendi
+using Watchdog.Application.UseCases.AI;
 
 namespace Watchdog.Application.UseCases.HealthMonitoring
 {
-    // Sistem Sağlık Analizi. Worker'dan gelen her ping sonucu bu süzgeçten geçer.
     public class AnalyzeSystemHealthUseCase : IUseCaseAsync<HealthSnapshot>
     {
         private readonly ISnapshotRepository _snapshotRepository;
         private readonly IIncidentRepository _incidentRepository;
         private readonly INotificationSender _notificationSender;
         private readonly IMonitoredAppRepository _appRepository;
-
-        // --- YAPAY ZEKA BAĞIMLILIKLARI ---
         private readonly IAiInsightRepository _insightRepository;
         private readonly IAiClientFactory _aiClientFactory;
 
@@ -45,37 +42,44 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
             var app = await _appRepository.GetByIdAsync(latestSnapshot.AppId);
             if (app == null) return;
 
+            // TEST İÇİN LOG: Her gelen pingi terminalde gör
+            Console.WriteLine($">>>> [MONITOR] {app.Name} Pinglendi. Durum: {latestSnapshot.Status}");
+
             var activeIncident = await _incidentRepository.GetActiveIncidentAsync(app.Id);
             bool hasActiveIncident = activeIncident != null;
 
             if (!hasActiveIncident && latestSnapshot.Status == HealthStatus.Unhealthy)
             {
+                // Son 3 kaydı çekiyoruz (3-Strike Kuralı için)
                 var recentSnapshots = await _snapshotRepository.GetLatestSnapshotsAsync(app.Id, 3);
 
                 if (IncidentRules.ShouldOpenIncident(recentSnapshots, hasActiveIncident))
                 {
-                    // 1. Çöküş tespit edildi! Yeni kayıt oluştur.
+                    // KRİTİK LOG: 3-Strike doldu!
+                    Console.WriteLine($">>>> [CRITICAL] {app.Name} ÜST ÜSTE 3 KEZ YANIT VERMEDİ! Olay başlatılıyor...");
+
                     var newIncident = new Incident
                     {
                         AppId = app.Id,
                         StartedAt = DateTime.UtcNow,
                         ErrorMessage = string.IsNullOrEmpty(latestSnapshot.DependencyDetails)
-                        ? "Sistem üst üste 3 kez yanıt vermedi."
-                        : $"Sistem üst üste 3 kez yanıt vermedi: {latestSnapshot.DependencyDetails}"
+                        ? "Sistem yanıt vermiyor."
+                        : $"Hata Detayı: {latestSnapshot.DependencyDetails}"
                     };
 
                     await _incidentRepository.AddAsync(newIncident);
                     await _notificationSender.SendDowntimeAlertAsync(newIncident, app);
 
-                    // --- 2. KRİZ ANINDA YAPAY ZEKAYI TETİKLE (Event-Driven) ---
-                    // Döngüyü kilitlememesi için Task'ı beklemeden arka planda fırlatıyoruz.
-                    _ = Task.Run(() => TriggerRootCauseAnalysisAsync(app, recentSnapshots));
+                    // --- YAPAY ZEKA TETİKLENİYOR ---
+                    // Arka planda çalışması için Task.Run kullanıyoruz
+                    _ = Task.Run(async () => await TriggerRootCauseAnalysisAsync(app, recentSnapshots));
                 }
             }
-            else if (hasActiveIncident)
+            else if (hasActiveIncident && latestSnapshot.Status == HealthStatus.Healthy)
             {
                 if (IncidentRules.ShouldResolveIncident(latestSnapshot, hasActiveIncident))
                 {
+                    Console.WriteLine($">>>> [RECOVERY] {app.Name} düzeldi. Olay kapatılıyor.");
                     activeIncident.ResolvedAt = DateTime.UtcNow;
                     await _incidentRepository.UpdateAsync(activeIncident);
                     await _notificationSender.SendRecoveryAlertAsync(activeIncident, app);
@@ -83,49 +87,48 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
             }
         }
 
-        // --- Geliştirici 2'nin Kriz Yönetimi (Kök Neden Analizi) Metodu ---
         private async Task TriggerRootCauseAnalysisAsync(MonitoredApp app, List<HealthSnapshot> recentSnapshots)
         {
-            // WDG049 KURALI: COOLDOWN (Soğuma) KONTROLÜ
-            // Son 5 dakika içinde bu uygulama için bir analiz üretilmişse, LLM'i yorma, işlemi atla!
+            Console.WriteLine($">>>> [AI-START] {app.Name} için Kök Neden Analizi süreci başladı...");
+
+            // WDG049: COOLDOWN KONTROLÜ
             var lastInsight = await _insightRepository.GetLatestInsightAsync(app.Id);
             if (lastInsight != null && lastInsight.CreatedAt > DateTime.UtcNow.AddMinutes(-5))
             {
-                return; // Cooldown aktif, bypass et.
+                Console.WriteLine($">>>> [AI-SKIP] Cooldown aktif. Son 5 dakika içinde analiz yapılmış.");
+                return;
             }
 
             try
             {
-                // 1. Prompt'u Hazırla (Logları Özetle)
                 var promptBuilder = new PromptBuilder();
                 var prompt = promptBuilder.BuildRootCausePrompt(recentSnapshots, app.Name);
 
-                // 2. Geliştirici 1'in Fabrikasından Aktif LLM'i İste
-                // ÇÖZÜM 2: Arkadaşının yazdığı interface'deki doğru metot adı kullanıldı!
+                Console.WriteLine($">>>> [AI-REQUEST] Yapay Zeka motoruna istek atılıyor...");
                 var aiClient = await _aiClientFactory.CreateClientAsync();
-
-                // 3. Analizi Yap
                 var aiResponse = await aiClient.AnalyzeAsync(prompt);
 
-                // 4. Sonucu Veritabanına Yaz
                 var newInsight = new AiInsight
                 {
                     AppId = app.Id,
-                    InsightType = InsightType.CrashWarning, // Çöküş uyarısı olduğu için kırmızı ikonla çıkacak
+                    InsightType = InsightType.CrashWarning,
                     Message = aiResponse,
                     IsResolved = false,
                     CreatedAt = DateTime.UtcNow
                 };
+
                 await _insightRepository.AddAsync(newInsight);
+                Console.WriteLine($">>>> [AI-SUCCESS] Analiz tamamlandı ve veritabanına kaydedildi!");
             }
-            catch
+            catch (Exception ex)
             {
-                // WDG054 KURALI: FALLBACK (Yedek Plan)
-                // LLM sunucusu çökerse sistem patlamasın, statik bir uyarı oluştur.
+                Console.WriteLine($">>>> [AI-ERROR] Analiz sırasında hata oluştu: {ex.Message}");
+
+                // FALLBACK
                 var fallbackInsight = new AiInsight
                 {
                     AppId = app.Id,
-                    Message = "Yapay zeka analiz motoruna ulaşılamadı. Sistemde anlık kesinti var, acil donanım kontrolü önerilir.",
+                    Message = "AI Motoru meşgul. Manuel kontrol önerilir.",
                     InsightType = InsightType.CrashWarning,
                     IsResolved = false,
                     CreatedAt = DateTime.UtcNow

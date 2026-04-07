@@ -10,7 +10,7 @@ using Watchdog.Domain.Enums;
 
 namespace Watchdog.Application.UseCases.HealthMonitoring
 {
-    // YENİ: Sözleşmemizi imzaladık. Dışarıdan AppId alır, geriye HealthSnapshot döner.
+    // Sözleşmemizi imzaladık. Dışarıdan AppId alır, geriye HealthSnapshot döner.
     public class PollSingleAppUseCase : IUseCaseAsync<PollSingleAppRequest, HealthSnapshot?>
     {
         private readonly IMonitoredAppRepository _appRepository;
@@ -36,28 +36,44 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
             var app = await _appRepository.GetByIdAsync(request.AppId);
             if (app == null) return null;
 
-            // 2. Altyapı Elçimize (Infrastructure) ping attır
-            var probeResult = await _probeClient.CheckHealthAsync(app.HealthUrl, request.CancellationToken);
-
-            // 3. Başarılıysa JSON verisini ayrıştır (Parse) - İş Kuralları burada başlar
+            // --- DEĞİŞİKLİK BURADA: Değişkenleri dışarıda tanımlıyoruz ---
+            HealthStatus finalStatus = HealthStatus.Unhealthy;
+            long finalDuration = 0;
+            string errorOrJson = "";
             double realCpu = 0, realRamPercent = 0, realDisk = 0;
 
-            if (probeResult.Status == HealthStatus.Healthy && !string.IsNullOrEmpty(probeResult.JsonContent))
+            try
             {
-                try
+                // 2. Altyapı Elçimize (Infrastructure) ping attır
+                var probeResult = await _probeClient.CheckHealthAsync(app.HealthUrl, request.CancellationToken);
+
+                finalStatus = probeResult.Status;
+                finalDuration = probeResult.DurationMilliseconds;
+                errorOrJson = probeResult.JsonContent;
+
+                // 3. Başarılıysa JSON verisini ayrıştır (Parse)
+                if (finalStatus == HealthStatus.Healthy && !string.IsNullOrEmpty(errorOrJson))
                 {
-                    using var jsonDoc = JsonDocument.Parse(probeResult.JsonContent);
-                    if (jsonDoc.RootElement.TryGetProperty("metrics", out var metricsElement))
+                    try
                     {
-                        if (metricsElement.TryGetProperty("system_cpu_percent", out var cpuProp)) realCpu = cpuProp.GetDouble();
-                        if (metricsElement.TryGetProperty("system_ram_percent", out var ramProp)) realRamPercent = ramProp.GetDouble();
-                        if (metricsElement.TryGetProperty("free_disk_gb", out var diskProp)) realDisk = diskProp.GetDouble();
+                        using var jsonDoc = JsonDocument.Parse(errorOrJson);
+                        if (jsonDoc.RootElement.TryGetProperty("metrics", out var metricsElement))
+                        {
+                            if (metricsElement.TryGetProperty("system_cpu_percent", out var cpuProp)) realCpu = cpuProp.GetDouble();
+                            if (metricsElement.TryGetProperty("system_ram_percent", out var ramProp)) realRamPercent = ramProp.GetDouble();
+                            if (metricsElement.TryGetProperty("free_disk_gb", out var diskProp)) realDisk = diskProp.GetDouble();
+                        }
                     }
+                    catch { /* JSON okunamasa bile uygulamanın ayakta olduğunu biliyoruz. */ }
                 }
-                catch
-                {
-                    // JSON okunamasa bile uygulamanın ayakta olduğunu biliyoruz.
-                }
+            }
+            catch (Exception ex)
+            {
+                // İŞTE KRİTİK NOKTA! Ağ hatası alırsak program çökmeyecek. 
+                // Durumu Unhealthy yapıp, hatayı AI'a göndermek üzere kaydedeceğiz.
+                finalStatus = HealthStatus.Unhealthy;
+                errorOrJson = $"Kritik Ağ Hatası (DNS/Bağlantı): {ex.Message}";
+                Console.WriteLine($">>>> [NETWORK FAIL] {app.Name} pinglenemedi! Hata yutuldu ve AI'a paslanacak.");
             }
 
             // 4. Veritabanına kaydedilecek Snapshot nesnesini hazırla
@@ -65,15 +81,15 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
             {
                 AppId = app.Id,
                 Timestamp = DateTime.UtcNow,
-                Status = probeResult.Status,
-                TotalDuration = probeResult.DurationMilliseconds,
+                Status = finalStatus,
+                TotalDuration = finalDuration,
                 CpuUsage = realCpu,
                 RamUsage = realRamPercent,
                 FreeDiskGb = realDisk,
-                DependencyDetails = probeResult.JsonContent
+                DependencyDetails = errorOrJson // Yapay Zeka buradaki hatayı okuyup yorumlayacak!
             };
 
-            // 5. Veritabanına kaydet (Worker'daki DbContext yükünü Repository'ye devrettik)
+            // 5. Veritabanına kaydet 
             await _snapshotRepository.AddAsync(snapshot);
 
             // 6. Kesinti var mı diye AI / Kural Motorunu tetikle

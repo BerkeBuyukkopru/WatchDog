@@ -28,6 +28,8 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
 
         public async Task ExecuteAsync(int olderThanDays = 30)
         {
+            Console.WriteLine(">>>> ARŞİVLEYİCİ ÇALIŞIYOR - VERİ ARANIYOR...");
+
             var cutoffDate = DateTime.UtcNow.AddDays(-olderThanDays);
 
             // 1. Veritabanından belirlenen günden eski verileri (Soğuk Veri) çek
