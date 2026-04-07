@@ -37,6 +37,9 @@ public static class DependencyInjection
         services.AddScoped<GetAiInsightsUseCase>();
         services.AddScoped<GenerateStrategicInsightUseCase>(); // AIOps Stratejik Tahmin Motoru
 
+        // --- GELİŞTİRİCİ 2: ARŞİVLEME USE-CASE KAYDI ---
+        services.AddScoped<ArchiveSnapshotsUseCase>();
+
         return services;
     }
 }

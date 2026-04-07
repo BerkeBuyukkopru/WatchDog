@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq; // Where, OrderBy vb. LINQ metotları için gereklidir.
 using System.Text;
-using System.Threading.Tasks; //Task yapısı için gereklidir.
+using System.Threading.Tasks; // Task yapısı için gereklidir.
 using Microsoft.EntityFrameworkCore;
 using Watchdog.Application.DTOs.AI; // YENİ EKLENDİ: Zenginleştirilmiş DTO için gerekli
 using Watchdog.Application.Interfaces.Repositories;
@@ -11,6 +11,7 @@ using Watchdog.Domain.Entities;
 namespace Watchdog.Infrastructure.Persistence.Repositories
 {
     // Sağlık Kayıtları Deposu. EF Core üzerinden SQL Server ile en performanslı şekilde konuşur.
+    // Sistemin "Kısa Süreli Hafızası" bu sınıf üzerinden yönetilir.
     public class SnapshotRepository : ISnapshotRepository
     {
         private readonly WatchdogDbContext _context;
@@ -32,6 +33,7 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
         {
             // LINQ TO SQL: Bu sorgu SQL'de "SELECT TOP (X) ... ORDER BY Timestamp DESC" olur.
             return await _context.HealthSnapshots
+                .AsNoTracking() // Performans: Sadece okuma yapıldığı için takip etme.
                 .Where(s => s.AppId == appId) // Önce sadece hedef uygulamayı seç.
                 .OrderByDescending(s => s.Timestamp) // En yeni kaydı en başa al (WDG044 gereği).
                 .Take(count) // Sadece ihtiyacımız olan kadarını (Örn: 3) RAM'e çek.
@@ -41,6 +43,7 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
         public async Task<IEnumerable<HealthSnapshot>> GetLatestGlobalAsync(int count)
         {
             return await _context.HealthSnapshots
+                .AsNoTracking()
                 .Include(s => s.App) // <--- KRİTİK: Uygulama bilgilerini JOIN ile getirir.
                 .OrderByDescending(s => s.Timestamp)
                 .Take(count)
@@ -51,10 +54,13 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
         public async Task<List<HealthSnapshot>> GetSnapshotsSinceAsync(Guid appId, DateTime since)
         {
             return await _context.HealthSnapshots
+                .AsNoTracking()
                 .Where(s => s.AppId == appId && s.Timestamp >= since)
                 .OrderByDescending(s => s.Timestamp)
                 .ToListAsync();
         }
+
+        // --- BERKE: AIOPS STRATEJİK TAHMİN METODU ---
 
         // Milyonlarca logu RAM'e almadan, SQL seviyesinde filtreleyip C# tarafında gün gün zenginleştirerek özetler.
         public async Task<List<DailyEnrichedSnapshotDto>> GetDailyEnrichedSnapshotsAsync(Guid appId, int days)
@@ -63,6 +69,7 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
 
             // 1. ADIM: Sadece ihtiyacımız olan kolonları çekiyoruz (Select). Tüm tabloyu RAM'e almaktan kurtarır.
             var rawData = await _context.HealthSnapshots
+                .AsNoTracking()
                 .Where(s => s.AppId == appId && s.Timestamp >= sinceTime)
                 .Select(s => new
                 {
@@ -99,11 +106,11 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
                     return new DailyEnrichedSnapshotDto
                     {
                         Date = g.Key,
-                        AvgCpu = Math.Round(dailyRecords.Average(x => x.CpuUsage), 2),
-                        AvgRam = Math.Round(dailyRecords.Average(x => x.RamUsage), 2),
-                        AvgLatency = Math.Round(dailyRecords.Average(x => x.TotalDuration), 2),
-                        MaxCpu = Math.Round(peakRecord.CpuUsage, 2),
-                        MaxRam = Math.Round(peakRecord.RamUsage, 2),
+                        AvgCpu = Math.Round((double)dailyRecords.Average(x => x.CpuUsage), 2),
+                        AvgRam = Math.Round((double)dailyRecords.Average(x => x.RamUsage), 2),
+                        AvgLatency = Math.Round((double)dailyRecords.Average(x => x.TotalDuration), 2),
+                        MaxCpu = Math.Round((double)peakRecord.CpuUsage, 2),
+                        MaxRam = Math.Round((double)peakRecord.RamUsage, 2),
                         PeakHour = peakRecord.Timestamp.ToString("HH:mm"),
                         TopErrors = topErrors
                     };
@@ -112,6 +119,27 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
                 .ToList();
 
             return enrichedList;
+        }
+
+        // --- MAIN: UC-9 ARŞİVLEME VE TEMİZLİK METOTLARI (Conflict Hatasını Çözen Kısım) ---
+
+        // Gece 03:00'te çalışan arşivleme motoru için, belirlenen günden (cutoffDate) daha eski olan "Soğuk" verileri getirir.
+        public async Task<IEnumerable<HealthSnapshot>> GetSnapshotsOlderThanAsync(DateTime cutoffDate)
+        {
+            return await _context.HealthSnapshots
+                .AsNoTracking() // Bellek dostu: Binlerce satırı RAM'de takip etmez.
+                .Where(s => s.Timestamp < cutoffDate)
+                .ToListAsync();
+        }
+
+        // Diske başarıyla sıkıştırılıp kaydedilen bu eski verileri, veritabanından kalıcı olarak siler (Hard Delete).
+        public async Task RemoveRangeAsync(IEnumerable<HealthSnapshot> snapshots)
+        {
+            if (snapshots == null || !snapshots.Any()) return;
+
+            // Toplu silme işlemi
+            _context.HealthSnapshots.RemoveRange(snapshots);
+            await _context.SaveChangesAsync();
         }
     }
 }

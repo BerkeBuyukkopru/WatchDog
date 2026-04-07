@@ -33,5 +33,10 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
 
             return await query.OrderByDescending(i => i.CreatedAt).ToListAsync();
         }
+
+        public Task<AiInsight?> GetLatestInsightAsync(Guid id)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
