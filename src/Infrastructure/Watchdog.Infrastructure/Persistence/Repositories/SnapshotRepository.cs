@@ -1,15 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq; // YENİ EKLENDİ: Where, OrderBy vb. LINQ metotları için gereklidir.
-using System.Text;
-using System.Threading.Tasks; // YENİ EKLENDİ: Task yapısı için gereklidir.
+using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Watchdog.Application.Interfaces.Repositories;
 using Watchdog.Domain.Entities;
 
 namespace Watchdog.Infrastructure.Persistence.Repositories
 {
-    // Sağlık Kayıtları Deposu. EF Core üzerinden SQL Server ile en performanslı şekilde konuşur.
     public class SnapshotRepository : ISnapshotRepository
     {
         private readonly WatchdogDbContext _context;
@@ -21,39 +19,55 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
 
         public async Task AddAsync(HealthSnapshot snapshot)
         {
-            // Her ping sonucu buraya bir satır olarak mühürlenir.
             await _context.HealthSnapshots.AddAsync(snapshot);
             await _context.SaveChangesAsync();
         }
 
-        // IncidentRules (3-Strike) için gerekli veriyi sağlar.
         public async Task<List<HealthSnapshot>> GetLatestSnapshotsAsync(Guid appId, int count)
         {
-            // LINQ TO SQL: Bu sorgu SQL'de "SELECT TOP (X) ... ORDER BY Timestamp DESC" olur.
             return await _context.HealthSnapshots
-                .Where(s => s.AppId == appId) // 1. Önce sadece hedef uygulamayı seç.
-                .OrderByDescending(s => s.Timestamp) // 2. En yeni kaydı en başa al (WDG044 gereği).
-                .Take(count) // 3. Sadece ihtiyacımız olan kadarını (Örn: 3) RAM'e çek.
+                .AsNoTracking() // Performans: Sadece okuma yapıldığı için takip etme.
+                .Where(s => s.AppId == appId)
+                .OrderByDescending(s => s.Timestamp)
+                .Take(count)
                 .ToListAsync();
         }
 
         public async Task<IEnumerable<HealthSnapshot>> GetLatestGlobalAsync(int count)
         {
             return await _context.HealthSnapshots
-                .Include(s => s.App) // <--- KRİTİK: Uygulama bilgilerini JOIN ile getirir.
+                .AsNoTracking()
+                .Include(s => s.App)
                 .OrderByDescending(s => s.Timestamp)
                 .Take(count)
                 .ToListAsync();
         }
 
-        // --- YENİ EKLENEN METOT (CS0535 Hatasının Çözümü) ---
-        // Worker'ın rutin yapay zeka analizi için geçmişe dönük 1 saatlik (veya istenen sürelik) veriyi getirir.
         public async Task<List<HealthSnapshot>> GetSnapshotsSinceAsync(Guid appId, DateTime since)
         {
             return await _context.HealthSnapshots
+                .AsNoTracking()
                 .Where(s => s.AppId == appId && s.Timestamp >= since)
                 .OrderByDescending(s => s.Timestamp)
                 .ToListAsync();
+        }
+
+        // --- ARŞİVLEME: PERFORMANS OPTİMİZE EDİLDİ ---
+        public async Task<IEnumerable<HealthSnapshot>> GetSnapshotsOlderThanAsync(DateTime cutoffDate)
+        {
+            return await _context.HealthSnapshots
+                .AsNoTracking() // Bellek dostu: Binlerce satırı RAM'de takip etmez.
+                .Where(s => s.Timestamp < cutoffDate)
+                .ToListAsync();
+        }
+
+        public async Task RemoveRangeAsync(IEnumerable<HealthSnapshot> snapshots)
+        {
+            if (snapshots == null || !snapshots.Any()) return;
+
+            // Toplu silme işlemi
+            _context.HealthSnapshots.RemoveRange(snapshots);
+            await _context.SaveChangesAsync();
         }
     }
 }

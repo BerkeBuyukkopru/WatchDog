@@ -9,9 +9,14 @@ var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
 
-// === 2. Worker Servis Kaydı ===
-builder.Services.AddHostedService<Worker>();
-builder.Services.AddHostedService<AiAnalyzerWorker>(); // Yapay Zeka İşçisi
+// === 2. Worker Servis Kayıtları ===
+builder.Services.AddHostedService<Worker>();             // Temel Sağlık Taraması (Health Polling)
+builder.Services.AddHostedService<AiAnalyzerWorker>();   // Geliştirici 1: Yapay Zeka Kapasite İşçisi
+
+// --- YENİ EKLENEN (GELİŞTİRİCİ 2) ---
+builder.Services.AddHostedService<DataArchiverWorker>(); // Geliştirici 2: Sıcak/Soğuk Veri Arşiv İşçisi (UC-9)
+
+
 
 var host = builder.Build();
 host.Run();

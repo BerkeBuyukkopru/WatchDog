@@ -36,6 +36,9 @@ public static class DependencyInjection
         services.AddScoped<GenerateRoutineInsightUseCase>();
         services.AddScoped<GetAiInsightsUseCase>();
 
+        // --- GELİŞTİRİCİ 2: ARŞİVLEME USE-CASE KAYDI ---
+        services.AddScoped<ArchiveSnapshotsUseCase>();
+
         return services;
     }
 }
