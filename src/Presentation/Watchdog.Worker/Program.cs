@@ -13,5 +13,8 @@ builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddHostedService<Worker>();
 builder.Services.AddHostedService<AiAnalyzerWorker>(); // Yapay Zeka İşçisi
 
+// AIOps Stratejik Tahmin İşçisi (Gece çalışan karşılaştırmalı analiz motoru)
+builder.Services.AddHostedService<StrategicAnalyzerWorker>();
+
 var host = builder.Build();
 host.Run();

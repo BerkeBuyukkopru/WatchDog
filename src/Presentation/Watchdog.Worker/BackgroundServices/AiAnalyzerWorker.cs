@@ -1,6 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Watchdog.Application.DTOs.AI;
 using Watchdog.Application.Interfaces.Repositories;
 using Watchdog.Application.UseCases.AI;
@@ -47,12 +52,13 @@ namespace Watchdog.Worker.BackgroundServices
                     // Her uygulama için teker teker AI analizi yap
                     foreach (var app in apps)
                     {
-                        _logger.LogInformation($"[{app.Name}] uygulaması için son 1 saatlik AI analizi talep ediliyor...");
+                        // DÜZELTME: Log mesajı 24 saatlik veriyi temsil edecek şekilde güncellendi.
+                        _logger.LogInformation($"[{app.Name}] uygulaması için son 24 saatlik AI analizi talep ediliyor...");
 
                         var request = new GenerateRoutineInsightRequest
                         {
                             AppId = app.Id,
-                            HoursToAnalyze = 1
+                            HoursToAnalyze = 24 // 24 saatlik büyük veriyi UseCase'e yolluyoruz.
                         };
 
                         // Beyni (UseCase) çalıştır
@@ -75,8 +81,8 @@ namespace Watchdog.Worker.BackgroundServices
                 }
 
                 // UYKU MODU: İşlem bittikten sonra belirlediğimiz süre kadar uyu. Test aşamasında hızlı görmek için 1 Dakika, Canlıda (Production) 1 Saat idealdir.
-                //await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
-                await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+                //Test: await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+                await Task.Delay(TimeSpan.FromHours(1), stoppingToken); 
             }
         }
     }

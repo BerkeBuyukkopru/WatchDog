@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Watchdog.Application.DTOs.AI;
 using Watchdog.Domain.Entities;
 
 namespace Watchdog.Application.Interfaces.Repositories
@@ -19,5 +20,8 @@ namespace Watchdog.Application.Interfaces.Repositories
 
         // Rutin Yapay Zeka analizi için, belirli bir tarihten (örneğin son 1 saat) bu yana olan kayıtları getirir.
         Task<List<HealthSnapshot>> GetSnapshotsSinceAsync(Guid appId, DateTime since);
+
+        // AIOps stratejik tahmini için zenginleştirilmiş günlük özet listesi döner.
+        Task<List<DailyEnrichedSnapshotDto>> GetDailyEnrichedSnapshotsAsync(Guid appId, int days);
     }
 }

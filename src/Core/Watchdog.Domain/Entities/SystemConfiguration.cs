@@ -19,6 +19,9 @@ namespace Watchdog.Domain.Entities
 
         public double CriticalRamThreshold { get; set; } = 90.0;
 
+        // YENİ: Gecikme (Latency) sınırı da artık Dashboard'dan yönetilebilir:
+        public double CriticalLatencyThreshold { get; set; } = 1000.0;
+
         // Kurumsal takip için eklenen tarih damgası:
         public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
     }

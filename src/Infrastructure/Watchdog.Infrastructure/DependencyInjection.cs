@@ -46,7 +46,7 @@ namespace Watchdog.Infrastructure
                 minFreeSpaceGb: 5f
             );
 
-            // === 5. YENİ: Yapay Zeka (AI) Servisleri ===
+            // === Yapay Zeka (AI) Servisleri ===
             // Fabrikamızı kaydediyoruz. UseCase IAiClientFactory istediğinde AiClientFactory verilecek.
             services.AddScoped<IAiClientFactory, AiClientFactory>();
 

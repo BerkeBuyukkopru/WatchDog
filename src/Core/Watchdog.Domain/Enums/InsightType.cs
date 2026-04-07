@@ -10,6 +10,12 @@ namespace Watchdog.Domain.Enums
         CrashWarning = 1,
 
         // Rutin zamanlanmış görevle üretilen kapasite planlama tavsiyesi (Mavi). İleriye dönük ölçekleme (Scaling Advice) önerileri içerir.
-        ScalingAdvice = 2
+        ScalingAdvice = 2,
+
+        // SİSTEM STABİL: AI'ın uyandırılmadığı, her şeyin yolunda olduğunu gösteren rutin kayıt (Yeşil).
+        SystemStable = 3,
+
+        // Günlük/Haftalık karşılaştırmalar ve kapasite tahminleri (Sarı renkli vizyoner rapor).
+        StrategicForecast = 4
     }
 }

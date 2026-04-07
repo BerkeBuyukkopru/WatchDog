@@ -31,10 +31,11 @@ public static class DependencyInjection
         services.AddScoped<IUseCaseAsync<PollSingleAppRequest, HealthSnapshot?>, PollSingleAppUseCase>();
         services.AddScoped<IUseCaseAsync<GetLatestStatusesRequest, IEnumerable<LatestStatusDto>>, GetLatestStatusesUseCase>();
 
-        // === YENİ: Yapay Zeka Use Case'i ===
+        // === Yapay Zeka Use Case'leri ===
         // Worker doğrudan sınıfı talep ettiği için doğrudan (concrete) sınıf olarak kaydediyoruz.
         services.AddScoped<GenerateRoutineInsightUseCase>();
         services.AddScoped<GetAiInsightsUseCase>();
+        services.AddScoped<GenerateStrategicInsightUseCase>(); // AIOps Stratejik Tahmin Motoru
 
         return services;
     }
