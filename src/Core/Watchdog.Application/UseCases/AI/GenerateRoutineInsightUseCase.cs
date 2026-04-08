@@ -20,19 +20,23 @@ namespace Watchdog.Application.UseCases.AI
         private readonly IAiInsightRepository _insightRepository;
         private readonly IAiClientFactory _aiClientFactory;
         private readonly ISystemConfigurationRepository _systemConfigRepository;
+        private readonly IPromptBuilder _promptBuilder;
 
         public GenerateRoutineInsightUseCase(
             IMonitoredAppRepository appRepository,
             ISnapshotRepository snapshotRepository,
             IAiInsightRepository insightRepository,
             IAiClientFactory aiClientFactory,
-            ISystemConfigurationRepository systemConfigRepository)
+            ISystemConfigurationRepository systemConfigRepository,
+            IPromptBuilder promptBuilder)
+
         {
             _appRepository = appRepository;
             _snapshotRepository = snapshotRepository;
             _insightRepository = insightRepository;
             _aiClientFactory = aiClientFactory;
             _systemConfigRepository = systemConfigRepository;
+            _promptBuilder = promptBuilder;
         }
 
         public async Task<AiInsight?> ExecuteAsync(GenerateRoutineInsightRequest request)
@@ -44,11 +48,14 @@ namespace Watchdog.Application.UseCases.AI
             // Veritabanından Dashboard üzerinden ayarlanmış dinamik eşik değerlerini getiriyoruz.
             var config = await _systemConfigRepository.GetAsync();
 
+            // (DUAL-MODE) PromptBuilder'a göndermek için aktif yapay zeka sağlayıcısını çekiyoruz. Boş olma ihtimaline karşı varsayılan olarak "Ollama" gönderiyoruz.
+            string activeProvider = config?.ActiveAiProvider ?? "Ollama";
+
             // FALLBACK MANTIĞI: Eğer veritabanında henüz bir ayar satırı yoksa (ilk kurulum vb.), 
             // sistemin çökmemesi için senin belirlediğin kurumsal varsayılan değerleri kullanıyoruz.
-            double cpuLimit = config?.CriticalCpuThreshold ?? 80.0;
-            double ramLimit = config?.CriticalRamThreshold ?? 80.0;
-            double latencyLimit = config?.CriticalLatencyThreshold ?? 2000.0;
+            double cpuLimit = config?.CriticalCpuThreshold ?? 90.0;
+            double ramLimit = config?.CriticalRamThreshold ?? 90.0;
+            double latencyLimit = config?.CriticalLatencyThreshold ?? 1000.0;
 
             // İstenen zaman dilimine ait geçmiş sağlık verilerini (logları) çek (Artık 24 saatlik büyük veri geliyor)
             var sinceTime = DateTime.UtcNow.AddHours(-request.HoursToAnalyze);
@@ -72,7 +79,7 @@ namespace Watchdog.Application.UseCases.AI
             double avgRam2h = snapshots2h.Any() ? Math.Round((double)snapshots2h.Average(s => s.RamUsage), 2) : avgRam24h;
             double avgLatency2h = snapshots2h.Any() ? Math.Round((double)snapshots2h.Average(s => s.TotalDuration), 2) : avgLatency24h;
 
-            // --- YENİ EKLENEN: ZENGİNLEŞTİRİLMİŞ ZİRVE (PEAK) ANALİZİ ---
+            // --- ZENGİNLEŞTİRİLMİŞ ZİRVE (PEAK) ANALİZİ ---
             // Son 2 saat içindeki anlık patlamaları yakalıyoruz.
             var snapshotsForPeak = snapshots2h.Any() ? snapshots2h : snapshots.Take(20).ToList();
 
@@ -97,7 +104,7 @@ namespace Watchdog.Application.UseCases.AI
             // AKILLI BYPASS (ZERO-COMPUTE) MANTIĞI
             // Kontrolü Dashboard'dan gelen dinamik sınırlarla (cpuLimit, ramLimit vb.) yapıyoruz.
             // Sistem stabil mi kontrolü yapıyoruz. Hem 2 saatlik kısa trend hem de 24 saatlik genel kapasite eşiklerin altındaysa ve bağımlılıklar temizse sistem stabildir.
-            // YENİ: Bypass mantığına "Zirve (Max)" değerleri de ekledik (Conservative Bypass). Zirve değerler eşiğin %15 üzerindeyse AI uyanmalı.
+            // Bypass mantığına "Zirve (Max)" değerleri de ekledik (Conservative Bypass). Zirve değerler eşiğin %15 üzerindeyse AI uyanmalı.
             bool isCpuStable = avgCpu2h < cpuLimit && avgCpu24h < cpuLimit && maxCpu2h < (cpuLimit + 15);
             bool isRamStable = avgRam2h < ramLimit && avgRam24h < ramLimit;
             bool isLatencyStable = avgLatency2h < latencyLimit;
@@ -123,34 +130,17 @@ namespace Watchdog.Application.UseCases.AI
             // EĞER BURAYA GEÇTİYSE SİSTEMDE BİR SIKINTI VAR DEMEKTİR. AI FABRİKASINI UYANDIR!
             // 1. Bağımlılık metnini net, İngilizce log formatına çeviriyoruz
             string dependencyContext = dependencyIssues.Any()
-                ? "STATUS: DEGRADED | ERRORS: " + string.Join(", ", dependencyIssues)
-                : "STATUS: HEALTHY | ALL SUB-SERVICES OPERATIONAL";
+                            ? "STATUS: DEGRADED | ERRORS: " + string.Join(", ", dependencyIssues)
+                            : "STATUS: HEALTHY | ALL SUB-SERVICES OPERATIONAL";
 
-            // 2. Kurumsal SRE (Site Reliability Engineering) Çift Pencereli (Dual-Window) Promptu
-            // REVİZE: AI'a artık Zenginleştirilmiş Zirve (Peak) değerlerini de veriyoruz.
-            string aiPrompt = $@"
-                SYSTEM ROLE: You are an automated Site Reliability Engineering (SRE) diagnostic engine. Your ONLY purpose is to output a technical diagnostic report. 
-
-                STRICT RULES:
-                - DO NOT output any greetings, pleasantries, or introductory remarks.
-                - DO NOT output any concluding remarks.
-                - OUTPUT ONLY the three requested sections below. Do not add formatting like markdown code blocks (```) around the entire text.
-
-                [CONFIGURATION & THRESHOLDS]
-                Critical CPU Threshold: {cpuLimit}% | Critical RAM Threshold: {ramLimit}% | Critical Latency Threshold: {latencyLimit}ms
-
-                [TELEMETRY DATA (ENRICHED ANALYSIS)]
-                App: {app.Name}
-                CPU Stats: 24h-Avg: {avgCpu24h}%, 2h-Avg: {avgCpu2h}%, 2h-PEAK: {maxCpu2h}% at {peakCpuTime}
-                RAM Stats: 24h-Avg: {avgRam24h}%, 2h-Avg: {avgRam2h}%, 2h-PEAK: {maxRam2h}%
-                Latency Stats: 24h-Avg: {avgLatency24h}ms, 2h-Avg: {avgLatency2h}ms, 2h-PEAK: {maxLatency2h}ms
-                Dependencies: {dependencyContext}
-
-                [REQUIRED OUTPUT FORMAT]
-                ROOT CAUSE ANALYSIS: (Analyze the dual-window telemetry. Specifically compare averages vs peaks. Is it a sustained load or a sudden spike at {peakCpuTime}?)
-                CAPACITY STATUS: (Evaluate current resource load against configured limits.)
-                ACTIONABLE ADVICE: (Provide 1-2 direct technical steps for scaling, optimization, or maintenance.)
-";
+            // Verileri IPromptBuilder'a veriyoruz, o bize AI'a yollanacak en uygun soruyu üretiyor. (Temiz Kod & Tek Sorumluluk)
+            string aiPrompt = _promptBuilder.BuildRoutinePrompt(
+                activeProvider,
+                app, cpuLimit, ramLimit, latencyLimit,
+                avgCpu24h, avgRam24h, avgLatency24h,
+                avgCpu2h, avgRam2h, avgLatency2h,
+                maxCpu2h, maxRam2h, maxLatency2h,
+                peakCpuTime, dependencyContext);
 
             // FACTORY DESENİ KULLANIMI: Sistemde o an aktif olan AI motorunu (OpenAI veya Ollama) iste
             var aiClient = await _aiClientFactory.CreateClientAsync();
@@ -162,10 +152,8 @@ namespace Watchdog.Application.UseCases.AI
             var insight = new AiInsight
             {
                 AppId = request.AppId,
-                // Domain/Enums/InsightType.cs içindeki GERÇEK enum ismi kullanıldı.
                 InsightType = InsightType.ScalingAdvice,
                 Message = aiResponseText,
-                // Kriz anında da AI'a gönderilen zenginleştirilmiş zirve kanıtları kaydediliyor.
                 Evidence = $"CPU Peak: {maxCpu2h}% at {peakCpuTime} | RAM Peak: {maxRam2h}% | Latency Peak: {maxLatency2h}ms | Bağımlılıklar: {(dependencyIssues.Any() ? "Sorunlu" : "Temiz")}"
             };
 

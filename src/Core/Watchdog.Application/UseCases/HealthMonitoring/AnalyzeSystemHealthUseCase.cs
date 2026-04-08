@@ -21,13 +21,19 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
         private readonly IAiInsightRepository _insightRepository;
         private readonly IAiClientFactory _aiClientFactory;
 
+        // (REFACTORING) Bağımlılık Enjeksiyonu (DI) için yeni arayüzler eklendi.
+        private readonly IPromptBuilder _promptBuilder;
+        private readonly ISystemConfigurationRepository _systemConfigRepository;
+
         public AnalyzeSystemHealthUseCase(
             ISnapshotRepository snapshotRepository,
             IIncidentRepository incidentRepository,
             INotificationSender notificationSender,
             IMonitoredAppRepository appRepository,
             IAiInsightRepository insightRepository,
-            IAiClientFactory aiClientFactory)
+            IAiClientFactory aiClientFactory,
+            IPromptBuilder promptBuilder, // YENİ
+            ISystemConfigurationRepository systemConfigRepository) // YENİ
         {
             _snapshotRepository = snapshotRepository;
             _incidentRepository = incidentRepository;
@@ -35,6 +41,8 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
             _appRepository = appRepository;
             _insightRepository = insightRepository;
             _aiClientFactory = aiClientFactory;
+            _promptBuilder = promptBuilder; // YENİ
+            _systemConfigRepository = systemConfigRepository; // YENİ
         }
 
         public async Task ExecuteAsync(HealthSnapshot latestSnapshot)
@@ -101,8 +109,13 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
 
             try
             {
-                var promptBuilder = new PromptBuilder();
-                var prompt = promptBuilder.BuildRootCausePrompt(recentSnapshots, app.Name);
+                // (REFACTORING) Manuel "new PromptBuilder()" silindi. Artık Dependency Injection (SOLID) ile IPromptBuilder kullanıyoruz.
+                // Dual-Mode (Dil kuralı) için veritabanından aktif sağlayıcıyı okuyoruz.
+                var config = await _systemConfigRepository.GetAsync();
+                string activeProvider = config?.ActiveAiProvider ?? "Ollama";
+
+                // HATA ÇÖZÜMÜ: activeProvider parametresi metodun en başına eklendi.
+                var prompt = _promptBuilder.BuildRootCausePrompt(activeProvider, recentSnapshots, app.Name);
 
                 Console.WriteLine($">>>> [AI-REQUEST] Yapay Zeka motoruna istek atılıyor...");
                 var aiClient = await _aiClientFactory.CreateClientAsync();

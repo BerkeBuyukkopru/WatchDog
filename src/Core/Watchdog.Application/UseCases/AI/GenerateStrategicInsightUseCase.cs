@@ -17,23 +17,35 @@ namespace Watchdog.Application.UseCases.AI
         private readonly ISnapshotRepository _snapshotRepository;
         private readonly IAiInsightRepository _insightRepository;
         private readonly IAiClientFactory _aiClientFactory;
+        private readonly IPromptBuilder _promptBuilder;
+
+        // HATA ÇÖZÜMÜ: Aktif sağlayıcıyı (OpenAI/Ollama) bulmak için config repository'si eklendi.
+        private readonly ISystemConfigurationRepository _systemConfigRepository;
 
         public GenerateStrategicInsightUseCase(
             IMonitoredAppRepository appRepository,
             ISnapshotRepository snapshotRepository,
             IAiInsightRepository insightRepository,
-            IAiClientFactory aiClientFactory)
+            IAiClientFactory aiClientFactory,
+            IPromptBuilder promptBuilder,
+            ISystemConfigurationRepository systemConfigRepository) // YENİ EKLENDİ
         {
             _appRepository = appRepository;
             _snapshotRepository = snapshotRepository;
             _insightRepository = insightRepository;
             _aiClientFactory = aiClientFactory;
+            _promptBuilder = promptBuilder;
+            _systemConfigRepository = systemConfigRepository; // YENİ EKLENDİ
         }
 
         public async Task<AiInsight?> ExecuteAsync(GenerateStrategicInsightRequest request)
         {
             var app = await _appRepository.GetByIdAsync(request.AppId);
             if (app == null) return null;
+
+            // Ekip Arkadaşıma Not: YENİ EKLENDİ. Hangi zekanın çalıştığını builder'a söylemek için config çekiyoruz.
+            var config = await _systemConfigRepository.GetAsync();
+            string activeProvider = config?.ActiveAiProvider ?? "Ollama";
 
             // Veriyi Çek: Son 8 günün (Dün ve geçen haftanın aynı gününü kapsayacak şekilde) özetini al.
             var dailyStats = await _snapshotRepository.GetDailyEnrichedSnapshotsAsync(request.AppId, 8);
@@ -59,26 +71,14 @@ namespace Watchdog.Application.UseCases.AI
             string baselineErrors = baselineDay.TopErrors.Any() ? string.Join(", ", baselineDay.TopErrors) : "None";
 
             // Kurumsal AIOps Promptu (Karşılaştırmalı ve Tahminleyici)
-            string aiPrompt = $@"
-                SYSTEM ROLE: You are an advanced AIOps and Capacity Planning AI. Your goal is to analyze historical trends, identify anomalies between matching days, and provide capacity forecasts.
-
-                STRICT RULES:
-                - Output ONLY the three requested sections below. No greetings, no markdown blocks around the text.
-                - Keep it highly professional and technical.
-
-                [COMPARATIVE DATA (Day-Over-Day)]
-                App: {app.Name}
-                Baseline (Last Week {baselineDay.Date:dddd}): Avg CPU: {baselineDay.AvgCpu}%, Max CPU: {baselineDay.MaxCpu}% | Avg RAM: {baselineDay.AvgRam}%, Max RAM: {baselineDay.MaxRam}% | Top Errors: {baselineErrors}
-                Target (Yesterday {targetDay.Date:dddd}): Avg CPU: {targetDay.AvgCpu}%, Max CPU: {targetDay.MaxCpu}% (Peak at {targetDay.PeakHour}) | Avg RAM: {targetDay.AvgRam}%, Max RAM: {targetDay.MaxRam}% | Top Errors: {targetErrors}
-
-                [WEEKLY TREND]
-                7-Day Rolling Averages -> CPU: {weeklyAvgCpu}%, RAM: {weeklyAvgRam}%
-
-                [REQUIRED OUTPUT FORMAT]
-                COMPARATIVE ROOT CAUSE: (Compare Baseline vs Target. Identify why CPU/RAM changed or why specific errors occurred during the Peak Hour.)
-                WEEKLY FORECAST: (Based on the 7-day trend and this specific day's behavior, forecast the resource risk for next week.)
-                STRATEGIC RECOMMENDATION: (Provide 1-2 architectural or scaling recommendations to handle future load.)
-";
+            // Ekip Arkadaşıma Not: (REFACTORING YAPILDI)
+            // Haftalık kapasite tahmin promptumuzu da builder nesnemizden alıyoruz. 
+            // HATA ÇÖZÜMÜ: activeProvider parametresi en başa eklendi.
+            string aiPrompt = _promptBuilder.BuildStrategicPrompt(
+                activeProvider,
+                app, baselineDay, targetDay,
+                weeklyAvgCpu, weeklyAvgRam,
+                baselineErrors, targetErrors);
 
             var aiClient = await _aiClientFactory.CreateClientAsync();
             var aiResponseText = await aiClient.AnalyzeAsync(aiPrompt);

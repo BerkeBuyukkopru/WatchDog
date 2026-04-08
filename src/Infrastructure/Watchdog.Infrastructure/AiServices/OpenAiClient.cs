@@ -1,38 +1,55 @@
 ﻿using Microsoft.Extensions.AI;
+using OpenAI;
 using OpenAI.Chat;
 using System;
+using System.ClientModel;
 using System.Threading;
 using System.Threading.Tasks;
 using Watchdog.Application.Interfaces.ExternalClients;
 
 namespace Watchdog.Infrastructure.AiServices
 {
-    // Kurumun bulut tabanlı, gelişmiş yapay zeka (OpenAI) kullanmak istediğinde devreye giren motor.
-    // IAiAdvisorClient arayüzünü uygulayarak, UseCase'lerin arkada kimin çalıştığını bilmeden bu motorla konuşabilmesini sağlar (Strateji Deseni).
+    // Bu sınıf, Strategy deseninin bulut tarafındaki temsilcisidir.
+    // Yapılan son güncelleme ile "Universal Cloud Connector" haline getirilmiştir.
+    // Artık sadece api.openai.com değil, OpenAI protokolünü destekleyen (Groq, Azure, Mistral vb.)
+    // tüm servislerle dinamik URL üzerinden konuşabilir.
     public class OpenAiClient : IAiAdvisorClient
     {
         private readonly Microsoft.Extensions.AI.IChatClient _chatClient;
 
-        public OpenAiClient(string apiKey, string? apiUrl)
+        // EKİP NOTU: 'apiUrl' parametresi eklendi. Bu değer Dashboard'daki AiApiUrl alanından gelir.
+        // Eğer boş gelirse, kütüphane varsayılan olarak orijinal OpenAI adresine gider.
+        public OpenAiClient(string apiKey, string modelName, string? apiUrl = null)
         {
-            // .NET 10 Microsoft.Extensions.AI standartlarına uygun olarak, OpenAI'ın resmi ChatClient sınıfını oluşturup, bunu sisteme entegre ediyoruz. Model olarak maliyet/performans oranı en iyi olan "gpt-4o-mini" seçilmiştir.
-            var chatClient = new ChatClient("gpt-4o-mini", apiKey);
-            _chatClient = chatClient.AsIChatClient();
+            var options = new OpenAIClientOptions();
+
+            // Eğer veritabanından özel bir Proxy veya alternatif servis (Groq vb.) URL'i gelmişse
+            // OpenAI istemcisini o adrese yönlendiriyoruz.
+            if (!string.IsNullOrWhiteSpace(apiUrl) && Uri.TryCreate(apiUrl, UriKind.Absolute, out var endpoint))
+            {
+                options.Endpoint = endpoint;
+            }
+
+            // HATA ÇÖZÜMÜ: Ana OpenAIClient yerine, doğrudan OpenAI.Chat.ChatClient kullanıyoruz
+            // ve ayarları (options) içerisine enjekte ediyoruz.
+            var openAiChatClient = new ChatClient(modelName, new ApiKeyCredential(apiKey), options);
+
+            // Microsoft.Extensions.AI standardına uygun hale getiriliyor
+            _chatClient = openAiChatClient.AsIChatClient();
         }
 
         public async Task<string> AnalyzeAsync(string prompt, CancellationToken cancellationToken = default)
         {
             try
             {
-                // Prompt'u LLM'e yollayıp asenkron olarak cevabı bekliyoruz.
                 var response = await _chatClient.GetResponseAsync(prompt, cancellationToken: cancellationToken);
-                return response.Text ?? "OpenAI yanıt üretemedi.";
+                return response.Text ?? "Bulut AI yanıt üretemedi.";
             }
             catch (Exception ex)
             {
-                // FALLBACK KURALI: API kotası bitse veya internet kopsa bile sistem çökmemeli (Exception fırlatmamalı).
-                // Sadece uyarı mesajı dönerek uygulamanın yaşamaya devam etmesini sağlıyoruz.
-                return $"OpenAI API Hatası: Lütfen API anahtarınızı ve bakiyenizi kontrol edin. Detay: {ex.Message}";
+                // (Resilience) Bulut servislerinde bakiye bitmesi veya yanlış URL girilmesi durumunda
+                // sistemin ana akışını (Worker) bozmamak için hata mesajını kontrollü bir şekilde dönüyoruz.
+                return $"Bulut AI API Hatası: Lütfen API anahtarınızı, URL adresinizi ve model ismini kontrol edin. Detay: {ex.Message}";
             }
         }
     }

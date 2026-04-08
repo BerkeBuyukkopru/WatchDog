@@ -11,6 +11,9 @@ namespace Watchdog.Domain.Entities
 
         public string ActiveAiProvider { get; set; } = string.Empty;
 
+        // Hangi modelin (gpt-4o-mini, phi3, llama3 vb.) çalışacağını tutar
+        public string AiModelName { get; set; } = "phi3";
+
         public string? AiApiUrl { get; set; }
 
         public string? AiApiKey { get; set; }

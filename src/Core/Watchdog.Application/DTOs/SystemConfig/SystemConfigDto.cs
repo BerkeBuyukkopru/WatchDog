@@ -9,6 +9,9 @@ namespace Watchdog.Application.DTOs.SystemConfig
         // Hangi AI motorunun (Ollama, OpenAI, Claude vb.) aktif olduğunu belirler.
         public string ActiveAiProvider { get; set; } = string.Empty;
 
+        // UI'dan gelen model ismi
+        public string AiModelName { get; set; } = "phi3";
+
         // Yerel Ollama URL'i veya OpenAI API uç noktası.
         public string? AiApiUrl { get; set; }
 

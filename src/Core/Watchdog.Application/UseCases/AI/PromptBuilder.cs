@@ -1,25 +1,139 @@
 ﻿using System.Text.Json;
+using Watchdog.Application.Interfaces.Common;
 using Watchdog.Domain.Entities;
 using Watchdog.Domain.Enums;
 
 namespace Watchdog.Application.UseCases.AI
 {
-    public class PromptBuilder
+    // Bütün yapay zeka soruları (Promptlar) UseCase'lerden çıkarılıp buraya taşındı. Artık metinlerde bir değişiklik yapacaksak UseCase sınıflarını kirletmeden buradan yapacağız.
+    // Tüm promptlar "Birleşik (Unified)" formata geçirildi. Hangi AI motoru (OpenAI veya Ollama)  çalışırsa çalışsın, aynı veri setini alacak ve ÇOK KATI bir şekilde aynı 3 başlıkta cevap vermeye zorlanacak.
+    public class PromptBuilder : IPromptBuilder
     {
-       // Kriz anında (Event-Driven) Root Cause (Kök Neden) Analizi için [cite: 943, 1169]
-        public string BuildRootCausePrompt(List<HealthSnapshot> recentSnapshots, string appName)
+        // Ekip Arkadaşıma Not: Modellerin halüsinasyon görmesini engellemek için dil kurallarını dinamik atıyoruz.
+        // OpenAI Türkçe cevap verebilirken, Ollama (Phi-3, Llama3 vb.) zorlanmaması için İngilizceye sabitlendi.
+        private string GetLanguageRule(string activeProvider)
+        {
+            if (activeProvider.Equals("OpenAI", StringComparison.OrdinalIgnoreCase))
+            {
+                return "You MUST output your final diagnostic report strictly in professional Turkish. Do not use English in the output.";
+            }
+            return "You MUST output your analysis in English. Keep it brief, technical, and do not invent data.";
+        }
+
+        // --- 1. KRİZ ANI (EVENT-DRIVEN) PROMPTU ---
+        public string BuildRootCausePrompt(string activeProvider, List<HealthSnapshot> recentSnapshots, string appName)
         {
             var summary = AggregateSnapshots(recentSnapshots);
             var jsonContext = JsonSerializer.Serialize(summary);
+            string languageRule = GetLanguageRule(activeProvider);
 
-            return $@"Sen kıdemli bir DevOps ve Sistem Yöneticisisin. 
-'{appName}' isimli uygulamada anlık bir çöküş (Unhealthy) tespit edildi. 
-Aşağıdaki özet metrikleri (CPU, RAM, Disk, Bağımlılıklar) analiz et:
-{jsonContext}
-Sence bu çöküşün kök nedeni (Root Cause) ne olabilir? Lütfen kısa ve teknik bir açıklama ile çözüm önerisi sun.";
+            return $@"SYSTEM ROLE: You are an Expert DevOps and SRE AI.
+[LANGUAGE RULE]: {languageRule}
+
+[CONTEXT - TELEMETRY DATA]
+App Name: '{appName}'
+Current Status: UNHEALTHY (Crash Detected)
+Recent Logs: {jsonContext}
+
+[TASK]
+Analyze the data above. Your output MUST EXACTLY MATCH the 3 sections below. Do not add any greetings or conversational text.
+
+ROOT CAUSE ANALYSIS:
+(Write your root cause analysis here based on the logs)
+
+CAPACITY STATUS:
+(Write the current resource status here)
+
+ACTIONABLE ADVICE:
+(Write 1-2 direct technical steps to recover the system)";
         }
 
-        // Verileri LLM için hafifletme (Aggregation) 
+        // --- 2. SAATLİK RUTİN (CAPACITY) PROMPTU ---
+        public string BuildRoutinePrompt(
+            string activeProvider,
+            MonitoredApp app,
+            double cpuLimit, double ramLimit, double latencyLimit,
+            double avgCpu24h, double avgRam24h, double avgLatency24h,
+            double avgCpu2h, double avgRam2h, double avgLatency2h,
+            double maxCpu2h, double maxRam2h, double maxLatency2h,
+            string peakCpuTime, string dependencyContext)
+        {
+            string languageRule = GetLanguageRule(activeProvider);
+
+            return $@"SYSTEM ROLE: You are an automated Site Reliability Engineering (SRE) diagnostic engine. Your ONLY purpose is to output a technical diagnostic report. 
+
+STRICT RULES:
+- DO NOT output any greetings, pleasantries, or introductory remarks.
+- DO NOT output any concluding remarks.
+- OUTPUT ONLY the three requested sections below. Do not add formatting like markdown code blocks (```) around the entire text.
+
+[LANGUAGE RULE]: {languageRule}
+
+[CONFIGURATION & THRESHOLDS]
+Critical CPU Threshold: {cpuLimit}% | Critical RAM Threshold: {ramLimit}% | Critical Latency Threshold: {latencyLimit}ms
+
+[TELEMETRY DATA (ENRICHED ANALYSIS)]
+App: {app.Name}
+CPU Stats: 24h-Avg: {avgCpu24h}%, 2h-Avg: {avgCpu2h}%, 2h-PEAK: {maxCpu2h}% at {peakCpuTime}
+RAM Stats: 24h-Avg: {avgRam24h}%, 2h-Avg: {avgRam2h}%, 2h-PEAK: {maxRam2h}%
+Latency Stats: 24h-Avg: {avgLatency24h}ms, 2h-Avg: {avgLatency2h}ms, 2h-PEAK: {maxLatency2h}ms
+Dependencies: {dependencyContext}
+
+[TASK]
+Analyze the telemetry data. Compare the averages against the peak values to determine if the load is sustained or a sudden anomaly.
+Your output MUST EXACTLY MATCH the 3 sections below.
+
+ROOT CAUSE ANALYSIS:
+(Explain the load behavior here)
+
+CAPACITY STATUS:
+(Evaluate current resource load against configured limits here)
+
+ACTIONABLE ADVICE:
+(Provide 1-2 direct technical steps for scaling, optimization, or maintenance here)";
+        }
+
+        // --- 3. HAFTALIK STRATEJİK (FORECAST) PROMPTU ---
+        public string BuildStrategicPrompt(
+            string activeProvider,
+            MonitoredApp app,
+            dynamic baselineDay, dynamic targetDay,
+            double weeklyAvgCpu, double weeklyAvgRam,
+            string baselineErrors, string targetErrors)
+        {
+            string languageRule = GetLanguageRule(activeProvider);
+
+            return $@"SYSTEM ROLE: You are an advanced AIOps and Capacity Planning AI. Your goal is to analyze historical trends, identify anomalies between matching days, and provide capacity forecasts.
+
+STRICT RULES:
+- Output ONLY the three requested sections below. No greetings, no markdown blocks around the text.
+- Keep it highly professional and technical.
+
+[LANGUAGE RULE]: {languageRule}
+
+[COMPARATIVE DATA (Day-Over-Day)]
+App: {app.Name}
+Baseline (Last Week {baselineDay.Date:dddd}): Avg CPU: {baselineDay.AvgCpu}%, Max CPU: {baselineDay.MaxCpu}% | Avg RAM: {baselineDay.AvgRam}%, Max RAM: {baselineDay.MaxRam}% | Top Errors: {baselineErrors}
+Target (Yesterday {targetDay.Date:dddd}): Avg CPU: {targetDay.AvgCpu}%, Max CPU: {targetDay.MaxCpu}% (Peak at {targetDay.PeakHour}) | Avg RAM: {targetDay.AvgRam}%, Max RAM: {targetDay.MaxRam}% | Top Errors: {targetErrors}
+
+[WEEKLY TREND]
+7-Day Rolling Averages -> CPU: {weeklyAvgCpu}%, RAM: {weeklyAvgRam}%
+
+[TASK]
+Analyze historical trends and anomalies between the baseline and target day.
+Your output MUST EXACTLY MATCH the 3 sections below.
+
+COMPARATIVE ROOT CAUSE:
+(Identify why CPU/RAM changed or why specific errors occurred here)
+
+WEEKLY FORECAST:
+(Based on the 7-day trend, forecast the resource risk for next week here)
+
+STRATEGIC RECOMMENDATION:
+(Provide 1-2 architectural or scaling recommendations to handle future load here)";
+        }
+
+        // Kriz anında logları hafifleten özel metot
         private object AggregateSnapshots(List<HealthSnapshot> snapshots)
         {
             return new
@@ -29,7 +143,6 @@ Sence bu çöküşün kök nedeni (Root Cause) ne olabilir? Lütfen kısa ve tek
                 AverageRam = snapshots.Average(s => s.RamUsage),
                 LowestDiskSpace = snapshots.Min(s => s.FreeDiskGb),
                 ErrorCounts = snapshots.Count(s => s.Status == HealthStatus.Unhealthy),
-                // Son hata detayını (Bağımlılıklar) ekle
                 LatestDependencies = snapshots.OrderByDescending(s => s.Timestamp).FirstOrDefault()?.DependencyDetails
             };
         }

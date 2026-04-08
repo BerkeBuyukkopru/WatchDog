@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Watchdog.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using Watchdog.Infrastructure.Persistence;
 namespace Watchdog.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(WatchdogDbContext))]
-    partial class WatchdogDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260408070045_AddAiModelName")]
+    partial class AddAiModelName
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

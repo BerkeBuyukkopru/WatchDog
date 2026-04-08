@@ -27,6 +27,10 @@ namespace Watchdog.Application.UseCases.SystemConfig
             }
 
             existingConfig.ActiveAiProvider = request.ActiveAiProvider;
+
+            // Gelen model ismini veritabanına kaydediyoruz. Eğer boş gönderilirse varsayılan olarak "phi3" kabul ediyoruz.
+            existingConfig.AiModelName = string.IsNullOrWhiteSpace(request.AiModelName) ? "phi3" : request.AiModelName;
+
             existingConfig.AiApiUrl = request.AiApiUrl;
             existingConfig.AiApiKey = request.AiApiKey;
             existingConfig.CriticalCpuThreshold = request.CriticalCpuThreshold;

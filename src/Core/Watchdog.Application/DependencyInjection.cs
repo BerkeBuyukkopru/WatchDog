@@ -35,9 +35,10 @@ public static class DependencyInjection
         // Worker doğrudan sınıfı talep ettiği için doğrudan (concrete) sınıf olarak kaydediyoruz.
         services.AddScoped<GenerateRoutineInsightUseCase>();
         services.AddScoped<GetAiInsightsUseCase>();
-        services.AddScoped<GenerateStrategicInsightUseCase>(); // AIOps Stratejik Tahmin Motoru
+        services.AddScoped<GenerateStrategicInsightUseCase>(); 
+        services.AddScoped<IPromptBuilder, PromptBuilder>();
 
-        // --- GELİŞTİRİCİ 2: ARŞİVLEME USE-CASE KAYDI ---
+        // --- ARŞİVLEME USE-CASE KAYDI ---
         services.AddScoped<ArchiveSnapshotsUseCase>();
 
         return services;
