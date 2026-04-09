@@ -1,58 +1,74 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Threading.Tasks;
 using Watchdog.Application.Interfaces.ExternalClients;
 using Watchdog.Application.Interfaces.Repositories;
 
 namespace Watchdog.Infrastructure.AiServices
 {
-    // Ekip Arkadaşıma Not: Bu sınıf (Factory Deseni), UseCase'lerin arkasında hangi yapay zekanın (OpenAI/Ollama) 
-    // çalışacağına çalışma zamanında (runtime) dinamik olarak karar veren "orkestra şefi"dir.
+    // Yapay Zeka istemcilerini (OpenAI, Ollama vb.) çalışma zamanında (runtime) üreten ve yöneten fabrika sınıfı.
     public class AiClientFactory : IAiClientFactory
     {
-        private readonly ISystemConfigurationRepository _configRepository;
+        private readonly IAiProviderRepository _providerRepository;
+        private readonly ILogger<AiClientFactory> _logger; // Kurumsal izleme için Logger eklendi
 
-        public AiClientFactory(ISystemConfigurationRepository configRepository)
+        public AiClientFactory(IAiProviderRepository providerRepository, ILogger<AiClientFactory> logger)
         {
-            _configRepository = configRepository;
+            _providerRepository = providerRepository;
+            _logger = logger;
         }
 
         public async Task<IAiAdvisorClient> CreateClientAsync()
         {
-            var config = await _configRepository.GetAsync();
+            // 1. Veritabanından şu an 'Aktif' olan yapay zekayı çekiyoruz
+            var activeProvider = await _providerRepository.GetActiveProviderAsync();
 
-            // Veritabanı konfigürasyonu. Boş gelmesi durumunda sistem "phi3:medium" ile güvenli bölgede kalır.
-            string modelName = config?.AiModelName ?? "phi3:medium";
-            string apiUrl = config?.AiApiUrl ?? "http://localhost:11434";
+            // --- HER ZAMAN BİR YEDEK HAZIRLA ---
+            // Herhangi bir bulut hatasında (401, 429, 500 vb.) sistemin kör kalmaması için yerel Ollama istemcisini bir 'Fallback' seçeneği olarak her zaman hazırlıyoruz.
+            var localFallback = new LocalOllamaClient("http://localhost:11434", "phi3:medium");
 
-            // KURAL 1 - FALLBACK: Yapılandırma hiç yoksa risk alma, doğrudan yerel Ollama motorunu ver.
-            if (config == null || string.IsNullOrWhiteSpace(config.ActiveAiProvider))
+            // 2. KURAL 1 - KRİTİK FALLBACK: Veritabanında aktif sağlayıcı yoksa sistemi çökertme
+            if (activeProvider == null)
             {
-                return new LocalOllamaClient(apiUrl, modelName);
+                _logger.LogWarning("WatchDog: Aktif bir AI sağlayıcısı bulunamadı! Varsayılan olarak Yerel Ollama (phi3) başlatılıyor.");
+                return localFallback;
             }
 
-            // KURAL 2 - DİNAMİK BULUT STRATEJİSİ:
-            if (config.ActiveAiProvider.Equals("OpenAI", StringComparison.OrdinalIgnoreCase))
+            _logger.LogInformation("WatchDog: '{ProviderName}' sağlayıcısı üzerinden bağlantı kuruluyor...", activeProvider.Name);
+
+            string modelName = activeProvider.ModelName;
+            string apiUrl = activeProvider.ApiUrl ?? "http://localhost:11434";
+
+            // 3. KURAL 2 - BULUT STRATEJİSİ (OpenAI / Groq) + AKILLI YEDEKLEME
+            if (activeProvider.Name.Equals("OpenAI", StringComparison.OrdinalIgnoreCase) ||
+                activeProvider.Name.Equals("Groq", StringComparison.OrdinalIgnoreCase))
             {
-                if (string.IsNullOrWhiteSpace(config.AiApiKey))
+                // Güvenlik Kontrolü: API Key girilmiş mi?
+                if (string.IsNullOrWhiteSpace(activeProvider.ApiKey))
                 {
-                    // (Zero-Trust Fallback) OpenAI seçilmiş ama anahtar yoksa sistemi patlatma,
-                    // hemen yereldeki orta sıklet şampiyonuna (phi3:medium) geri dön.
-                    return new LocalOllamaClient(apiUrl, "phi3:medium");
+                    _logger.LogError("WatchDog: {ProviderName} seçili ancak API Anahtarı eksik! Güvenlik gereği yerel modele dönülüyor.", activeProvider.Name);
+                    return localFallback;
                 }
 
-                // ARTIK DİNAMİK: OpenAiClient'a sadece anahtar ve model değil, 
-                // veritabanındaki apiUrl değerini de geçiyoruz. Bu sayede 'Universal Connector' çalışıyor.
-                return new OpenAiClient(config.AiApiKey, modelName, apiUrl);
+                _logger.LogInformation("WatchDog: Bulut AI motoru ({Model}) için Akıllı İstemci (Fallback Destekli) oluşturuluyor.", modelName);
+
+                // Ana istemci olarak Bulut AI (OpenAI/Groq) oluşturulur.
+                var cloudClient = new OpenAiClient(activeProvider.ApiKey, modelName, apiUrl);
+
+                // cloudClient'ı FallbackAiAdvisorClient ile sarmalıyoruz. Eğer cloudClient hata fırlatırsa, bu sarmalayıcı otomatik olarak localFallback'e geçecek.
+                return new FallbackAiAdvisorClient(cloudClient, localFallback, _logger);
             }
 
-            // KURAL 3: Kullanıcı açıkça Ollama istediyse...
-            if (config.ActiveAiProvider.Equals("Ollama", StringComparison.OrdinalIgnoreCase))
+            // 4. KURAL 3 - YEREL MOTOR (Ollama)
+            if (activeProvider.Name.Equals("Ollama", StringComparison.OrdinalIgnoreCase))
             {
+                _logger.LogInformation("WatchDog: Yerel AI motoru ({Model}) üzerinden analiz yapılacak.", modelName);
                 return new LocalOllamaClient(apiUrl, modelName);
             }
 
-            // KURAL 4: Tanımlanamayan bir durumda her zaman lokalde kal (Güvenlik Önlemi).
-            return new LocalOllamaClient(apiUrl, modelName);
+            // 5. Bilinmeyen durumlar için emniyet sibobu
+            _logger.LogCritical("WatchDog: Tanımlanamayan AI sağlayıcısı: {ProviderName}. Lokal modele dönülüyor.", activeProvider.Name);
+            return localFallback;
         }
     }
 }

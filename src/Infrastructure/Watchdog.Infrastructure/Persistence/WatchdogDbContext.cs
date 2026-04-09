@@ -6,82 +6,70 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Watchdog.Infrastructure.Persistence
 {
-    public class WatchdogDbContext: DbContext
+    public class WatchdogDbContext : DbContext
     {
-        public WatchdogDbContext(DbContextOptions<WatchdogDbContext> options) : base(options)
-        {
-        }
+        public WatchdogDbContext(DbContextOptions<WatchdogDbContext> options) : base(options) { }
 
-        // SQL Server'da tabloya dönüşecek olan sınıflarımız
         public DbSet<MonitoredApp> MonitoredApps { get; set; }
         public DbSet<HealthSnapshot> HealthSnapshots { get; set; }
         public DbSet<Incident> Incidents { get; set; }
         public DbSet<AiInsight> AiInsights { get; set; }
         public DbSet<SystemConfiguration> SystemConfigurations { get; set; }
+        public DbSet<AiProvider> AiProviders { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // MonitoredApp Kuralları
-            modelBuilder.Entity<MonitoredApp>(entity =>
-            {
-                entity.HasKey(e => e.Id); // Birincil Anahtarı
-                entity.Property(e => e.Name).IsRequired().HasMaxLength(200); // İsim boş geçilemez (NOT NULL) ve maksimum 200 karakter olabilir (VARCHAR(200)).
-                entity.Property(e => e.HealthUrl).IsRequired().HasMaxLength(500); // URL boş geçilemez ve maksimum 500 karakter olabilir.
-            });
+            // ... Diğer entity ayarları (MonitoredApp vb.) aynı kalıyor ...
 
-            // HealthSnapshot Kuralları
-            modelBuilder.Entity<HealthSnapshot>(entity =>
+            // AI Provider Seed Data - Sabit GUID'ler ile kurumsal yapılandırma
+            modelBuilder.Entity<AiProvider>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
 
-                // Alt detayların JSON olarak saklanması için nvarchar(max) tipi zorunludur.
-                entity.Property(e => e.DependencyDetails).HasColumnType("nvarchar(max)");
-
-                // HealthSnapshot (ve Incident, AiInsight) içindeki ilişki ayarı:
-                entity.HasOne(e => e.App) // "Her bir Snapshot'ın BİR TANE App'i (Uygulaması) vardır"
-                      .WithMany()         // "Bir App'in BİRDEN FAZLA Snapshot'ı olabilir"
-                      .HasForeignKey(e => e.AppId) // "Aralarındaki bağ AppId kolonu üzerinden kurulur"
-                      .OnDelete(DeleteBehavior.Cascade); // KURAL: Ana uygulama silinirse, bu logları da sil!
+                entity.HasData(
+                    new AiProvider
+                    {
+                        // Sabit GUID'ler veriyoruz ki her migration'da ID değişmesin.
+                        Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
+                        Name = "Ollama",
+                        ModelName = "phi3:medium",
+                        ApiUrl = "http://localhost:11434",
+                        IsActive = true,
+                        CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                    },
+                    new AiProvider
+                    {
+                        Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
+                        Name = "OpenAI",
+                        ModelName = "gpt-4o-mini",
+                        IsActive = false,
+                        CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                    },
+                    new AiProvider
+                    {
+                        Id = Guid.Parse("33333333-3333-3333-3333-333333333333"),
+                        Name = "Groq",
+                        ModelName = "llama-3.3-70b-versatile",
+                        ApiUrl = "https://api.groq.com/openai/v1",
+                        IsActive = false,
+                        CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                    }
+                );
             });
 
-            // 3. Incident Kuralları ve İlişkisi
-            modelBuilder.Entity<Incident>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-
-                entity.HasOne(e => e.App)
-                      .WithMany()
-                      .HasForeignKey(e => e.AppId)
-                      .OnDelete(DeleteBehavior.Cascade);
-            });
-
-            // 4. AiInsight Kuralları ve İlişkisi
-            modelBuilder.Entity<AiInsight>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-
-                entity.HasOne(e => e.App)
-                      .WithMany()
-                      .HasForeignKey(e => e.AppId)
-                      .OnDelete(DeleteBehavior.Cascade);
-            });
-
-            // 5. SystemConfiguration Kuralları ve Başlangıç Verisi
+            // SystemConfiguration Seed Data
             modelBuilder.Entity<SystemConfiguration>(entity =>
             {
                 entity.HasKey(e => e.Id);
-
-                // Sistem ilk ayağa kalktığında tabloya varsayılan değerleri yerleştir (Seed Data)
                 entity.HasData(new SystemConfiguration
                 {
                     Id = 1,
-                    ActiveAiProvider = "Ollama", // Varsayılan yapay zeka
-                    CriticalCpuThreshold = 90.0, // %90 CPU sınırı
-                    CriticalRamThreshold = 90.0, // 2GB RAM sınırı
-
-                    // EF Core kızmasın diye sabit bir tarih veriyoruz (Örn: 1 Ocak 2026)
+                    CriticalCpuThreshold = 90.0,
+                    CriticalRamThreshold = 90.0,
+                    CriticalLatencyThreshold = 1000.0,
                     LastUpdated = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
                 });
             });

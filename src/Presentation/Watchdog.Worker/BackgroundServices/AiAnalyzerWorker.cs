@@ -81,8 +81,10 @@ namespace Watchdog.Worker.BackgroundServices
                 }
 
                 // UYKU MODU: İşlem bittikten sonra belirlediğimiz süre kadar uyu. Test aşamasında hızlı görmek için 1 Dakika, Canlıda (Production) 1 Saat idealdir.
-                //Test: await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
-                await Task.Delay(TimeSpan.FromHours(1), stoppingToken); 
+                //Test:
+               await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
+               // await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+                
             }
         }
     }

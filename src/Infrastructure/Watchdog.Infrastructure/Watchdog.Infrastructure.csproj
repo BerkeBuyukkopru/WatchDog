@@ -23,6 +23,10 @@
 		<ProjectReference Include="..\..\..\modules\HealthChecks.System\HealthChecks.System.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="Persistence\Migrations\" />
+	</ItemGroup>
+
 	<PropertyGroup>
 		<TargetFramework>net10.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>

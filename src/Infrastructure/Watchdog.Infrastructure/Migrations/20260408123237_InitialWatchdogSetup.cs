@@ -3,22 +3,42 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace Watchdog.Infrastructure.Persistence.Migrations
+#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
+
+namespace Watchdog.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class InitialWatchdogSetup : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
+                name: "AiProviders",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    ModelName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ApiUrl = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ApiKey = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AiProviders", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "MonitoredApps",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    HealthUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    HealthUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     PollingIntervalSeconds = table.Column<int>(type: "int", nullable: false),
+                    NotificationEmails = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     ApiKey = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
@@ -33,11 +53,10 @@ namespace Watchdog.Infrastructure.Persistence.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    ActiveAiProvider = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    AiApiUrl = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    AiApiKey = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     CriticalCpuThreshold = table.Column<double>(type: "float", nullable: false),
-                    MaxRamThresholdMb = table.Column<double>(type: "float", nullable: false)
+                    CriticalRamThreshold = table.Column<double>(type: "float", nullable: false),
+                    CriticalLatencyThreshold = table.Column<double>(type: "float", nullable: false),
+                    LastUpdated = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -77,7 +96,7 @@ namespace Watchdog.Infrastructure.Persistence.Migrations
                     TotalDuration = table.Column<long>(type: "bigint", nullable: false),
                     Timestamp = table.Column<DateTime>(type: "datetime2", nullable: false),
                     CpuUsage = table.Column<double>(type: "float", nullable: false),
-                    RamUsageMb = table.Column<double>(type: "float", nullable: false),
+                    RamUsage = table.Column<double>(type: "float", nullable: false),
                     FreeDiskGb = table.Column<double>(type: "float", nullable: false),
                     DependencyDetails = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
@@ -114,9 +133,19 @@ namespace Watchdog.Infrastructure.Persistence.Migrations
                 });
 
             migrationBuilder.InsertData(
+                table: "AiProviders",
+                columns: new[] { "Id", "ApiKey", "ApiUrl", "CreatedAt", "IsActive", "ModelName", "Name" },
+                values: new object[,]
+                {
+                    { new Guid("11111111-1111-1111-1111-111111111111"), null, "http://localhost:11434", new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), true, "phi3:medium", "Ollama" },
+                    { new Guid("22222222-2222-2222-2222-222222222222"), null, null, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), false, "gpt-4o-mini", "OpenAI" },
+                    { new Guid("33333333-3333-3333-3333-333333333333"), null, "https://api.groq.com/openai/v1", new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), false, "llama-3.3-70b-versatile", "Groq" }
+                });
+
+            migrationBuilder.InsertData(
                 table: "SystemConfigurations",
-                columns: new[] { "Id", "ActiveAiProvider", "AiApiKey", "AiApiUrl", "CriticalCpuThreshold", "MaxRamThresholdMb" },
-                values: new object[] { 1, "Ollama", null, null, 90.0, 2048.0 });
+                columns: new[] { "Id", "CriticalCpuThreshold", "CriticalLatencyThreshold", "CriticalRamThreshold", "LastUpdated" },
+                values: new object[] { 1, 90.0, 1000.0, 90.0, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc) });
 
             migrationBuilder.CreateIndex(
                 name: "IX_AiInsights_AppId",
@@ -139,6 +168,9 @@ namespace Watchdog.Infrastructure.Persistence.Migrations
         {
             migrationBuilder.DropTable(
                 name: "AiInsights");
+
+            migrationBuilder.DropTable(
+                name: "AiProviders");
 
             migrationBuilder.DropTable(
                 name: "HealthSnapshots");

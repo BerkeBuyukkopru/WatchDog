@@ -49,6 +49,7 @@ namespace Watchdog.Infrastructure
             // === Yapay Zeka (AI) Servisleri ===
             // Fabrikamızı kaydediyoruz. UseCase IAiClientFactory istediğinde AiClientFactory verilecek.
             services.AddScoped<IAiClientFactory, AiClientFactory>();
+            services.AddScoped<IAiProviderRepository, AiProviderRepository>();
 
             return services;
         }

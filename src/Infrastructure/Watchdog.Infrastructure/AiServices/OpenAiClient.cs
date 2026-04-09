@@ -43,13 +43,18 @@ namespace Watchdog.Infrastructure.AiServices
             try
             {
                 var response = await _chatClient.GetResponseAsync(prompt, cancellationToken: cancellationToken);
-                return response.Text ?? "Bulut AI yanıt üretemedi.";
+
+                // Eğer bulut boş dönerse bunu bir hata sayalım
+                if (string.IsNullOrWhiteSpace(response.Text))
+                    throw new Exception("Bulut AI boş bir yanıt döndü.");
+
+                return response.Text;
             }
             catch (Exception ex)
             {
-                // (Resilience) Bulut servislerinde bakiye bitmesi veya yanlış URL girilmesi durumunda
-                // sistemin ana akışını (Worker) bozmamak için hata mesajını kontrollü bir şekilde dönüyoruz.
-                return $"Bulut AI API Hatası: Lütfen API anahtarınızı, URL adresinizi ve model ismini kontrol edin. Detay: {ex.Message}";
+                // KRİTİK: Burada artık 'return string' yapmıyoruz. 
+                // Hatayı yukarıya (Factory/Fallback katmanına) fırlatıyoruz.
+                throw new Exception($"Bulut AI (Groq/OpenAI) Erişim Hatası: {ex.Message}", ex);
             }
         }
     }

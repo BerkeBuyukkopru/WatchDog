@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Watchdog.Application.DTOs.AI;
 using Watchdog.Domain.Entities;
 
 namespace Watchdog.Application.Interfaces.Common
@@ -19,14 +20,16 @@ namespace Watchdog.Application.Interfaces.Common
             double avgCpu24h, double avgRam24h, double avgLatency24h,
             double avgCpu2h, double avgRam2h, double avgLatency2h,
             double maxCpu2h, double maxRam2h, double maxLatency2h,
-            string peakCpuTime, string dependencyContext);
+            string peakCpuTime, string dependencyContext,
+            int outageCount);
 
         // Günlük/Haftalık karşılaştırmalı (Target vs Baseline) kapasite tahmini için kullanılan prompt
         string BuildStrategicPrompt(
-            string activeProvider,
-            MonitoredApp app,
-            dynamic baselineDay, dynamic targetDay,
-            double weeklyAvgCpu, double weeklyAvgRam, 
-            string baselineErrors, string targetErrors);
+                    string activeProvider,
+                    MonitoredApp app,
+                    DailyEnrichedSnapshotDto baselineDay,
+                    DailyEnrichedSnapshotDto targetDay,
+                    double weeklyAvgCpu, double weeklyAvgRam,
+                    string baselineErrors, string targetErrors);
     }
 }

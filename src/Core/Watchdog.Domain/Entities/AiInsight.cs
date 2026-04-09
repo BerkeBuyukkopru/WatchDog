@@ -8,6 +8,8 @@ namespace Watchdog.Domain.Entities
         public Guid Id { get; set; } = Guid.NewGuid();
 
         public Guid AppId { get; set; }
+        public Guid? AiProviderId { get; set; } // Analizi yapan AI'nın kimliği
+        public virtual AiProvider? AiProvider { get; set; }
 
         public virtual MonitoredApp? App { get; set; }
 

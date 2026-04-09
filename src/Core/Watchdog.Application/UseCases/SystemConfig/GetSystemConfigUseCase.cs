@@ -24,11 +24,10 @@ namespace Watchdog.Application.UseCases.SystemConfig
 
             return new SystemConfigDto
             {
-                ActiveAiProvider = config.ActiveAiProvider,
-                AiApiUrl = config.AiApiUrl,
-                AiApiKey = config.AiApiKey,
+                // YENİ MİMARİ: Sadece eşik değerleri (Thresholds) taşınıyor.
                 CriticalCpuThreshold = config.CriticalCpuThreshold,
-                CriticalRamThreshold = config.CriticalRamThreshold
+                CriticalRamThreshold = config.CriticalRamThreshold,
+                CriticalLatencyThreshold = config.CriticalLatencyThreshold
             };
         }
     }

@@ -26,15 +26,10 @@ namespace Watchdog.Application.UseCases.SystemConfig
                 existingConfig = new SystemConfiguration { Id = 1 };
             }
 
-            existingConfig.ActiveAiProvider = request.ActiveAiProvider;
-
-            // Gelen model ismini veritabanına kaydediyoruz. Eğer boş gönderilirse varsayılan olarak "phi3" kabul ediyoruz.
-            existingConfig.AiModelName = string.IsNullOrWhiteSpace(request.AiModelName) ? "phi3" : request.AiModelName;
-
-            existingConfig.AiApiUrl = request.AiApiUrl;
-            existingConfig.AiApiKey = request.AiApiKey;
+            // YENİ MİMARİ: AI ayarlarını kaydetme işi AiProviderRepository'ye devredildi.
             existingConfig.CriticalCpuThreshold = request.CriticalCpuThreshold;
             existingConfig.CriticalRamThreshold = request.CriticalRamThreshold;
+            existingConfig.CriticalLatencyThreshold = request.CriticalLatencyThreshold;
             existingConfig.LastUpdated = DateTime.UtcNow;
 
             return await _repository.UpdateAsync(existingConfig);

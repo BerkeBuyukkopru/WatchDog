@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using Watchdog.Application.DTOs.AI;
 using Watchdog.Application.Interfaces.Common;
 using Watchdog.Domain.Entities;
 using Watchdog.Domain.Enums;
@@ -13,7 +14,8 @@ namespace Watchdog.Application.UseCases.AI
         // OpenAI Türkçe cevap verebilirken, Ollama (Phi-3, Llama3 vb.) zorlanmaması için İngilizceye sabitlendi.
         private string GetLanguageRule(string activeProvider)
         {
-            if (activeProvider.Equals("OpenAI", StringComparison.OrdinalIgnoreCase))
+            if (activeProvider.Equals("OpenAI", StringComparison.OrdinalIgnoreCase) ||
+                    activeProvider.Equals("Groq", StringComparison.OrdinalIgnoreCase))
             {
                 return "You MUST output your final diagnostic report strictly in professional Turkish. Do not use English in the output.";
             }
@@ -56,48 +58,49 @@ ACTIONABLE ADVICE:
             double avgCpu24h, double avgRam24h, double avgLatency24h,
             double avgCpu2h, double avgRam2h, double avgLatency2h,
             double maxCpu2h, double maxRam2h, double maxLatency2h,
-            string peakCpuTime, string dependencyContext)
+            string peakCpuTime, string dependencyContext,
+            int outageCount) // YENİ PARAMETRE
         {
             string languageRule = GetLanguageRule(activeProvider);
 
-            return $@"SYSTEM ROLE: You are an automated Site Reliability Engineering (SRE) diagnostic engine. Your ONLY purpose is to output a technical diagnostic report. 
-
-STRICT RULES:
-- DO NOT output any greetings, pleasantries, or introductory remarks.
-- DO NOT output any concluding remarks.
-- OUTPUT ONLY the three requested sections below. Do not add formatting like markdown code blocks (```) around the entire text.
-
+            return $@"SYSTEM ROLE: You are an automated SRE diagnostic engine.
 [LANGUAGE RULE]: {languageRule}
 
-[CONFIGURATION & THRESHOLDS]
-Critical CPU Threshold: {cpuLimit}% | Critical RAM Threshold: {ramLimit}% | Critical Latency Threshold: {latencyLimit}ms
+[STRICT INTERPRETATION RULE]:
+- If CPU/RAM values are near 0% AND 'Outages Detected' is greater than 0, this means the app was CRASHED/DOWN, not efficient.
+- Diagnose these 0% values as 'Service Unavailable' in your report.
 
-[TELEMETRY DATA (ENRICHED ANALYSIS)]
+[CONFIGURATION & THRESHOLDS]
+CPU Limit: {cpuLimit}% | RAM Limit: {ramLimit}% | Latency Limit: {latencyLimit}ms
+
+[TELEMETRY & AVAILABILITY DATA]
 App: {app.Name}
-CPU Stats: 24h-Avg: {avgCpu24h}%, 2h-Avg: {avgCpu2h}%, 2h-PEAK: {maxCpu2h}% at {peakCpuTime}
-RAM Stats: 24h-Avg: {avgRam24h}%, 2h-Avg: {avgRam2h}%, 2h-PEAK: {maxRam2h}%
-Latency Stats: 24h-Avg: {avgLatency24h}ms, 2h-Avg: {avgLatency2h}ms, 2h-PEAK: {maxLatency2h}ms
+Outages Detected (Last 24h): {outageCount} times! << IMPORTANT
+CPU Stats: 24h-Avg: {avgCpu24h}%, 2h-PEAK: {maxCpu2h}% at {peakCpuTime}
+RAM Stats: 24h-Avg: {avgRam24h}%, 2h-PEAK: {maxRam2h}%
+Latency Stats: 24h-Avg: {avgLatency24h}ms, 2h-Avg: {avgLatency2h}ms
 Dependencies: {dependencyContext}
 
 [TASK]
-Analyze the telemetry data. Compare the averages against the peak values to determine if the load is sustained or a sudden anomaly.
+Analyze the data. If outages occurred, focus your Root Cause Analysis on why the service was down.
 Your output MUST EXACTLY MATCH the 3 sections below.
 
 ROOT CAUSE ANALYSIS:
-(Explain the load behavior here)
+(Explain if it's high load or a total service outage)
 
 CAPACITY STATUS:
-(Evaluate current resource load against configured limits here)
+(Evaluate resource usage vs outages)
 
 ACTIONABLE ADVICE:
-(Provide 1-2 direct technical steps for scaling, optimization, or maintenance here)";
+(Provide recovery or scaling steps)";
         }
 
         // --- 3. HAFTALIK STRATEJİK (FORECAST) PROMPTU ---
         public string BuildStrategicPrompt(
             string activeProvider,
             MonitoredApp app,
-            dynamic baselineDay, dynamic targetDay,
+            DailyEnrichedSnapshotDto baselineDay,
+            DailyEnrichedSnapshotDto targetDay,   
             double weeklyAvgCpu, double weeklyAvgRam,
             string baselineErrors, string targetErrors)
         {

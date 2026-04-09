@@ -3,20 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Watchdog.Infrastructure.Persistence;
 
 #nullable disable
 
-namespace Watchdog.Infrastructure.Persistence.Migrations
+namespace Watchdog.Infrastructure.Migrations
 {
     [DbContext(typeof(WatchdogDbContext))]
-    [Migration("20260406133947_AddAiModules")]
-    partial class AddAiModules
+    partial class WatchdogDbContextModelSnapshot : ModelSnapshot
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -29,6 +26,9 @@ namespace Watchdog.Infrastructure.Persistence.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("AiProviderId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("AppId")
@@ -53,9 +53,71 @@ namespace Watchdog.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AiProviderId");
+
                     b.HasIndex("AppId");
 
                     b.ToTable("AiInsights");
+                });
+
+            modelBuilder.Entity("Watchdog.Domain.Entities.AiProvider", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ApiKey")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ApiUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ModelName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AiProviders");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("11111111-1111-1111-1111-111111111111"),
+                            ApiUrl = "http://localhost:11434",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            ModelName = "phi3:medium",
+                            Name = "Ollama"
+                        },
+                        new
+                        {
+                            Id = new Guid("22222222-2222-2222-2222-222222222222"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = false,
+                            ModelName = "gpt-4o-mini",
+                            Name = "OpenAI"
+                        },
+                        new
+                        {
+                            Id = new Guid("33333333-3333-3333-3333-333333333333"),
+                            ApiUrl = "https://api.groq.com/openai/v1",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = false,
+                            ModelName = "llama-3.3-70b-versatile",
+                            Name = "Groq"
+                        });
                 });
 
             modelBuilder.Entity("Watchdog.Domain.Entities.HealthSnapshot", b =>
@@ -135,13 +197,11 @@ namespace Watchdog.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("HealthUrl")
                         .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("NotificationEmails")
                         .HasColumnType("nvarchar(max)");
@@ -162,17 +222,10 @@ namespace Watchdog.Infrastructure.Persistence.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("ActiveAiProvider")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("AiApiKey")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("AiApiUrl")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<double>("CriticalCpuThreshold")
+                        .HasColumnType("float");
+
+                    b.Property<double>("CriticalLatencyThreshold")
                         .HasColumnType("float");
 
                     b.Property<double>("CriticalRamThreshold")
@@ -189,8 +242,8 @@ namespace Watchdog.Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = 1,
-                            ActiveAiProvider = "Ollama",
                             CriticalCpuThreshold = 90.0,
+                            CriticalLatencyThreshold = 1000.0,
                             CriticalRamThreshold = 90.0,
                             LastUpdated = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
@@ -198,11 +251,17 @@ namespace Watchdog.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Watchdog.Domain.Entities.AiInsight", b =>
                 {
+                    b.HasOne("Watchdog.Domain.Entities.AiProvider", "AiProvider")
+                        .WithMany()
+                        .HasForeignKey("AiProviderId");
+
                     b.HasOne("Watchdog.Domain.Entities.MonitoredApp", "App")
                         .WithMany()
                         .HasForeignKey("AppId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("AiProvider");
 
                     b.Navigation("App");
                 });

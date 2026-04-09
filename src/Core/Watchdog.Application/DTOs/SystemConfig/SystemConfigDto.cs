@@ -6,21 +6,15 @@ namespace Watchdog.Application.DTOs.SystemConfig
 {
     public class SystemConfigDto
     {
-        // Hangi AI motorunun (Ollama, OpenAI, Claude vb.) aktif olduğunu belirler.
-        public string ActiveAiProvider { get; set; } = string.Empty;
-
-        // UI'dan gelen model ismi
-        public string AiModelName { get; set; } = "phi3";
-
-        // Yerel Ollama URL'i veya OpenAI API uç noktası.
-        public string? AiApiUrl { get; set; }
-
-        // API Key hassas bir veri olduğu için nullable (?) tanımlanmış.
-        public string? AiApiKey { get; set; }
+        // YENİ MİMARİ: AI ayarları yeni eklenecek olan AiProviderDto'ya taşınacak.
+        // Bu DTO artık sadece sistem alarm sınırlarını (Threshold) taşıyor.
 
         // Sistemin 'Degraded' (Sarı) alarm vermesi için gereken CPU eşiği (Örn: 90.0).
         public double CriticalCpuThreshold { get; set; }
 
         public double CriticalRamThreshold { get; set; }
+
+        // Gecikme (Latency) sınırı (Entity'de vardı, UI'dan yönetilebilmesi için DTO'ya da ekledik)
+        public double CriticalLatencyThreshold { get; set; }
     }
 }
