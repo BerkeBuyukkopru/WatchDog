@@ -3,8 +3,7 @@ using Watchdog.Application.Interfaces.ExternalClients;
 
 namespace Watchdog.Api.Controllers
 {
-    // Ekip Arkadaşıma Not: Bu controller geçicidir. Sadece AI Fabrikamızın (OpenAI / Ollama geçişlerinin) 
-    // doğru çalışıp çalışmadığını Swagger üzerinden hızlıca test etmek için oluşturulmuştur.
+    // Bu controller geçicidir. Sadece AI Fabrikamızın (OpenAI / Ollama geçişlerinin) doğru çalışıp çalışmadığını Swagger üzerinden hızlıca test etmek için oluşturulmuştur.
     [ApiController]
     [Route("api/[controller]")]
     public class TestAiController : ControllerBase

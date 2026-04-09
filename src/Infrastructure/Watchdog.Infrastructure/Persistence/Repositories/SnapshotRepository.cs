@@ -4,7 +4,7 @@ using System.Linq; // Where, OrderBy vb. LINQ metotları için gereklidir.
 using System.Text;
 using System.Threading.Tasks; // Task yapısı için gereklidir.
 using Microsoft.EntityFrameworkCore;
-using Watchdog.Application.DTOs.AI; // YENİ EKLENDİ: Zenginleştirilmiş DTO için gerekli
+using Watchdog.Application.DTOs.AI; // Zenginleştirilmiş DTO için gerekli
 using Watchdog.Application.Interfaces.Repositories;
 using Watchdog.Domain.Entities;
 
@@ -84,9 +84,13 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
 
             if (!rawData.Any()) return new List<DailyEnrichedSnapshotDto>();
 
+            // --- KURUMSAL STANDART: Sunucu saatine güvenme, zaman dilimini açıkça belirt ---
+            var turkeyTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Turkey Standard Time");
+
             // C# tarafında (Memory'de) günlere göre grupla ve zenginleştir (Enriched DTO).
             var enrichedList = rawData
-                .GroupBy(s => s.Timestamp.Date)
+                // KRİTİK: UTC tarihi Türkiye saatine çevirip öyle grupluyoruz. Docker'da bile şaşmaz.
+                .GroupBy(s => TimeZoneInfo.ConvertTimeFromUtc(s.Timestamp, turkeyTimeZone).Date)
                 .Select(g =>
                 {
                     var dailyRecords = g.ToList();
@@ -111,7 +115,8 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
                         AvgLatency = Math.Round((double)dailyRecords.Average(x => x.TotalDuration), 2),
                         MaxCpu = Math.Round((double)peakRecord.CpuUsage, 2),
                         MaxRam = Math.Round((double)peakRecord.RamUsage, 2),
-                        PeakHour = peakRecord.Timestamp.ToString("HH:mm"),
+                        // Zirve saatini de rapor için TR saatine çeviriyoruz
+                        PeakHour = TimeZoneInfo.ConvertTimeFromUtc(peakRecord.Timestamp, turkeyTimeZone).ToString("HH:mm"),
                         TopErrors = topErrors
                     };
                 })

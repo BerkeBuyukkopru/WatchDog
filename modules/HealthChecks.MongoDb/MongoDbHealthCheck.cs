@@ -40,7 +40,7 @@ namespace HealthChecks.MongoDb
 
                 stopwatch.Stop();
 
-                // YENİ: AI için güvenli metrik verisi oluşturuyoruz (Şifre vb. sızdırmadan)
+                // AI için güvenli metrik verisi oluşturuyoruz (Şifre vb. sızdırmadan)
                 var telemetryData = new Dictionary<string, object>
                 {
                     { "ClusterStatus", "Connected" },

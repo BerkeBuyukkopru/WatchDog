@@ -9,12 +9,13 @@ namespace Watchdog.Application.Interfaces.Common
     // Bu Interface, sistemin tüm yapay zeka promptlarını tek bir merkezden (PromptBuilder) üretmek için tasarlandı. (SOLID - SRP)
     public interface IPromptBuilder
     {
-        // Kriz anında (çöküşte) Kök Neden tahmini için kullanılan prompt
-        string BuildRootCausePrompt(string activeProvider, List<HealthSnapshot> recentSnapshots, string appName);
+        // Kriz Anı (Event-Driven) Promptu
+        string BuildRootCausePrompt(
+            List<HealthSnapshot> recentSnapshots,
+            string appName);
 
-        // Saatlik kapasite ve zirve (peak) analizi için kullanılan prompt
+        // Saatlik Rutin Kapasite Promptu
         string BuildRoutinePrompt(
-            string activeProvider,
             MonitoredApp app,
             double cpuLimit, double ramLimit, double latencyLimit,
             double avgCpu24h, double avgRam24h, double avgLatency24h,
@@ -23,13 +24,12 @@ namespace Watchdog.Application.Interfaces.Common
             string peakCpuTime, string dependencyContext,
             int outageCount);
 
-        // Günlük/Haftalık karşılaştırmalı (Target vs Baseline) kapasite tahmini için kullanılan prompt
+        // Haftalık Stratejik Tahmin Promptu
         string BuildStrategicPrompt(
-                    string activeProvider,
-                    MonitoredApp app,
-                    DailyEnrichedSnapshotDto baselineDay,
-                    DailyEnrichedSnapshotDto targetDay,
-                    double weeklyAvgCpu, double weeklyAvgRam,
-                    string baselineErrors, string targetErrors);
+            MonitoredApp app,
+            DailyEnrichedSnapshotDto baselineDay,
+            DailyEnrichedSnapshotDto targetDay,
+            double weeklyAvgCpu, double weeklyAvgRam,
+            string baselineErrors, string targetErrors);
     }
 }

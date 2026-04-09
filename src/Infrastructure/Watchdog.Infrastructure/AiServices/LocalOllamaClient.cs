@@ -32,9 +32,14 @@ namespace Watchdog.Infrastructure.AiServices
 
         public async Task<string> AnalyzeAsync(string prompt, CancellationToken cancellationToken = default)
         {
+            // Builder'dan dilsiz (ham) olarak gelen metnin başına Yerel AI için kesin İngilizce konuşma emrini ekliyoruz.
+            // Kapasitesi kısıtlı modellerin (Phi-3, Llama3 vb.) halüsinasyon görmemesi için İngilizce şart.
+            string localPrompt = "You MUST output your analysis in English. Keep it brief, technical, and do not invent data. Do not use Turkish.\n\n" + prompt;
+
             try
             {
-                var response = await _chatClient.GetResponseAsync(prompt, cancellationToken: cancellationToken);
+                // Ham prompt yerine, kurallı 'localPrompt'u gönderiyoruz
+                var response = await _chatClient.GetResponseAsync(localPrompt, cancellationToken: cancellationToken);
                 return response.Text ?? "Yerel yapay zeka (Ollama) yanıt üretemedi.";
             }
             catch (Exception ex)

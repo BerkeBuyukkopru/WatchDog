@@ -6,7 +6,7 @@ namespace Watchdog.Application.DTOs.SystemConfig
 {
     public class SystemConfigDto
     {
-        // YENİ MİMARİ: AI ayarları yeni eklenecek olan AiProviderDto'ya taşınacak.
+        // AI ayarları yeni eklenecek olan AiProviderDto'ya taşınacak.
         // Bu DTO artık sadece sistem alarm sınırlarını (Threshold) taşıyor.
 
         // Sistemin 'Degraded' (Sarı) alarm vermesi için gereken CPU eşiği (Örn: 90.0).

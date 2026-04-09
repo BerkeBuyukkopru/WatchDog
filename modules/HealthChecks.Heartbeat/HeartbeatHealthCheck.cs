@@ -41,7 +41,7 @@ public class HeartbeatHealthCheck : IHealthCheck
 
             var timeSinceLastPulse = DateTime.UtcNow - lastPulse.Value;
 
-            // YENİ: Metrik verisini Data Dictionary içine koyuyoruz
+            // Metrik verisini Data Dictionary içine koyuyoruz
             var telemetryData = new Dictionary<string, object>
             {
                 { "MinutesSinceLastPulse", Math.Round(timeSinceLastPulse.TotalMinutes, 2) },

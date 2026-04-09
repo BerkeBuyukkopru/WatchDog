@@ -1,14 +1,15 @@
-﻿using System;
+﻿using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Watchdog.Application.Interfaces.Common;
 using Watchdog.Application.Interfaces.ExternalClients;
 using Watchdog.Application.Interfaces.Repositories;
+using Watchdog.Application.UseCases.AI;
 using Watchdog.Domain.Entities;
 using Watchdog.Domain.Enums;
 using Watchdog.Domain.Rules;
-using Watchdog.Application.UseCases.AI;
 
 namespace Watchdog.Application.UseCases.HealthMonitoring
 {
@@ -18,31 +19,24 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
         private readonly IIncidentRepository _incidentRepository;
         private readonly INotificationSender _notificationSender;
         private readonly IMonitoredAppRepository _appRepository;
-        private readonly IAiInsightRepository _insightRepository;
-        private readonly IAiClientFactory _aiClientFactory;
-        private readonly IPromptBuilder _promptBuilder;
 
-        // REFACTORING: Artık SystemConfig'e değil, AI Registry'ye (AiProviders tablosuna) bakıyoruz.
-        private readonly IAiProviderRepository _aiProviderRepository;
+        // KRİTİK EKLENTİ: Arka planda (Task.Run) yeni veritabanı bağlantıları açabilmek için fabrika
+        private readonly IServiceScopeFactory _scopeFactory;
+
+        // Not: AI ve Prompt servislerini artık kurucuda değil, TriggerRootCauseAnalysisAsync içinde yeni Scope üzerinden çağıracağız. Aksi takdirde ObjectDisposedException alırız.
 
         public AnalyzeSystemHealthUseCase(
             ISnapshotRepository snapshotRepository,
             IIncidentRepository incidentRepository,
             INotificationSender notificationSender,
             IMonitoredAppRepository appRepository,
-            IAiInsightRepository insightRepository,
-            IAiClientFactory aiClientFactory,
-            IPromptBuilder promptBuilder,
-            IAiProviderRepository aiProviderRepository) // YENİ
+            IServiceScopeFactory scopeFactory)
         {
             _snapshotRepository = snapshotRepository;
             _incidentRepository = incidentRepository;
             _notificationSender = notificationSender;
             _appRepository = appRepository;
-            _insightRepository = insightRepository;
-            _aiClientFactory = aiClientFactory;
-            _promptBuilder = promptBuilder;
-            _aiProviderRepository = aiProviderRepository; // YENİ
+            _scopeFactory = scopeFactory;
         }
 
         public async Task ExecuteAsync(HealthSnapshot latestSnapshot)
@@ -61,7 +55,8 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
 
                 if (IncidentRules.ShouldOpenIncident(recentSnapshots, hasActiveIncident))
                 {
-                    Console.WriteLine($">>>> [CRITICAL] {app.Name} ÜST ÜSTE 3 KEZ YANIT VERMEDİ! Olay başlatılıyor...");
+                    // --- KURUMSAL LOG GÜNCELLEMESİ ---
+                    Console.WriteLine($">>>> [INCIDENT-TRIGGER] [CRITICAL] {app.Name} ÜST ÜSTE 3 KEZ YANIT VERMEDİ! Olay başlatılıyor...");
 
                     var newIncident = new Incident
                     {
@@ -75,6 +70,7 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                     await _incidentRepository.AddAsync(newIncident);
                     await _notificationSender.SendDowntimeAlertAsync(newIncident, app);
 
+                    // Arka plana atıyoruz ama artık kendi scope'unu yaratacak
                     _ = Task.Run(async () => await TriggerRootCauseAnalysisAsync(app, recentSnapshots));
                 }
             }
@@ -92,26 +88,39 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
 
         private async Task TriggerRootCauseAnalysisAsync(MonitoredApp app, List<HealthSnapshot> recentSnapshots)
         {
-            Console.WriteLine($">>>> [AI-START] {app.Name} için Kök Neden Analizi süreci başladı...");
-
-            var lastInsight = await _insightRepository.GetLatestInsightAsync(app.Id);
-            if (lastInsight != null && lastInsight.CreatedAt > DateTime.UtcNow.AddMinutes(-5))
-            {
-                Console.WriteLine($">>>> [AI-SKIP] Cooldown aktif. Son 5 dakika içinde analiz yapılmış.");
-                return;
-            }
-
+            // HER ŞEY TRY-CATCH İÇİNDE! KAÇIŞ YOK.
             try
             {
-                // YENİ MİMARİ: Hangi sağlayıcının (Ollama, Groq vs) aktif olduğunu veritabanından çekiyoruz.
-                var activeProviderEntity = await _aiProviderRepository.GetActiveProviderAsync();
+                // SCOPE YARATIMI: Ana thread burayı terk etse bile bu using bloğu sayesinde 
+                // veritabanı bağlantımız arka planda güvende ve açık kalır.
+                using var scope = _scopeFactory.CreateScope();
+
+                var insightRepository = scope.ServiceProvider.GetRequiredService<IAiInsightRepository>();
+                var aiProviderRepository = scope.ServiceProvider.GetRequiredService<IAiProviderRepository>();
+                var promptBuilder = scope.ServiceProvider.GetRequiredService<IPromptBuilder>();
+                var aiClientFactory = scope.ServiceProvider.GetRequiredService<IAiClientFactory>();
+
+                // --- KURUMSAL LOG GÜNCELLEMESİ ---
+                Console.WriteLine($">>>> [RCA-START] {app.Name} için Kök Neden Analizi süreci başladı...");
+
+                var lastInsight = await insightRepository.GetLatestInsightAsync(app.Id);
+                if (lastInsight != null && lastInsight.CreatedAt > DateTime.UtcNow.AddMinutes(-5))
+                {
+                    Console.WriteLine($">>>> [RCA-SKIP] Cooldown aktif. Son 5 dakika içinde analiz yapılmış.");
+                    return;
+                }
+
+                var activeProviderEntity = await aiProviderRepository.GetActiveProviderAsync();
                 string activeProvider = activeProviderEntity?.Name ?? "Ollama";
 
-                var prompt = _promptBuilder.BuildRootCausePrompt(activeProvider, recentSnapshots, app.Name);
+                var prompt = promptBuilder.BuildRootCausePrompt(recentSnapshots, app.Name);
 
-                Console.WriteLine($">>>> [AI-REQUEST] Yapay Zeka motoruna istek atılıyor...");
-                var aiClient = await _aiClientFactory.CreateClientAsync();
+                Console.WriteLine($">>>> [RCA-REQUEST] Yapay Zeka motoruna istek atılıyor...");
+                var aiClient = await aiClientFactory.CreateClientAsync();
                 var aiResponse = await aiClient.AnalyzeAsync(prompt);
+
+                // --- KURUMSAL LOG GÜNCELLEMESİ ---
+                Console.WriteLine($">>>> [RCA-REPORT] {app.Name} Kriz Analiz Raporu:\n{aiResponse}\n--------------------------------------------------");
 
                 var newInsight = new AiInsight
                 {
@@ -123,22 +132,13 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                     CreatedAt = DateTime.UtcNow
                 };
 
-                await _insightRepository.AddAsync(newInsight);
-                Console.WriteLine($">>>> [AI-SUCCESS] Analiz tamamlandı ve veritabanına kaydedildi!");
+                await insightRepository.AddAsync(newInsight);
+                Console.WriteLine($">>>> [RCA-SUCCESS] Analiz tamamlandı ve veritabanına kaydedildi!");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($">>>> [AI-ERROR] Analiz sırasında hata oluştu: {ex.Message}");
-
-                var fallbackInsight = new AiInsight
-                {
-                    AppId = app.Id,
-                    Message = "AI Motoru meşgul. Manuel kontrol önerilir.",
-                    InsightType = InsightType.CrashWarning,
-                    IsResolved = false,
-                    CreatedAt = DateTime.UtcNow
-                };
-                await _insightRepository.AddAsync(fallbackInsight);
+                // YAKALANDIN! Hatayı yutmayıp konsola basıyoruz.
+                Console.WriteLine($">>>> [RCA-FATAL-ERROR] Analiz tamamen patladı: {ex.ToString()}");
             }
         }
     }

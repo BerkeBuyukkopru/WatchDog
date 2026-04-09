@@ -19,7 +19,7 @@ namespace Watchdog.Application.Interfaces.Repositories
         // Bir sağlayıcıyı aktif yapar (Parametre tipi Guid olmalı!)
         Task<bool> SetActiveProviderAsync(Guid id);
 
-        // YENİ: Sağlayıcı bilgilerini (ApiKey vb.) günceller
+        // Sağlayıcı bilgilerini (ApiKey vb.) günceller
         Task<bool> UpdateAsync(AiProvider provider);
     }
 }

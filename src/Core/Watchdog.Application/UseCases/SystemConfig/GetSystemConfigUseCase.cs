@@ -24,7 +24,7 @@ namespace Watchdog.Application.UseCases.SystemConfig
 
             return new SystemConfigDto
             {
-                // YENİ MİMARİ: Sadece eşik değerleri (Thresholds) taşınıyor.
+                // Sadece eşik değerleri (Thresholds) taşınıyor.
                 CriticalCpuThreshold = config.CriticalCpuThreshold,
                 CriticalRamThreshold = config.CriticalRamThreshold,
                 CriticalLatencyThreshold = config.CriticalLatencyThreshold

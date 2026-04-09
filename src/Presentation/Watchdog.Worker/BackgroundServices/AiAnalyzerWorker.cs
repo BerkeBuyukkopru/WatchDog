@@ -36,7 +36,7 @@ namespace Watchdog.Worker.BackgroundServices
             {
                 try
                 {
-                    _logger.LogInformation("WatchDog: Rutin AI kapasite analizi döngüsü başlıyor...");
+                    _logger.LogInformation("[ROUTINE-AI] WatchDog: Rutin AI kapasite analizi döngüsü başlıyor...");
 
                     // SCOPE AÇILIŞI: Veritabanı ve AI nesneleri için güvenli bir bellek alanı yaratıyoruz
                     using var scope = _scopeFactory.CreateScope();
@@ -53,7 +53,7 @@ namespace Watchdog.Worker.BackgroundServices
                     foreach (var app in apps)
                     {
                         // DÜZELTME: Log mesajı 24 saatlik veriyi temsil edecek şekilde güncellendi.
-                        _logger.LogInformation($"[{app.Name}] uygulaması için son 24 saatlik AI analizi talep ediliyor...");
+                        _logger.LogInformation($"[ROUTINE-AI] [{app.Name}] uygulaması için son 24 saatlik AI analizi talep ediliyor...");
 
                         var request = new GenerateRoutineInsightRequest
                         {
@@ -66,25 +66,28 @@ namespace Watchdog.Worker.BackgroundServices
 
                         if (insight != null)
                         {
-                            _logger.LogInformation($"[{app.Name}] AI Tavsiyesi Üretildi: {insight.Message}");
+                            // --- KURUMSAL LOG GÜNCELLEMESİ ---
+                            _logger.LogInformation($"[CAPACITY-INSIGHT] [{app.Name}] AI Tavsiyesi Üretildi:\n{insight.Message}\n--------------------------------------------------");
                         }
                         else
                         {
-                            _logger.LogDebug($"[{app.Name}] Yeterli veri olmadığı için AI analizi atlandı.");
+                            _logger.LogDebug($"[ROUTINE-AI] [{app.Name}] Yeterli veri olmadığı için AI analizi atlandı.");
                         }
                     }
                 }
                 catch (Exception ex)
                 {
                     // AI çökse, internet gitse veya API limiti dolsa bile Worker ÖLMEMELİ. Bu yüzden hatayı loglayıp döngüye devam ediyoruz.
-                    _logger.LogError(ex, "WatchDog: AiAnalyzerWorker çalışırken kritik bir hata oluştu.");
+                    _logger.LogError(ex, "[ROUTINE-AI] WatchDog: AiAnalyzerWorker çalışırken kritik bir hata oluştu.");
                 }
 
                 // UYKU MODU: İşlem bittikten sonra belirlediğimiz süre kadar uyu. Test aşamasında hızlı görmek için 1 Dakika, Canlıda (Production) 1 Saat idealdir.
                 //Test:
-               await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
-               // await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
-                
+                //_logger.LogInformation("[ROUTINE-AI] WatchDog: TEST MODU - Bir sonraki RUTİN AI analizi 1 DAKİKA sonra çalışacak.");
+                //await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+
+                await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+
             }
         }
     }

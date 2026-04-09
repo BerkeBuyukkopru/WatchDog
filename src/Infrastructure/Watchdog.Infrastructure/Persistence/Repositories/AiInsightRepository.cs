@@ -34,9 +34,14 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
             return await query.OrderByDescending(i => i.CreatedAt).ToListAsync();
         }
 
-        public Task<AiInsight?> GetLatestInsightAsync(Guid id)
+        // --- EKSİK OLAN METOT DOLDURULDU ---
+        public async Task<AiInsight?> GetLatestInsightAsync(Guid appId)
         {
-            throw new NotImplementedException();
+            return await _context.AiInsights
+                .AsNoTracking() // Sadece okuma yapacağımız için belleği yormuyoruz (Performans)
+                .Where(i => i.AppId == appId) // Sadece kriz yaşayan uygulamaya ait analizler
+                .OrderByDescending(i => i.CreatedAt) // En yenisi en üstte
+                .FirstOrDefaultAsync(); // İlkini (en tazesini) al veya yoksa null dön
         }
     }
 }

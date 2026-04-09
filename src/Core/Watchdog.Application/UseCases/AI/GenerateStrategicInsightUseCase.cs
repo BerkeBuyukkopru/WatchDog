@@ -18,7 +18,7 @@ namespace Watchdog.Application.UseCases.AI
         private readonly IAiInsightRepository _insightRepository;
         private readonly IAiClientFactory _aiClientFactory;
         private readonly IPromptBuilder _promptBuilder;
-        private readonly IAiProviderRepository _aiProviderRepository; // YENİ EKLENDİ
+        private readonly IAiProviderRepository _aiProviderRepository;
 
         public GenerateStrategicInsightUseCase(
             IMonitoredAppRepository appRepository,
@@ -26,14 +26,14 @@ namespace Watchdog.Application.UseCases.AI
             IAiInsightRepository insightRepository,
             IAiClientFactory aiClientFactory,
             IPromptBuilder promptBuilder,
-            IAiProviderRepository aiProviderRepository) // YENİ EKLENDİ
+            IAiProviderRepository aiProviderRepository)
         {
             _appRepository = appRepository;
             _snapshotRepository = snapshotRepository;
             _insightRepository = insightRepository;
             _aiClientFactory = aiClientFactory;
             _promptBuilder = promptBuilder;
-            _aiProviderRepository = aiProviderRepository; // YENİ EKLENDİ
+            _aiProviderRepository = aiProviderRepository;
         }
 
         public async Task<AiInsight?> ExecuteAsync(GenerateStrategicInsightRequest request)
@@ -41,7 +41,7 @@ namespace Watchdog.Application.UseCases.AI
             var app = await _appRepository.GetByIdAsync(request.AppId);
             if (app == null) return null;
 
-            // YENİ MİMARİ: Hangi zekanın çalıştığını builder'a söylemek için yeni tablodan çekiyoruz.
+            // Hangi zekanın çalıştığını builder'a söylemek için yeni tablodan çekiyoruz.
             var activeProviderEntity = await _aiProviderRepository.GetActiveProviderAsync();
             string activeProvider = activeProviderEntity?.Name ?? "Ollama";
 
@@ -49,7 +49,14 @@ namespace Watchdog.Application.UseCases.AI
             if (dailyStats == null || dailyStats.Count < 2) return null;
 
             var targetDay = dailyStats.OrderByDescending(d => d.Date).FirstOrDefault();
-            var baselineDay = dailyStats.FirstOrDefault(d => d.Date.Date == targetDay.Date.AddDays(-7).Date);
+
+            // --- KURUMSAL STANDART: Esnek Hedef Eşleştirme (Toleranslı Arama) ---
+            var targetBaselineDate = targetDay.Date.AddDays(-7).Date;
+
+            var baselineDay = dailyStats
+                .Where(d => d.Date.Date >= targetBaselineDate.AddDays(-1) && d.Date.Date <= targetBaselineDate.AddDays(1)) // 6, 7 veya 8. güne esneklik tanı
+                .OrderBy(d => Math.Abs((d.Date.Date - targetBaselineDate).Days)) // 7. güne en yakın olanı seç
+                .FirstOrDefault();
 
             if (baselineDay == null) return null;
 
@@ -61,7 +68,6 @@ namespace Watchdog.Application.UseCases.AI
             string baselineErrors = baselineDay.TopErrors.Any() ? string.Join(", ", baselineDay.TopErrors) : "None";
 
             string aiPrompt = _promptBuilder.BuildStrategicPrompt(
-                activeProvider,
                 app, baselineDay, targetDay,
                 weeklyAvgCpu, weeklyAvgRam,
                 baselineErrors, targetErrors);

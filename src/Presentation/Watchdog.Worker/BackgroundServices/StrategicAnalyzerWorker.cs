@@ -27,7 +27,8 @@ namespace Watchdog.Worker.BackgroundServices
             {
                 try
                 {
-                    _logger.LogInformation("WatchDog: Günlük/Haftalık stratejik kapasite tahmini başlatılıyor...");
+                    // --- KURUMSAL LOG GÜNCELLEMESİ ---
+                    _logger.LogInformation("[STRATEGIC-AI] WatchDog: Günlük/Haftalık stratejik kapasite tahmini başlatılıyor...");
 
                     using var scope = _scopeFactory.CreateScope();
                     var appRepository = scope.ServiceProvider.GetRequiredService<IMonitoredAppRepository>();
@@ -42,17 +43,36 @@ namespace Watchdog.Worker.BackgroundServices
 
                         if (insight != null)
                         {
-                            _logger.LogInformation($"[{app.Name}] Stratejik Tahmin Raporu Üretildi.");
+                            // --- KURUMSAL LOG GÜNCELLEMESİ ---
+                            _logger.LogInformation($"[FORECAST-REPORT] [{app.Name}] Stratejik Tahmin Raporu Üretildi:\n{insight.Message}\n--------------------------------------------------");
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "WatchDog: StrategicAnalyzerWorker çalışırken hata oluştu.");
+                    _logger.LogError(ex, "[STRATEGIC-AI] WatchDog: StrategicAnalyzerWorker çalışırken hata oluştu.");
                 }
 
                 // KURUMSAL STANDART: Günde 1 kez çalışması idealdir. 
-                await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
+                // --- KURUMSAL STANDART: Her gün UTC 22:00'de (TR 01:00) çalıştır ---
+                var nowUtc = DateTime.UtcNow;
+                var nextRunTimeUtc = nowUtc.Date.AddHours(22); // Bugün UTC 22:00
+
+                // Eğer saati kaçırdıysak (örneğin UTC 23:00'te sunucu açıldıysa), yarına kur
+                if (nowUtc >= nextRunTimeUtc)
+                {
+                    nextRunTimeUtc = nextRunTimeUtc.AddDays(1);
+                }
+
+                var delay = nextRunTimeUtc - nowUtc;
+
+                _logger.LogInformation($"[STRATEGIC-AI] WatchDog: Bir sonraki Stratejik Analiz {delay.TotalHours:F1} saat sonra (TR 01:00 / UTC 22:00) çalışacak.");
+
+                await Task.Delay(delay, stoppingToken);
+
+                // TEST İÇİN GEÇİCİ OLARAK 1 DAKİKAYA İNDİRİLDİ
+                //_logger.LogInformation($"[STRATEGIC-AI] WatchDog: TEST MODU - Bir sonraki Stratejik Analiz 1 DAKİKA sonra çalışacak.");
+                //await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
             }
         }
     }

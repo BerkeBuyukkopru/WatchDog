@@ -20,7 +20,7 @@ namespace Watchdog.Application.UseCases.AI
         private readonly IAiInsightRepository _insightRepository;
         private readonly IAiClientFactory _aiClientFactory;
         private readonly ISystemConfigurationRepository _systemConfigRepository; // Eşikler için
-        private readonly IAiProviderRepository _aiProviderRepository; // AI Provider için (YENİ)
+        private readonly IAiProviderRepository _aiProviderRepository; // AI Provider için 
         private readonly IPromptBuilder _promptBuilder;
 
         public GenerateRoutineInsightUseCase(
@@ -29,7 +29,7 @@ namespace Watchdog.Application.UseCases.AI
             IAiInsightRepository insightRepository,
             IAiClientFactory aiClientFactory,
             ISystemConfigurationRepository systemConfigRepository,
-            IAiProviderRepository aiProviderRepository, // YENİ
+            IAiProviderRepository aiProviderRepository, 
             IPromptBuilder promptBuilder)
         {
             _appRepository = appRepository;
@@ -37,7 +37,7 @@ namespace Watchdog.Application.UseCases.AI
             _insightRepository = insightRepository;
             _aiClientFactory = aiClientFactory;
             _systemConfigRepository = systemConfigRepository;
-            _aiProviderRepository = aiProviderRepository; // YENİ
+            _aiProviderRepository = aiProviderRepository; 
             _promptBuilder = promptBuilder;
         }
 
@@ -52,7 +52,7 @@ namespace Watchdog.Application.UseCases.AI
             double ramLimit = config?.CriticalRamThreshold ?? 90.0;
             double latencyLimit = config?.CriticalLatencyThreshold ?? 1000.0;
 
-            // 2. Aktif Yapay Zekayı Çek (YENİ MİMARİ)
+            // 2. Aktif Yapay Zekayı Çek 
             var activeProviderEntity = await _aiProviderRepository.GetActiveProviderAsync();
             string activeProvider = activeProviderEntity?.Name ?? "Ollama";
 
@@ -61,7 +61,7 @@ namespace Watchdog.Application.UseCases.AI
 
             if (snapshots == null || !snapshots.Any()) return null;
 
-            // --- YENİ GÜNCELLEME: KESİNTİ KONTROLÜ (Ölü Adamın Nabzı Sorunu Çözümü) ---
+            // --- KESİNTİ KONTROLÜ (Ölü Adamın Nabzı Sorunu Çözümü) ---
             // Analiz edilen periyot içinde herhangi bir "Unhealthy" durumu var mı hesaplıyoruz.
             int outageCount = snapshots.Count(s => s.Status == HealthStatus.Unhealthy);
             bool hasOutages = outageCount > 0;
@@ -122,13 +122,12 @@ namespace Watchdog.Application.UseCases.AI
 
             // PromptBuilder'a kesinti sayısı (outageCount) parametre olarak eklendi.
             string aiPrompt = _promptBuilder.BuildRoutinePrompt(
-                activeProvider,
                 app, cpuLimit, ramLimit, latencyLimit,
                 avgCpu24h, avgRam24h, avgLatency24h,
                 avgCpu2h, avgRam2h, avgLatency2h,
                 maxCpu2h, maxRam2h, maxLatency2h,
                 peakCpuTime, dependencyContext,
-                outageCount); // YENİ PARAMETRE
+                outageCount);
 
             var aiClient = await _aiClientFactory.CreateClientAsync();
             var aiResponseText = await aiClient.AnalyzeAsync(aiPrompt);

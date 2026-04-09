@@ -29,7 +29,7 @@ namespace Watchdog.Infrastructure
             services.AddScoped<IIncidentRepository, IncidentRepository>();
             services.AddScoped<ISystemConfigurationRepository, SystemConfigurationRepository>();
 
-            // YENİ: Yapay Zeka Tavsiye Deposu Kaydı
+            // Yapay Zeka Tavsiye Deposu Kaydı
             services.AddScoped<IAiInsightRepository, AiInsightRepository>();
 
             // === 3. Bildirim (Mail) Servisleri ===

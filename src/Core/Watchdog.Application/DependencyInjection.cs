@@ -23,7 +23,7 @@ public static class DependencyInjection
         services.AddScoped<IUseCaseAsync<GetSystemConfigRequest, SystemConfigDto?>, GetSystemConfigUseCase>();
         services.AddScoped<IUseCaseAsync<SystemConfigDto, bool>, UpdateSystemConfigUseCase>();
 
-        // === YENİ: Yapay Zeka Sağlayıcı Yönetimi Use Case'leri ===
+        // ===  Yapay Zeka Sağlayıcı Yönetimi Use Case'leri ===
         services.AddScoped<IUseCaseAsync<GetAllAiProvidersRequest, IEnumerable<AiProviderDto>>, GetAllAiProvidersUseCase>();
         services.AddScoped<IUseCaseAsync<Guid, bool>, SetActiveAiProviderUseCase>();
         services.AddScoped<IUseCaseAsync<UpdateAiProviderRequest, bool>, UpdateAiProviderUseCase>();
@@ -33,7 +33,8 @@ public static class DependencyInjection
 
         services.AddScoped<IUseCaseAsync<CreateMonitoredAppRequest, CreateMonitoredAppResponse>, CreateMonitoredAppUseCase>();
         services.AddScoped<IUseCaseAsync<UpdateAppEmailsRequest, (bool IsSuccess, string ErrorMessage)>, UpdateAppEmailsUseCase>();
-        services.AddScoped<IUseCaseAsync<HealthSnapshot>, AnalyzeSystemHealthUseCase>();
+        // Arka plan görevlerinde (Task.Run) ömrünün ana scope'a bağlı kalmaması için Transient yapıyoruz
+        services.AddTransient<IUseCaseAsync<HealthSnapshot>, AnalyzeSystemHealthUseCase>();
         services.AddScoped<IUseCaseAsync<PollSingleAppRequest, HealthSnapshot?>, PollSingleAppUseCase>();
         services.AddScoped<IUseCaseAsync<GetLatestStatusesRequest, IEnumerable<LatestStatusDto>>, GetLatestStatusesUseCase>();
 

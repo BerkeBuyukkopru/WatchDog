@@ -14,7 +14,7 @@ namespace Watchdog.Application.DTOs.Apps
         public int PollingIntervalSeconds { get; set; }
         public DateTime CreatedAt { get; set; }
 
-        // YENİ EKLENEN: Arayüzde (React/Swagger) mailleri göstermek için gereken alan
+        // Arayüzde (React/Swagger) mailleri göstermek için gereken alan
         public string NotificationEmails { get; set; } = string.Empty;
     }
 }

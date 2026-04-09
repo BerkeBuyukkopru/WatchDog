@@ -26,7 +26,7 @@ namespace Watchdog.Application.UseCases.SystemConfig
                 existingConfig = new SystemConfiguration { Id = 1 };
             }
 
-            // YENİ MİMARİ: AI ayarlarını kaydetme işi AiProviderRepository'ye devredildi.
+            // AI ayarlarını kaydetme işi AiProviderRepository'ye devredildi.
             existingConfig.CriticalCpuThreshold = request.CriticalCpuThreshold;
             existingConfig.CriticalRamThreshold = request.CriticalRamThreshold;
             existingConfig.CriticalLatencyThreshold = request.CriticalLatencyThreshold;

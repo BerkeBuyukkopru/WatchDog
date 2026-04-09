@@ -7,30 +7,16 @@ using Watchdog.Domain.Enums;
 namespace Watchdog.Application.UseCases.AI
 {
     // Bütün yapay zeka soruları (Promptlar) UseCase'lerden çıkarılıp buraya taşındı. Artık metinlerde bir değişiklik yapacaksak UseCase sınıflarını kirletmeden buradan yapacağız.
-    // Tüm promptlar "Birleşik (Unified)" formata geçirildi. Hangi AI motoru (OpenAI veya Ollama)  çalışırsa çalışsın, aynı veri setini alacak ve ÇOK KATI bir şekilde aynı 3 başlıkta cevap vermeye zorlanacak.
+    // Tüm promptlar "Birleşik (Unified)" formata geçirildi. Hangi AI motoru (OpenAI veya Ollama)  çalışırsa çalışsın, aynı veri setini alacak ve ÇOK KATI bir şekilde aynı 3 başlıkta cevap vermeye zorlanacak.
     public class PromptBuilder : IPromptBuilder
     {
-        // Ekip Arkadaşıma Not: Modellerin halüsinasyon görmesini engellemek için dil kurallarını dinamik atıyoruz.
-        // OpenAI Türkçe cevap verebilirken, Ollama (Phi-3, Llama3 vb.) zorlanmaması için İngilizceye sabitlendi.
-        private string GetLanguageRule(string activeProvider)
-        {
-            if (activeProvider.Equals("OpenAI", StringComparison.OrdinalIgnoreCase) ||
-                    activeProvider.Equals("Groq", StringComparison.OrdinalIgnoreCase))
-            {
-                return "You MUST output your final diagnostic report strictly in professional Turkish. Do not use English in the output.";
-            }
-            return "You MUST output your analysis in English. Keep it brief, technical, and do not invent data.";
-        }
-
-        // --- 1. KRİZ ANI (EVENT-DRIVEN) PROMPTU ---
-        public string BuildRootCausePrompt(string activeProvider, List<HealthSnapshot> recentSnapshots, string appName)
+        // --- 1. KRİZ ANI (EVENT-DRIVEN) PROMPTU ---
+        public string BuildRootCausePrompt(List<HealthSnapshot> recentSnapshots, string appName)
         {
             var summary = AggregateSnapshots(recentSnapshots);
             var jsonContext = JsonSerializer.Serialize(summary);
-            string languageRule = GetLanguageRule(activeProvider);
 
             return $@"SYSTEM ROLE: You are an Expert DevOps and SRE AI.
-[LANGUAGE RULE]: {languageRule}
 
 [CONTEXT - TELEMETRY DATA]
 App Name: '{appName}'
@@ -50,21 +36,17 @@ ACTIONABLE ADVICE:
 (Write 1-2 direct technical steps to recover the system)";
         }
 
-        // --- 2. SAATLİK RUTİN (CAPACITY) PROMPTU ---
-        public string BuildRoutinePrompt(
-            string activeProvider,
-            MonitoredApp app,
-            double cpuLimit, double ramLimit, double latencyLimit,
-            double avgCpu24h, double avgRam24h, double avgLatency24h,
-            double avgCpu2h, double avgRam2h, double avgLatency2h,
-            double maxCpu2h, double maxRam2h, double maxLatency2h,
-            string peakCpuTime, string dependencyContext,
-            int outageCount) // YENİ PARAMETRE
-        {
-            string languageRule = GetLanguageRule(activeProvider);
-
+        // --- 2. SAATLİK RUTİN (CAPACITY) PROMPTU ---
+        public string BuildRoutinePrompt(
+      MonitoredApp app,
+      double cpuLimit, double ramLimit, double latencyLimit,
+      double avgCpu24h, double avgRam24h, double avgLatency24h,
+      double avgCpu2h, double avgRam2h, double avgLatency2h,
+      double maxCpu2h, double maxRam2h, double maxLatency2h,
+      string peakCpuTime, string dependencyContext,
+      int outageCount) 
+        {
             return $@"SYSTEM ROLE: You are an automated SRE diagnostic engine.
-[LANGUAGE RULE]: {languageRule}
 
 [STRICT INTERPRETATION RULE]:
 - If CPU/RAM values are near 0% AND 'Outages Detected' is greater than 0, this means the app was CRASHED/DOWN, not efficient.
@@ -95,24 +77,19 @@ ACTIONABLE ADVICE:
 (Provide recovery or scaling steps)";
         }
 
-        // --- 3. HAFTALIK STRATEJİK (FORECAST) PROMPTU ---
-        public string BuildStrategicPrompt(
-            string activeProvider,
-            MonitoredApp app,
-            DailyEnrichedSnapshotDto baselineDay,
-            DailyEnrichedSnapshotDto targetDay,   
-            double weeklyAvgCpu, double weeklyAvgRam,
-            string baselineErrors, string targetErrors)
+        // --- 3. HAFTALIK STRATEJİK (FORECAST) PROMPTU ---
+        public string BuildStrategicPrompt(
+      MonitoredApp app,
+      DailyEnrichedSnapshotDto baselineDay,
+      DailyEnrichedSnapshotDto targetDay,
+      double weeklyAvgCpu, double weeklyAvgRam,
+      string baselineErrors, string targetErrors)
         {
-            string languageRule = GetLanguageRule(activeProvider);
-
             return $@"SYSTEM ROLE: You are an advanced AIOps and Capacity Planning AI. Your goal is to analyze historical trends, identify anomalies between matching days, and provide capacity forecasts.
 
 STRICT RULES:
 - Output ONLY the three requested sections below. No greetings, no markdown blocks around the text.
 - Keep it highly professional and technical.
-
-[LANGUAGE RULE]: {languageRule}
 
 [COMPARATIVE DATA (Day-Over-Day)]
 App: {app.Name}
@@ -136,8 +113,8 @@ STRATEGIC RECOMMENDATION:
 (Provide 1-2 architectural or scaling recommendations to handle future load here)";
         }
 
-        // Kriz anında logları hafifleten özel metot
-        private object AggregateSnapshots(List<HealthSnapshot> snapshots)
+        // Kriz anında logları hafifleten özel metot
+        private object AggregateSnapshots(List<HealthSnapshot> snapshots)
         {
             return new
             {

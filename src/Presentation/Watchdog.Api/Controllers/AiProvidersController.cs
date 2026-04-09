@@ -27,7 +27,7 @@ namespace Watchdog.Api.Controllers
         }
 
         // PUT: api/AiProviders/{id}
-        // YENİ: Detay güncelleme ucu
+        // Detay güncelleme ucu
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateAiProviderRequest dto, [FromServices] IUseCaseAsync<UpdateAiProviderRequest, bool> useCase)
         {
