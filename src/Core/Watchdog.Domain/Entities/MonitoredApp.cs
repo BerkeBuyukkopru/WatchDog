@@ -18,7 +18,9 @@ namespace Watchdog.Domain.Entities
 
         // ApiKey başlangıçta boş olabileceği için nullable (?) yapıyoruz
         public string? ApiKey { get; set; }
-
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        // Soft Delete (Yumuşak Silme) için bayrak. Varsayılan olarak aktiftir.
+        public bool IsActive { get; set; } = true;
     }
 }

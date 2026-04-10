@@ -1,6 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<ItemGroup>
+	  <Compile Remove="Persistence\Migrations\**" />
+	  <EmbeddedResource Remove="Persistence\Migrations\**" />
+	  <None Remove="Persistence\Migrations\**" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="MailKit" Version="4.15.1" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.5" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.5" />
@@ -21,10 +27,6 @@
 		<ProjectReference Include="..\..\Core\Watchdog.Domain\Watchdog.Domain.csproj" />
 		<ProjectReference Include="..\..\..\modules\HealthChecks.Abstractions\HealthChecks.Abstractions.csproj" />
 		<ProjectReference Include="..\..\..\modules\HealthChecks.System\HealthChecks.System.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Persistence\Migrations\" />
 	</ItemGroup>
 
 	<PropertyGroup>

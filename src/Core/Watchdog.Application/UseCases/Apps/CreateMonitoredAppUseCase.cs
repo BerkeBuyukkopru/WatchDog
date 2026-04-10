@@ -9,7 +9,6 @@ namespace Watchdog.Application.UseCases.Apps
     public class CreateMonitoredAppUseCase : IUseCaseAsync<CreateMonitoredAppRequest, CreateMonitoredAppResponse>
     {
         private readonly IMonitoredAppRepository _appRepository;
-        private static readonly Regex EmailRegex = new(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.Compiled);
 
         public CreateMonitoredAppUseCase(IMonitoredAppRepository appRepository)
         {
@@ -19,31 +18,14 @@ namespace Watchdog.Application.UseCases.Apps
         public async Task<CreateMonitoredAppResponse> ExecuteAsync(CreateMonitoredAppRequest request)
         {
             // URL formatı doğru mu? (Servisten buraya taşıdığımız kural)
-            if (!Uri.TryCreate(request.HealthUrl, UriKind.Absolute, out _))
-            {
-                return new CreateMonitoredAppResponse { IsSuccess = false, ErrorMessage = "Lütfen geçerli bir URL giriniz. (örn: https://...)" };
-            }
-
-            // 1. İş Kuralı: URL zaten var mı?
+            // İş Kuralı: Mailler doğru formatta mı? (Profesyonel Validasyon)
+            // İş Kuralı: URL zaten var mı?
             if (await _appRepository.IsUrlExistAsync(request.HealthUrl))
             {
-                return new CreateMonitoredAppResponse { IsSuccess = false, ErrorMessage = "Bu URL zaten kayıtlı." };
+                return new CreateMonitoredAppResponse { IsSuccess = false, ErrorMessage = "Bu adres zaten izlenmektedir." };
             }
 
-            // 2. İş Kuralı: Mailler doğru formatta mı? (Profesyonel Validasyon)
-            if (!string.IsNullOrWhiteSpace(request.NotificationEmails))
-            {
-                var emails = request.NotificationEmails.Split(',', ';');
-                foreach (var email in emails)
-                {
-                    if (!EmailRegex.IsMatch(email.Trim()))
-                    {
-                        return new CreateMonitoredAppResponse { IsSuccess = false, ErrorMessage = $"Geçersiz e-posta formatı: {email}" };
-                    }
-                }
-            }
-
-            // 3. Entity Oluşturma ve API Key Üretimi
+            // Entity Oluşturma ve API Key Üretimi
             var newApp = new MonitoredApp
             {
                 Name = request.Name,
@@ -51,10 +33,10 @@ namespace Watchdog.Application.UseCases.Apps
                 PollingIntervalSeconds = request.PollingIntervalSeconds,
                 NotificationEmails = request.NotificationEmails,
                 // Profesyonel, güvenli ve benzersiz bir API Key üretimi
-                ApiKey = Guid.NewGuid().ToString("N").ToUpper()
+                ApiKey = "wdg_live_" + Guid.NewGuid().ToString("N").ToLower()
             };
 
-            // 4. Veritabanına Kaydet
+            // Veritabanına Kaydet
             var success = await _appRepository.AddAsync(newApp);
 
             return new CreateMonitoredAppResponse
