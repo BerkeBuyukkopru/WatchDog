@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Watchdog.Application.Attributes;
 
 namespace Watchdog.Application.DTOs.Apps
 {
@@ -10,6 +11,8 @@ namespace Watchdog.Application.DTOs.Apps
         public Guid AppId { get; set; }
 
         // React'ten gelecek olan virgüllü mail listesi
+
+        [CommaSeparatedEmails(ErrorMessage = "Geçersiz e-posta formatı tespit edildi")]
         public string NotificationEmails { get; set; } = string.Empty;
     }
 }

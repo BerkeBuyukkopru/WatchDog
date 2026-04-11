@@ -4,7 +4,7 @@ using Watchdog.Application.DTOs.Monitoring;
 using Watchdog.Application.Interfaces.Common;
 using Watchdog.Infrastructure.Persistence;
 
-namespace Watchdog.Api.Controller
+namespace Watchdog.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -20,10 +20,14 @@ namespace Watchdog.Api.Controller
 
         // GET: api/status/history
         [HttpGet("history")]
-        public async Task<IActionResult> GetStatusHistory([FromQuery] int count = 50)
+        public async Task<IActionResult> GetStatusHistory([FromQuery] Guid? appId, [FromQuery] int count = 50)
         {
             // 1. Veritabanına git ve sadece son 'count' (varsayılan 50) logu getir.
-            var request = new GetLatestStatusesRequest { Count = count };
+            var request = new GetLatestStatusesRequest
+            {
+                Count = count,
+                AppId = appId
+            };
 
             // Veritabanıyla işimiz yok. Sadece Use Case'e "Bana veriyi getir" diyoruz.
             var result = await _getLatestStatusesUseCase.ExecuteAsync(request);
