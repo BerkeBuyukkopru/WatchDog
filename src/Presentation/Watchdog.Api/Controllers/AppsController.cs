@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http.HttpResults;
+using Watchdog.Application.Enums;
 using Microsoft.AspNetCore.Mvc;
 using Watchdog.Application.DTOs.Apps;
 using Watchdog.Application.Interfaces.Common;
@@ -23,17 +24,35 @@ namespace Watchdog.Api.Controller
 
         [HttpPost]
         public async Task<IActionResult> Create(
-                    [FromBody] CreateMonitoredAppRequest request,
-                    [FromServices] IUseCaseAsync<CreateMonitoredAppRequest, CreateMonitoredAppResponse> useCase)
+                     [FromBody] CreateMonitoredAppRequest request,
+                     [FromServices] IUseCaseAsync<CreateMonitoredAppRequest, CreateMonitoredAppResponse> useCase)
         {
             var result = await useCase.ExecuteAsync(request);
 
             if (!result.IsSuccess)
             {
+                // ARTIK METNE DEĞİL, ENUM KODUNA BAKIYORUZ
+                if (result.ErrorCode == AppErrorCode.UrlAlreadyExists)
+                {
+                    return Conflict(new
+                    {
+                        errorCode = "URL_ALREADY_EXISTS",
+                        message = result.ErrorMessage
+                    });
+                }
+
+                // Diğer tüm hatalar için (Örn: DatabaseError)
                 return BadRequest(new { message = result.ErrorMessage });
             }
 
-            return CreatedAtAction(nameof(GetAll), new { id = result.Id }, result);
+            var responsePayload = new
+            {
+                id = result.Id,
+                message = "Uygulama başarıyla eklendi.",
+                apiKey = result.ApiKey
+            };
+
+            return CreatedAtAction(nameof(GetAll), new { id = result.Id }, responsePayload);
         }
 
         [HttpDelete("{id:guid}")]

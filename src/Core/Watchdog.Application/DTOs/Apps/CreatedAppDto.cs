@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Watchdog.Application.Enums;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -10,5 +11,8 @@ namespace Watchdog.Application.DTOs.Apps
         public string HealthUrl { get; set; } = string.Empty;
         // Tarama sıklığını saniye cinsinden belirten özellik.
         public int PollingIntervalSeconds { get; set; }
+       
+        // YENİ EKLENEN ALAN
+        public AppErrorCode ErrorCode { get; set; }
     }
 }

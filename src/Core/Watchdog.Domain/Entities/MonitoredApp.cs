@@ -20,5 +20,7 @@ namespace Watchdog.Domain.Entities
         public string? ApiKey { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        public bool IsActive { get; set; } = true; // Uygulama oluşturulduğunda varsayılan olarak her zaman aktiftir.
     }
 }

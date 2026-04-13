@@ -2,7 +2,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Watchdog.Domain\Watchdog.Domain.csproj" />
-	  <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" />
+	  <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.5" />
+	  <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.5" />
   </ItemGroup>
 
   <PropertyGroup>
