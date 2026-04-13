@@ -1,11 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Watchdog.Application.DTOs.AI;
+using Watchdog.Application.Interfaces.Common;
 using Watchdog.Application.UseCases.AI;
 
 namespace Watchdog.Api.Controller
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize] // Sınıfın tamamını korumaya alır
     public class InsightsController : ControllerBase
     {
         private readonly GetAiInsightsUseCase _getInsightsUseCase;
@@ -19,9 +22,7 @@ namespace Watchdog.Api.Controller
             _generateInsightUseCase = generateInsightUseCase;
         }
 
-        /// <summary>
-        /// Belirli bir uygulama için veya tüm sistemdeki AI tavsiyelerini getirir.
-        /// </summary>
+        //Belirli bir uygulama için veya tüm sistemdeki AI tavsiyelerini getirir.
         [HttpGet]
         public async Task<ActionResult<IEnumerable<AiInsightDto>>> GetAll([FromQuery] Guid? appId)
         {
@@ -29,9 +30,7 @@ namespace Watchdog.Api.Controller
             return Ok(result);
         }
 
-        /// <summary>
-        /// TEST AMAÇLI: Belirli bir uygulama için AI analizini manuel olarak tetikler.
-        /// </summary>
+        //TEST AMAÇLI: Belirli bir uygulama için AI analizini manuel olarak tetikler.
         [HttpPost("analyze/{appId}")]
         public async Task<IActionResult> ManualAnalyze(Guid appId, [FromQuery] int hours = 1)
         {
@@ -47,6 +46,18 @@ namespace Watchdog.Api.Controller
                 return NotFound("Uygulama bulunamadı veya analiz edilecek veri yok.");
 
             return Ok(result);
+        }
+
+        // Kullanıcı UI üzerinden bir tavsiyeyi 'Çözüldü' olarak işaretler.
+        [HttpPatch("{id}/resolve")]
+        public async Task<IActionResult> Resolve(Guid id, [FromServices] IUseCaseAsync<Guid, bool> resolveUseCase)
+        {
+            var result = await resolveUseCase.ExecuteAsync(id);
+
+            if (!result)
+                return NotFound(new { message = "İlgili analiz raporu bulunamadı." });
+
+            return Ok(new { message = "Uyarı başarıyla çözüldü olarak işaretlendi." });
         }
     }
 }

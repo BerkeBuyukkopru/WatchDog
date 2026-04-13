@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using Watchdog.Application.DTOs.SystemConfig;
 using Watchdog.Application.Interfaces.Common;
@@ -7,6 +8,7 @@ namespace Watchdog.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")] //// Dashboard'da "api/SystemConfigurations" adresini açar.
+    [Authorize]
     public class SystemConfigurationsController : ControllerBase
     {
         // Constructor temizlendi, Controller artık hafif.
@@ -26,6 +28,7 @@ namespace Watchdog.Api.Controllers
         }
 
         [HttpPost] //Dashboard'dan gelen yeni ayarları kaydeder.
+        [Authorize(Roles = "Admin")] // Sistem ayarlarını sadece Admin değiştirebilir
         public async Task<IActionResult> Update(
             [FromBody] SystemConfigDto dto,
             [FromServices] IUseCaseAsync<SystemConfigDto, bool> useCase)

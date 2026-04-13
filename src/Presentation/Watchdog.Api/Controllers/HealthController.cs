@@ -1,11 +1,13 @@
 ﻿using HealthChecks.Abstractions;
 using HealthChecks.Abstractions.Enums;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Watchdog.Api.Controllers
 {
     [ApiController]
     [Route("[controller]")] // Dışarıdan "https://localhost:xxxx/health" yazılarak ulaşılacak
+    [Authorize]
     public class HealthController : ControllerBase
     {
         // Sistemdeki tüm IHealthCheck sensörlerini (CPU, RAM, Disk) bir liste olarak buraya alıyoruz

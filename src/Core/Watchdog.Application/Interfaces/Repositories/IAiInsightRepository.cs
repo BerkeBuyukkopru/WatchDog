@@ -11,7 +11,8 @@ namespace Watchdog.Application.Interfaces.Repositories
     {
         Task AddAsync(AiInsight insight);
         Task<IEnumerable<AiInsight>> GetByAppIdAsync(Guid? appId);
-
         Task<AiInsight?> GetLatestInsightAsync(Guid appId);
+        Task<AiInsight?> GetByIdAsync(Guid id);
+        Task UpdateAsync(AiInsight insight);
     }
 }

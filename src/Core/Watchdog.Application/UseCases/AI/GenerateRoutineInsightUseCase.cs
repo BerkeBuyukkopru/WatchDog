@@ -23,7 +23,7 @@ namespace Watchdog.Application.UseCases.AI
         private readonly IAiProviderRepository _aiProviderRepository; // AI Provider için 
         private readonly IPromptBuilder _promptBuilder;
 
-        // --- EKLENEN KISIM: Canlı yayın sözleşmesi ---
+        // Canlı yayın sözleşmesi 
         private readonly IStatusBroadcaster _statusBroadcaster;
 
         public GenerateRoutineInsightUseCase(
@@ -34,7 +34,7 @@ namespace Watchdog.Application.UseCases.AI
             ISystemConfigurationRepository systemConfigRepository,
             IAiProviderRepository aiProviderRepository,
             IPromptBuilder promptBuilder,
-            IStatusBroadcaster statusBroadcaster) // --- EKLENEN KISIM ---
+            IStatusBroadcaster statusBroadcaster)
         {
             _appRepository = appRepository;
             _snapshotRepository = snapshotRepository;
@@ -43,7 +43,7 @@ namespace Watchdog.Application.UseCases.AI
             _systemConfigRepository = systemConfigRepository;
             _aiProviderRepository = aiProviderRepository;
             _promptBuilder = promptBuilder;
-            _statusBroadcaster = statusBroadcaster; // --- EKLENEN KISIM ---
+            _statusBroadcaster = statusBroadcaster; 
         }
 
         public async Task<AiInsight?> ExecuteAsync(GenerateRoutineInsightRequest request)
@@ -119,7 +119,6 @@ namespace Watchdog.Application.UseCases.AI
 
                 await _insightRepository.AddAsync(stableInsight);
 
-                // --- EKLENEN KISIM ---
                 await _statusBroadcaster.BroadcastNewInsightAsync(stableInsight);
 
                 return stableInsight;
@@ -152,7 +151,6 @@ namespace Watchdog.Application.UseCases.AI
 
             await _insightRepository.AddAsync(insight);
 
-            // --- EKLENEN KISIM ---
             await _statusBroadcaster.BroadcastNewInsightAsync(insight);
 
             return insight;

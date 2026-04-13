@@ -131,13 +131,12 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                     AiProviderId = activeProviderEntity?.Id,
                     InsightType = InsightType.CrashWarning,
                     Message = aiResponse,
-                    IsResolved = false,
-                    CreatedAt = DateTime.UtcNow
+                    IsResolved = false
                 };
 
                 await insightRepository.AddAsync(newInsight);
 
-                // --- EKLENEN KISIM: React (SignalR) tüneline canlı fırlatma ---
+                // React (SignalR) tüneline canlı fırlatma
                 var statusBroadcaster = scope.ServiceProvider.GetRequiredService<IStatusBroadcaster>();
                 await statusBroadcaster.BroadcastNewInsightAsync(newInsight);
 

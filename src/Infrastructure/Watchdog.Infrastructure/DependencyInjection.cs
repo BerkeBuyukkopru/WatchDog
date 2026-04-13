@@ -5,9 +5,11 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Watchdog.Application.Interfaces.Common;
 using Watchdog.Application.Interfaces.ExternalClients;
 using Watchdog.Application.Interfaces.Repositories;
 using Watchdog.Infrastructure.AiServices;
+using Watchdog.Infrastructure.Auth;
 using Watchdog.Infrastructure.Notifications;
 using Watchdog.Infrastructure.Persistence;
 using Watchdog.Infrastructure.Persistence.Repositories;
@@ -20,6 +22,8 @@ namespace Watchdog.Infrastructure
         public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
         {
             // === 1. Veritabanı (DbContext) Kaydı ===
+            // Not: DbContext artık constructor'da ICurrentUserService bekliyor. 
+            // Bu servis Program.cs içinde kaydedildiği için burada otomatik çözülecektir.
             services.AddDbContext<WatchdogDbContext>(options =>
                 options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 
@@ -53,6 +57,13 @@ namespace Watchdog.Infrastructure
             // Fabrikamızı kaydediyoruz. UseCase IAiClientFactory istediğinde AiClientFactory verilecek.
             services.AddScoped<IAiClientFactory, AiClientFactory>();
             services.AddScoped<IAiProviderRepository, AiProviderRepository>();
+
+            // Auth Servisleri ve Repository
+            services.AddScoped<IAuthRepository, AuthRepository>();
+            services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
+            services.AddScoped<IPasswordHasher, PasswordHasher>();
+            services.AddScoped<DatabaseSeeder>();
+            services.AddScoped<IAuthRepository, AuthRepository>();
 
             return services;
         }

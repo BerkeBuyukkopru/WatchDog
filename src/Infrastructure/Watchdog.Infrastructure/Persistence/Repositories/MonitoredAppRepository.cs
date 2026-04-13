@@ -12,7 +12,6 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
     {
         private readonly WatchdogDbContext _context;
 
-        // Dependency Injection: Veritabanı bağlantı nesnesini (DbContext) içeri alıyoruz.
         public MonitoredAppRepository(WatchdogDbContext context)
         {
             _context = context;
@@ -20,19 +19,22 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
 
         public async Task<IEnumerable<MonitoredApp>> GetAllAsync()
         {
-            // SADECE AKTİF (Silinmemiş) uygulamaları getir
-            return await _context.MonitoredApps.Where(a => a.IsActive).ToListAsync();
+            return await _context.MonitoredApps
+                .Where(a => !a.IsDeleted)
+                .ToListAsync();
         }
 
         public async Task<MonitoredApp?> GetByIdAsync(Guid id)
         {
-            // Silinmiş bir uygulamayı getirmemesi için IsActive kontrolü
-            return await _context.MonitoredApps.FirstOrDefaultAsync(a => a.Id == id && a.IsActive);
+            // Silinmiş bir veri sistemde "yok" hükmündedir.
+            return await _context.MonitoredApps
+                .FirstOrDefaultAsync(a => a.Id == id && !a.IsDeleted);
         }
 
         public async Task<bool> AddAsync(MonitoredApp app)
         {
             await _context.MonitoredApps.AddAsync(app);
+            // DbContext içindeki SaveChangesAsync, parmak izini (CreatedBy) otomatik basacak.
             var result = await _context.SaveChangesAsync();
             return result > 0;
         }
@@ -40,11 +42,9 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
         public async Task<bool> DeleteAsync(Guid id)
         {
             var app = await _context.MonitoredApps.FindAsync(id);
-            if (app == null || !app.IsActive) return false;
+            if (app == null || app.IsDeleted) return false;
 
-            // HARD DELETE YERİNE SOFT DELETE YAPIYORUZ
-            app.IsActive = false;
-            _context.MonitoredApps.Update(app);
+            _context.MonitoredApps.Remove(app);
 
             var result = await _context.SaveChangesAsync();
             return result > 0;
@@ -53,14 +53,15 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
         public async Task<bool> UpdateAsync(MonitoredApp app)
         {
             _context.MonitoredApps.Update(app);
+            // DbContext, ModifiedBy ve ModifiedAt alanlarını otomatik dolduracak.
             return await _context.SaveChangesAsync() > 0;
         }
 
-        // URL zaten var mı diye bakar.
         public async Task<bool> IsUrlExistAsync(string healthUrl)
         {
-            // Sadece aktif uygulamalar arasında bu URL var mı diye bak
-            return await _context.MonitoredApps.AnyAsync(a => a.HealthUrl == healthUrl && a.IsActive);
+            // Yeni bir uygulama eklerken, sadece SİLİNMEMİŞ uygulamalar arasında bu URL var mı diye bakıyoruz.
+            return await _context.MonitoredApps
+                .AnyAsync(a => a.HealthUrl == healthUrl && !a.IsDeleted);
         }
     }
 }
