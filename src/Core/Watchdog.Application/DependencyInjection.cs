@@ -37,6 +37,7 @@ public static class DependencyInjection
         services.AddTransient<IUseCaseAsync<HealthSnapshot>, AnalyzeSystemHealthUseCase>();
         services.AddScoped<IUseCaseAsync<PollSingleAppRequest, HealthSnapshot?>, PollSingleAppUseCase>();
         services.AddScoped<IUseCaseAsync<GetLatestStatusesRequest, IEnumerable<LatestStatusDto>>, GetLatestStatusesUseCase>();
+        services.AddScoped<PollAllAppsUseCase>();
 
         // === Yapay Zeka Use Case'leri ===
         // Worker doğrudan sınıfı talep ettiği için doğrudan (concrete) sınıf olarak kaydediyoruz.

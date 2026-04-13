@@ -37,6 +37,9 @@ namespace Watchdog.Infrastructure
             services.AddScoped<INotificationSender, MailSender>();
             services.AddHttpClient<IHealthProbeClient, HealthProbeHttpClient>();
 
+            // Canlı yayın servisini tekilleştirilmiş (Singleton) olarak ekliyoruz
+            services.AddSingleton<IStatusBroadcaster, SignalRStatusBroadcaster>();
+
             // === 4. Sistem Sensörleri ===
             services.AddSystemHealthChecks(
                 serverCpuThreshold: 90.0,
