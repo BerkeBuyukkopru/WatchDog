@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Watchdog.Application.DTOs.Monitoring;
 using Watchdog.Application.Interfaces.Common;
 using Watchdog.Application.Interfaces.Repositories;
+using Watchdog.Domain.Entities;
 
 namespace Watchdog.Application.UseCases.HealthMonitoring
 {
@@ -18,8 +19,18 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
 
         public async Task<IEnumerable<LatestStatusDto>> ExecuteAsync(GetLatestStatusesRequest request)
         {
+            IEnumerable<HealthSnapshot> snapshots;
+
             // 1. Veriyi Repository'den (Veritabanından) al
-            var snapshots = await _snapshotRepository.GetLatestGlobalAsync(request.Count);
+            // Gelen istekte AppId varsa sadece o uygulamayı, yoksa tüm sistemi getir.
+            if (request.AppId.HasValue && request.AppId.Value != System.Guid.Empty)
+            {
+                snapshots = await _snapshotRepository.GetLatestSnapshotsAsync(request.AppId.Value, request.Count);
+            }
+            else
+            {
+                snapshots = await _snapshotRepository.GetLatestGlobalAsync(request.Count);
+            }
 
             // 2. Ham entity'leri, React için temiz DTO'lara dönüştür (Mapping)
             var dtoList = snapshots.Select(x => new LatestStatusDto

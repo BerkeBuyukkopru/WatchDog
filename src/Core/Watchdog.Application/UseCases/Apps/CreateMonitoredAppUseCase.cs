@@ -24,9 +24,10 @@ namespace Watchdog.Application.UseCases.Apps
 
         public async Task<CreateMonitoredAppResponse> ExecuteAsync(CreateMonitoredAppRequest request)
         {
+            // LOG: Süreci başlatıyoruz
             _logger.LogInformation("Yeni uygulama ekleme işlemi başlatıldı. Hedef URL: {HealthUrl}", request.HealthUrl);
 
-            // 1. KONTROL: URL sistemde aktif olarak var mı?
+            // 1. KONTROL: İş Kuralı - URL zaten sistemde aktif olarak var mı?
             if (await _appRepository.IsUrlExistAsync(request.HealthUrl))
             {
                 _logger.LogWarning("İşlem reddedildi. Bu URL sistemde zaten mevcut: {HealthUrl}", request.HealthUrl);
@@ -39,21 +40,22 @@ namespace Watchdog.Application.UseCases.Apps
                 };
             }
 
-            // 2. OLUŞTURMA: Yeni uygulamayı ayağa kaldır
+            // 2. OLUŞTURMA: Yeni Domain Entity'yi hazırlıyoruz
             var newApp = new MonitoredApp
             {
                 Name = request.Name,
                 HealthUrl = request.HealthUrl,
                 PollingIntervalSeconds = request.PollingIntervalSeconds,
                 NotificationEmails = request.NotificationEmails,
+
+                // Profesyonel, güvenli ve benzersiz bir API Key üretimi
                 ApiKey = "wdg_live_" + Guid.NewGuid().ToString("N").ToLower(),
 
-                // MANTIKSAL HATAYI ÇÖZEN SATIR: 
-                // Uygulama veritabanına eklenirken artık çöpe (false) atılmayacak, aktif (true) başlayacak.
+                // Yeni uygulama sisteme aktif olarak dahil olmalı
                 IsActive = true
             };
 
-            // 3. KAYIT: Veritabanına yaz
+            // 3. KAYIT: Repository üzerinden veritabanına yazıyoruz
             var success = await _appRepository.AddAsync(newApp);
 
             if (success)
@@ -70,7 +72,7 @@ namespace Watchdog.Application.UseCases.Apps
             }
             else
             {
-                _logger.LogError("Veritabanı kaydı sırasında bilinmeyen bir hata oluştu. URL: {HealthUrl}", request.HealthUrl);
+                _logger.LogError("Veritabanı kaydı sırasında teknik bir hata oluştu. URL: {HealthUrl}", request.HealthUrl);
 
                 return new CreateMonitoredAppResponse
                 {

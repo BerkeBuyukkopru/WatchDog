@@ -1,18 +1,18 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
-using Watchdog.Application.Enums;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Watchdog.Application.DTOs.Apps;
+using Watchdog.Application.Enums;
 using Watchdog.Application.Interfaces.Common;
 
-//Dashboard'dan (React) gelen emirleri karşılayan ve Application katmanına paslar.
-namespace Watchdog.Api.Controller
+namespace Watchdog.Api.Controllers
 {
-    [ApiController] //API kurallarını (validasyon vb.) otomatik işletir.
+    [ApiController]
     [Route("api/[controller]")]
     public class AppsController : ControllerBase
     {
-        // Artık constructor'da servis almıyoruz, her metot kendi Use Case'ini FromServices ile çağıracak.
-        // Bu sayede Controller inanılmaz hafifleyecek.
+        // Constructor boş kalabilir, Use Case'leri metod seviyesinde [FromServices] ile alıyoruz.
         public AppsController() { }
 
         [HttpGet]
@@ -24,8 +24,8 @@ namespace Watchdog.Api.Controller
 
         [HttpPost]
         public async Task<IActionResult> Create(
-                     [FromBody] CreateMonitoredAppRequest request,
-                     [FromServices] IUseCaseAsync<CreateMonitoredAppRequest, CreateMonitoredAppResponse> useCase)
+            [FromBody] CreateMonitoredAppRequest request,
+            [FromServices] IUseCaseAsync<CreateMonitoredAppRequest, CreateMonitoredAppResponse> useCase)
         {
             var result = await useCase.ExecuteAsync(request);
 
@@ -41,7 +41,7 @@ namespace Watchdog.Api.Controller
                     });
                 }
 
-                // Diğer tüm hatalar için (Örn: DatabaseError)
+                // Veritabanı veya diğer genel hatalar için BadRequest
                 return BadRequest(new { message = result.ErrorMessage });
             }
 
@@ -57,8 +57,8 @@ namespace Watchdog.Api.Controller
 
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> Delete(
-                    Guid id,
-                    [FromServices] IUseCaseAsync<DeleteAppRequest, bool> useCase)
+            Guid id,
+            [FromServices] IUseCaseAsync<DeleteAppRequest, bool> useCase)
         {
             var isDeleted = await useCase.ExecuteAsync(new DeleteAppRequest(id));
             if (!isDeleted)
@@ -70,18 +70,20 @@ namespace Watchdog.Api.Controller
 
         [HttpPatch("{id:guid}/emails")]
         public async Task<IActionResult> UpdateEmails(
-                            Guid id,
-                            [FromBody] UpdateAppEmailsRequest request,
-                            [FromServices] IUseCaseAsync<UpdateAppEmailsRequest, (bool IsSuccess, string ErrorMessage)> useCase)
+            Guid id,
+            [FromBody] UpdateAppEmailsRequest request,
+            [FromServices] IUseCaseAsync<UpdateAppEmailsRequest, (bool IsSuccess, string ErrorMessage)> useCase)
         {
             request.AppId = id;
             var result = await useCase.ExecuteAsync(request);
 
             if (!result.IsSuccess)
             {
-                // Eğer hata mesajı 'bulunamadı' kelimesi içeriyorsa 404 dön, yoksa Regex hatasıdır 400 dön.
-                if (result.ErrorMessage.Contains("bulunamadı"))
+                // Hata mesajı içeriğine göre 404 veya 400 dönüyoruz
+                if (result.ErrorMessage != null && result.ErrorMessage.Contains("bulunamadı"))
+                {
                     return NotFound(new { message = result.ErrorMessage });
+                }
 
                 return BadRequest(new { message = result.ErrorMessage });
             }

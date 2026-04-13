@@ -20,12 +20,14 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
 
         public async Task<IEnumerable<MonitoredApp>> GetAllAsync()
         {
-            return await _context.MonitoredApps.ToListAsync();
+            // SADECE AKTİF (Silinmemiş) uygulamaları getir
+            return await _context.MonitoredApps.Where(a => a.IsActive).ToListAsync();
         }
 
         public async Task<MonitoredApp?> GetByIdAsync(Guid id)
         {
-            return await _context.MonitoredApps.FindAsync(id);
+            // Silinmiş bir uygulamayı getirmemesi için IsActive kontrolü
+            return await _context.MonitoredApps.FirstOrDefaultAsync(a => a.Id == id && a.IsActive);
         }
 
         public async Task<bool> AddAsync(MonitoredApp app)
@@ -38,9 +40,12 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
         public async Task<bool> DeleteAsync(Guid id)
         {
             var app = await _context.MonitoredApps.FindAsync(id);
-            if (app == null) return false;
+            if (app == null || !app.IsActive) return false;
 
-            _context.MonitoredApps.Remove(app);
+            // HARD DELETE YERİNE SOFT DELETE YAPIYORUZ
+            app.IsActive = false;
+            _context.MonitoredApps.Update(app);
+
             var result = await _context.SaveChangesAsync();
             return result > 0;
         }
@@ -54,7 +59,8 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
         // URL zaten var mı diye bakar.
         public async Task<bool> IsUrlExistAsync(string healthUrl)
         {
-            return await _context.MonitoredApps.AnyAsync(a => a.HealthUrl == healthUrl);
+            // Sadece aktif uygulamalar arasında bu URL var mı diye bak
+            return await _context.MonitoredApps.AnyAsync(a => a.HealthUrl == healthUrl && a.IsActive);
         }
     }
 }

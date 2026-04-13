@@ -38,17 +38,7 @@ namespace Watchdog.Application.UseCases.Apps
                                                        .Select(e => e.Trim())
                                                        .ToList();
 
-                // Standart E-Posta Regex'i
-                var regex = new Regex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$");
-
-                foreach (var email in emails)
-                {
-                    if (!regex.IsMatch(email))
-                    {
-                        // İlk hatalı formatta işlemi durdur ve 400 Bad Request için mesajı yolla
-                        return (false, $"Geçersiz e-posta formatı tespit edildi: {email}");
-                    }
-                }
+                // NOT: Format kontrolü (Regex) artık DTO seviyesinde yapıldığı için burada sadece kayıt işlemi yapılıyor.
 
                 // Kullanıcının girdiği dağınık string'i (örn: "a@b.com  ,  c@d.com") tertemiz, standart bir formata sokup kaydediyoruz.
                 app.NotificationEmails = string.Join(", ", emails);
