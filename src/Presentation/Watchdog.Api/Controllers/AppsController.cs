@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -10,6 +11,7 @@ namespace Watchdog.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize] // Sınıfın tamamı için giriş yapmış olma şartı
     public class AppsController : ControllerBase
     {
         // Constructor boş kalabilir, Use Case'leri metod seviyesinde [FromServices] ile alıyoruz.
@@ -23,6 +25,7 @@ namespace Watchdog.Api.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")] // Sadece Admin yeni uygulama ekleyebilir
         public async Task<IActionResult> Create(
             [FromBody] CreateMonitoredAppRequest request,
             [FromServices] IUseCaseAsync<CreateMonitoredAppRequest, CreateMonitoredAppResponse> useCase)
@@ -56,6 +59,7 @@ namespace Watchdog.Api.Controllers
         }
 
         [HttpDelete("{id:guid}")]
+        [Authorize(Roles = "Admin")] // Sadece Admin silebilir
         public async Task<IActionResult> Delete(
             Guid id,
             [FromServices] IUseCaseAsync<DeleteAppRequest, bool> useCase)

@@ -21,7 +21,7 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
         private readonly IMonitoredAppRepository _appRepository;
         private readonly IServiceScopeFactory _scopeFactory;
 
-        // YENİ EKLENEN 1: Canlı yayın sözleşmesi
+        // Canlı yayın sözleşmesi
         private readonly IStatusBroadcaster _statusBroadcaster;
 
         public AnalyzeSystemHealthUseCase(
@@ -30,19 +30,19 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
             INotificationSender notificationSender,
             IMonitoredAppRepository appRepository,
             IServiceScopeFactory scopeFactory,
-            IStatusBroadcaster statusBroadcaster) // YENİ EKLENEN 2
+            IStatusBroadcaster statusBroadcaster)
         {
             _snapshotRepository = snapshotRepository;
             _incidentRepository = incidentRepository;
             _notificationSender = notificationSender;
             _appRepository = appRepository;
             _scopeFactory = scopeFactory;
-            _statusBroadcaster = statusBroadcaster; // YENİ EKLENEN 3
+            _statusBroadcaster = statusBroadcaster;
         }
 
         public async Task ExecuteAsync(HealthSnapshot latestSnapshot)
         {
-            // YENİ EKLENEN 4: Arayüze anında canlı veri gönderimi (Worker'dan buraya taşındı)
+            // Arayüze anında canlı veri gönderimi (Worker'dan buraya taşındı)
             await _statusBroadcaster.BroadcastNewStatusAsync(latestSnapshot);
 
             var app = await _appRepository.GetByIdAsync(latestSnapshot.AppId);
@@ -131,11 +131,15 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                     AiProviderId = activeProviderEntity?.Id,
                     InsightType = InsightType.CrashWarning,
                     Message = aiResponse,
-                    IsResolved = false,
-                    CreatedAt = DateTime.UtcNow
+                    IsResolved = false
                 };
 
                 await insightRepository.AddAsync(newInsight);
+
+                // React (SignalR) tüneline canlı fırlatma
+                var statusBroadcaster = scope.ServiceProvider.GetRequiredService<IStatusBroadcaster>();
+                await statusBroadcaster.BroadcastNewInsightAsync(newInsight);
+
                 Console.WriteLine($">>>> [RCA-SUCCESS] Analiz tamamlandı ve veritabanına kaydedildi!");
             }
             catch (Exception ex)

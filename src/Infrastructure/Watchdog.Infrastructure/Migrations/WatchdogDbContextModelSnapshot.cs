@@ -22,277 +22,448 @@ namespace Watchdog.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("Watchdog.Domain.Entities.AdminUser", b =>
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uniqueidentifier");
+
+                b.Property<DateTime>("CreatedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<string>("CreatedBy")
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<DateTime?>("DeletedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<string>("DeletedBy")
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<bool>("IsDeleted")
+                    .HasColumnType("bit");
+
+                b.Property<DateTime?>("ModifiedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<string>("ModifiedBy")
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<string>("PasswordHash")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<string>("Role")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<string>("Username")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(max)");
+
+                b.HasKey("Id");
+
+                b.ToTable("AdminUsers");
+            });
+
             modelBuilder.Entity("Watchdog.Domain.Entities.AiInsight", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("AiProviderId")
-                        .HasColumnType("uniqueidentifier");
+                b.Property<Guid?>("AiProviderId")
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("AppId")
-                        .HasColumnType("uniqueidentifier");
+                b.Property<Guid>("AppId")
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime>("CreatedAt")
+                    .HasColumnType("datetime2");
 
-                    b.Property<string>("Evidence")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                b.Property<string>("CreatedBy")
+                    .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("InsightType")
-                        .HasColumnType("int");
+                b.Property<DateTime?>("DeletedAt")
+                    .HasColumnType("datetime2");
 
-                    b.Property<bool>("IsResolved")
-                        .HasColumnType("bit");
+                b.Property<string>("DeletedBy")
+                    .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Message")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                b.Property<string>("Evidence")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("Id");
+                b.Property<int>("InsightType")
+                    .HasColumnType("int");
 
-                    b.HasIndex("AiProviderId");
+                b.Property<bool>("IsDeleted")
+                    .HasColumnType("bit");
 
-                    b.HasIndex("AppId");
+                b.Property<bool>("IsResolved")
+                    .HasColumnType("bit");
 
-                    b.ToTable("AiInsights");
-                });
+                b.Property<string>("Message")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<DateTime?>("ModifiedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<string>("ModifiedBy")
+                    .HasColumnType("nvarchar(max)");
+
+                b.HasKey("Id");
+
+                b.HasIndex("AiProviderId");
+
+                b.HasIndex("AppId");
+
+                b.ToTable("AiInsights");
+            });
 
             modelBuilder.Entity("Watchdog.Domain.Entities.AiProvider", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("ApiKey")
-                        .HasColumnType("nvarchar(max)");
+                b.Property<string>("ApiKey")
+                    .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("ApiUrl")
-                        .HasColumnType("nvarchar(max)");
+                b.Property<string>("ApiUrl")
+                    .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime>("CreatedAt")
+                    .HasColumnType("datetime2");
 
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
+                b.Property<string>("CreatedBy")
+                    .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("ModelName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                b.Property<DateTime?>("DeletedAt")
+                    .HasColumnType("datetime2");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                b.Property<string>("DeletedBy")
+                    .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("Id");
+                b.Property<bool>("IsActive")
+                    .HasColumnType("bit");
 
-                    b.ToTable("AiProviders");
+                b.Property<bool>("IsDeleted")
+                    .HasColumnType("bit");
 
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("11111111-1111-1111-1111-111111111111"),
-                            ApiUrl = "http://localhost:11434",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            ModelName = "phi3:medium",
-                            Name = "Ollama"
-                        },
-                        new
-                        {
-                            Id = new Guid("22222222-2222-2222-2222-222222222222"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = false,
-                            ModelName = "gpt-4o-mini",
-                            Name = "OpenAI"
-                        },
-                        new
-                        {
-                            Id = new Guid("33333333-3333-3333-3333-333333333333"),
-                            ApiUrl = "https://api.groq.com/openai/v1",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = false,
-                            ModelName = "llama-3.3-70b-versatile",
-                            Name = "Groq"
-                        });
-                });
+                b.Property<string>("ModelName")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<DateTime?>("ModifiedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<string>("ModifiedBy")
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<string>("Name")
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .HasColumnType("nvarchar(100)");
+
+                b.HasKey("Id");
+
+                b.ToTable("AiProviders");
+
+                b.HasData(
+                    new
+                    {
+                        Id = new Guid("11111111-1111-1111-1111-111111111111"),
+                        ApiUrl = "http://localhost:11434",
+                        CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                        CreatedBy = "System",
+                        IsActive = true,
+                        IsDeleted = false,
+                        ModelName = "phi3:medium",
+                        Name = "Ollama"
+                    },
+                    new
+                    {
+                        Id = new Guid("22222222-2222-2222-2222-222222222222"),
+                        CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                        CreatedBy = "System",
+                        IsActive = false,
+                        IsDeleted = false,
+                        ModelName = "gpt-4o-mini",
+                        Name = "OpenAI"
+                    },
+                    new
+                    {
+                        Id = new Guid("33333333-3333-3333-3333-333333333333"),
+                        ApiUrl = "https://api.groq.com/openai/v1",
+                        CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                        CreatedBy = "System",
+                        IsActive = false,
+                        IsDeleted = false,
+                        ModelName = "llama-3.3-70b-versatile",
+                        Name = "Groq"
+                    });
+            });
 
             modelBuilder.Entity("Watchdog.Domain.Entities.HealthSnapshot", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("AppId")
-                        .HasColumnType("uniqueidentifier");
+                b.Property<Guid>("AppId")
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<double>("CpuUsage")
-                        .HasColumnType("float");
+                b.Property<double>("CpuUsage")
+                    .HasColumnType("float");
 
-                    b.Property<string>("DependencyDetails")
-                        .HasColumnType("nvarchar(max)");
+                b.Property<DateTime>("CreatedAt")
+                    .HasColumnType("datetime2");
 
-                    b.Property<double>("FreeDiskGb")
-                        .HasColumnType("float");
+                b.Property<string>("CreatedBy")
+                    .HasColumnType("nvarchar(max)");
 
-                    b.Property<double>("RamUsage")
-                        .HasColumnType("float");
+                b.Property<DateTime?>("DeletedAt")
+                    .HasColumnType("datetime2");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
+                b.Property<string>("DeletedBy")
+                    .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime>("Timestamp")
-                        .HasColumnType("datetime2");
+                b.Property<string>("DependencyDetails")
+                    .HasColumnType("nvarchar(max)");
 
-                    b.Property<long>("TotalDuration")
-                        .HasColumnType("bigint");
+                b.Property<double>("FreeDiskGb")
+                    .HasColumnType("float");
 
-                    b.HasKey("Id");
+                b.Property<bool>("IsDeleted")
+                    .HasColumnType("bit");
 
-                    b.HasIndex("AppId");
+                b.Property<DateTime?>("ModifiedAt")
+                    .HasColumnType("datetime2");
 
-                    b.ToTable("HealthSnapshots");
-                });
+                b.Property<string>("ModifiedBy")
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<double>("RamUsage")
+                    .HasColumnType("float");
+
+                b.Property<int>("Status")
+                    .HasColumnType("int");
+
+                b.Property<DateTime>("Timestamp")
+                    .HasColumnType("datetime2");
+
+                b.Property<long>("TotalDuration")
+                    .HasColumnType("bigint");
+
+                b.HasKey("Id");
+
+                b.HasIndex("AppId");
+
+                b.ToTable("HealthSnapshots");
+            });
 
             modelBuilder.Entity("Watchdog.Domain.Entities.Incident", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("AppId")
-                        .HasColumnType("uniqueidentifier");
+                b.Property<Guid>("AppId")
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("ErrorMessage")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                b.Property<DateTime>("CreatedAt")
+                    .HasColumnType("datetime2");
 
-                    b.Property<DateTime?>("ResolvedAt")
-                        .HasColumnType("datetime2");
+                b.Property<string>("CreatedBy")
+                    .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime>("StartedAt")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime?>("DeletedAt")
+                    .HasColumnType("datetime2");
 
-                    b.HasKey("Id");
+                b.Property<string>("DeletedBy")
+                    .HasColumnType("nvarchar(max)");
 
-                    b.HasIndex("AppId");
+                b.Property<string>("ErrorMessage")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(max)");
 
-                    b.ToTable("Incidents");
-                });
+                b.Property<bool>("IsDeleted")
+                    .HasColumnType("bit");
+
+                b.Property<DateTime?>("ModifiedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<string>("ModifiedBy")
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<DateTime?>("ResolvedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<DateTime>("StartedAt")
+                    .HasColumnType("datetime2");
+
+                b.HasKey("Id");
+
+                b.HasIndex("AppId");
+
+                b.ToTable("Incidents");
+            });
 
             modelBuilder.Entity("Watchdog.Domain.Entities.MonitoredApp", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("ApiKey")
-                        .HasColumnType("nvarchar(max)");
+                b.Property<string>("ApiKey")
+                    .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime>("CreatedAt")
+                    .HasColumnType("datetime2");
 
-                    b.Property<string>("HealthUrl")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                b.Property<string>("CreatedBy")
+                    .HasColumnType("nvarchar(max)");
 
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
+                b.Property<DateTime?>("DeletedAt")
+                    .HasColumnType("datetime2");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                b.Property<string>("DeletedBy")
+                    .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("NotificationEmails")
-                        .HasColumnType("nvarchar(max)");
+                b.Property<string>("HealthUrl")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("PollingIntervalSeconds")
-                        .HasColumnType("int");
+                b.Property<bool>("IsActive")
+                    .HasColumnType("bit");
 
-                    b.HasKey("Id");
+                b.Property<bool>("IsDeleted")
+                    .HasColumnType("bit");
 
-                    b.ToTable("MonitoredApps");
-                });
+                b.Property<DateTime?>("ModifiedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<string>("ModifiedBy")
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<string>("Name")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<string>("NotificationEmails")
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<int>("PollingIntervalSeconds")
+                    .HasColumnType("int");
+
+                b.HasKey("Id");
+
+                b.ToTable("MonitoredApps");
+            });
 
             modelBuilder.Entity("Watchdog.Domain.Entities.SystemConfiguration", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+            {
+                b.Property<int>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<double>("CriticalCpuThreshold")
-                        .HasColumnType("float");
+                b.Property<DateTime>("CreatedAt")
+                    .HasColumnType("datetime2");
 
-                    b.Property<double>("CriticalLatencyThreshold")
-                        .HasColumnType("float");
+                b.Property<string>("CreatedBy")
+                    .HasColumnType("nvarchar(max)");
 
-                    b.Property<double>("CriticalRamThreshold")
-                        .HasColumnType("float");
+                b.Property<double>("CriticalCpuThreshold")
+                    .HasColumnType("float");
 
-                    b.Property<DateTime?>("LastArchivedDate")
-                        .HasColumnType("datetime2");
+                b.Property<double>("CriticalLatencyThreshold")
+                    .HasColumnType("float");
 
-                    b.Property<DateTime>("LastUpdated")
-                        .HasColumnType("datetime2");
+                b.Property<double>("CriticalRamThreshold")
+                    .HasColumnType("float");
 
-                    b.HasKey("Id");
+                b.Property<DateTime?>("DeletedAt")
+                    .HasColumnType("datetime2");
 
-                    b.ToTable("SystemConfigurations");
+                b.Property<string>("DeletedBy")
+                    .HasColumnType("nvarchar(max)");
 
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            CriticalCpuThreshold = 90.0,
-                            CriticalLatencyThreshold = 1000.0,
-                            CriticalRamThreshold = 90.0,
-                            LastUpdated = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
-                        });
-                });
+                b.Property<bool>("IsDeleted")
+                    .HasColumnType("bit");
+
+                // YENİ EKLENEN KOLON
+                b.Property<DateTime?>("LastArchivedDate")
+                    .HasColumnType("datetime2");
+
+                b.Property<DateTime>("LastUpdated")
+                    .HasColumnType("datetime2");
+
+                b.Property<DateTime?>("ModifiedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<string>("ModifiedBy")
+                    .HasColumnType("nvarchar(max)");
+
+                b.HasKey("Id");
+
+                b.ToTable("SystemConfigurations");
+
+                b.HasData(
+                    new
+                    {
+                        Id = 1,
+                        CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                        CreatedBy = "System",
+                        CriticalCpuThreshold = 90.0,
+                        CriticalLatencyThreshold = 1000.0,
+                        CriticalRamThreshold = 90.0,
+                        IsDeleted = false,
+                        LastUpdated = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                    });
+            });
 
             modelBuilder.Entity("Watchdog.Domain.Entities.AiInsight", b =>
-                {
-                    b.HasOne("Watchdog.Domain.Entities.AiProvider", "AiProvider")
-                        .WithMany()
-                        .HasForeignKey("AiProviderId");
+            {
+                b.HasOne("Watchdog.Domain.Entities.AiProvider", "AiProvider")
+                    .WithMany()
+                    .HasForeignKey("AiProviderId");
 
-                    b.HasOne("Watchdog.Domain.Entities.MonitoredApp", "App")
-                        .WithMany()
-                        .HasForeignKey("AppId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                b.HasOne("Watchdog.Domain.Entities.MonitoredApp", "App")
+                    .WithMany()
+                    .HasForeignKey("AppId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
 
-                    b.Navigation("AiProvider");
+                b.Navigation("AiProvider");
 
-                    b.Navigation("App");
-                });
+                b.Navigation("App");
+            });
 
             modelBuilder.Entity("Watchdog.Domain.Entities.HealthSnapshot", b =>
-                {
-                    b.HasOne("Watchdog.Domain.Entities.MonitoredApp", "App")
-                        .WithMany()
-                        .HasForeignKey("AppId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+            {
+                b.HasOne("Watchdog.Domain.Entities.MonitoredApp", "App")
+                    .WithMany()
+                    .HasForeignKey("AppId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
 
-                    b.Navigation("App");
-                });
+                b.Navigation("App");
+            });
 
             modelBuilder.Entity("Watchdog.Domain.Entities.Incident", b =>
-                {
-                    b.HasOne("Watchdog.Domain.Entities.MonitoredApp", "App")
-                        .WithMany()
-                        .HasForeignKey("AppId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+            {
+                b.HasOne("Watchdog.Domain.Entities.MonitoredApp", "App")
+                    .WithMany()
+                    .HasForeignKey("AppId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
 
-                    b.Navigation("App");
-                });
+                b.Navigation("App");
+            });
 #pragma warning restore 612, 618
         }
     }

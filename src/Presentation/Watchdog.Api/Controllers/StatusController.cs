@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Watchdog.Application.DTOs.Monitoring;
 using Watchdog.Application.Interfaces.Common;
@@ -8,6 +9,7 @@ namespace Watchdog.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class StatusController : ControllerBase
     {
         private readonly IUseCaseAsync<GetLatestStatusesRequest, IEnumerable<LatestStatusDto>> _getLatestStatusesUseCase;

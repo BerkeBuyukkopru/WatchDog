@@ -2,11 +2,13 @@
 using System.Collections.Generic;
 using Watchdog.Application.DTOs.AI;
 using Watchdog.Application.DTOs.Apps;
+using Watchdog.Application.DTOs.Auth;
 using Watchdog.Application.DTOs.Monitoring;
 using Watchdog.Application.DTOs.SystemConfig;
 using Watchdog.Application.Interfaces.Common;
 using Watchdog.Application.UseCases.AI;
 using Watchdog.Application.UseCases.Apps;
+using Watchdog.Application.UseCases.Auth;
 using Watchdog.Application.UseCases.HealthMonitoring;
 using Watchdog.Application.UseCases.SystemConfig;
 using Watchdog.Domain.Entities;
@@ -46,8 +48,16 @@ public static class DependencyInjection
         services.AddScoped<GenerateStrategicInsightUseCase>();
         services.AddScoped<IPromptBuilder, PromptBuilder>();
 
-        // --- ARŞİVLEME USE-CASE KAYDI ---
+        // Okundu/Çözüldü İşaretleme Senaryosu 
+        services.AddScoped<IUseCaseAsync<Guid, bool>, ResolveInsightUseCase>();
+
         services.AddScoped<ArchiveSnapshotsUseCase>();
+
+        // Auth Use Case
+        services.AddScoped<IUseCaseAsync<LoginRequest, LoginResponse>, LoginUseCase>();
+        services.AddScoped<IUseCaseAsync<RegisterRequest, RegisterResponse>, RegisterUseCase>();
+        services.AddScoped<IUseCaseAsync<Guid, bool>, DeleteAdminUseCase>();
+        services.AddScoped<IUseCaseAsync<UpdateAdminRequest, bool>, UpdateAdminUseCase>();
 
         return services;
     }

@@ -51,6 +51,18 @@ namespace Watchdog.Infrastructure.Notifications
             }
         }
 
+        // Yapay zeka verisini API'ye fırlatıyoruz
+        public async Task BroadcastNewInsightAsync(AiInsight insight, CancellationToken cancellationToken = default)
+        {
+            await EnsureConnectedAsync(cancellationToken);
+
+            if (_hubConnection.State == HubConnectionState.Connected)
+            {
+                // API'deki "BroadcastNewInsight" isimli Hub metodunu tetikler
+                await _hubConnection.InvokeAsync("BroadcastNewInsight", insight, cancellationToken);
+            }
+        }
+
         // Uygulama kapanırken bağlantıyı temizle
         public async ValueTask DisposeAsync()
         {

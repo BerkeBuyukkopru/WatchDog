@@ -11,19 +11,19 @@ namespace Watchdog.Infrastructure.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<bool>(
-                name: "IsActive",
-                table: "MonitoredApps",
-                type: "bit",
-                nullable: false,
-                defaultValue: false);
+            name: "IsActive",
+            table: "MonitoredApps",
+            type: "bit",
+            nullable: false,
+            defaultValue: false);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "IsActive",
-                table: "MonitoredApps");
+            name: "IsActive",
+            table: "MonitoredApps");
         }
     }
 }

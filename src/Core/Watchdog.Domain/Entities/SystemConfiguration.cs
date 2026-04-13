@@ -1,12 +1,13 @@
 ﻿using System;
+using Watchdog.Domain.Common;
 
 namespace Watchdog.Domain.Entities
 {
     // Bu sınıf panel kısmına yönetici olarak girdiğinde cpu eşiği, yapay zeka çeşitleri, ram eşik değeri gibi şeyleri ayarlamak içindir.
-    public class SystemConfiguration
+    public class SystemConfiguration : BaseEntity<int>
     {
-        // Tek satırlık Singleton yapısı korunuyor.
-        public int Id { get; set; } = 1;
+        // Tek satırlık Singleton yapısı korunuyor (BaseEntity'den gelen Id'yi 1'e sabitliyoruz).
+        public SystemConfiguration() => Id = 1;
 
         public double CriticalCpuThreshold { get; set; } = 90.0;
 

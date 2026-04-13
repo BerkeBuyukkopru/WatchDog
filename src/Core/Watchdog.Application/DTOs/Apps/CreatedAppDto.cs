@@ -12,7 +12,6 @@ namespace Watchdog.Application.DTOs.Apps
         // Tarama sıklığını saniye cinsinden belirten özellik.
         public int PollingIntervalSeconds { get; set; }
        
-        // YENİ EKLENEN ALAN
         public AppErrorCode ErrorCode { get; set; }
     }
 }
