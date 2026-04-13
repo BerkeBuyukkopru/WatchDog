@@ -10,9 +10,16 @@ namespace Watchdog.Api.Hubs
         public async Task BroadcastNewStatus(HealthSnapshot newSnapshot)
         {
             // 2. Clients.All: "Şu an bu tünele bağlı olan tüm tarayıcılara (React) seslen" demektir.
-            // 3. "ReceiveStatusUpdate": React'in JavaScript tarafında dinlediği radyo frekansının adıdır[cite: 466, 467].
+            // 3. "ReceiveStatusUpdate": React'in JavaScript tarafında dinlediği radyo frekansının adıdır.
             // 4. newSnapshot: O frekanstan göndereceğimiz taze veri paketi.
             await Clients.All.SendAsync("ReceiveStatusUpdate", newSnapshot);
+        }
+
+        // Yapay zeka analiz raporlarını (Insights) React'e fırlatır
+        public async Task BroadcastNewInsight(AiInsight newInsight)
+        {
+            // Frontend tarafı bu veriyi "ReceiveNewInsight" olayını (event) dinleyerek yakalayacak
+            await Clients.All.SendAsync("ReceiveNewInsight", newInsight);
         }
     }
 }

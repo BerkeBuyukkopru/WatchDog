@@ -20,13 +20,17 @@ namespace Watchdog.Application.UseCases.AI
         private readonly IPromptBuilder _promptBuilder;
         private readonly IAiProviderRepository _aiProviderRepository;
 
+        // Canlı yayın sözleşmesi
+        private readonly IStatusBroadcaster _statusBroadcaster;
+
         public GenerateStrategicInsightUseCase(
             IMonitoredAppRepository appRepository,
             ISnapshotRepository snapshotRepository,
             IAiInsightRepository insightRepository,
             IAiClientFactory aiClientFactory,
             IPromptBuilder promptBuilder,
-            IAiProviderRepository aiProviderRepository)
+            IAiProviderRepository aiProviderRepository,
+            IStatusBroadcaster statusBroadcaster) 
         {
             _appRepository = appRepository;
             _snapshotRepository = snapshotRepository;
@@ -34,6 +38,7 @@ namespace Watchdog.Application.UseCases.AI
             _aiClientFactory = aiClientFactory;
             _promptBuilder = promptBuilder;
             _aiProviderRepository = aiProviderRepository;
+            _statusBroadcaster = statusBroadcaster; 
         }
 
         public async Task<AiInsight?> ExecuteAsync(GenerateStrategicInsightRequest request)
@@ -84,6 +89,8 @@ namespace Watchdog.Application.UseCases.AI
             };
 
             await _insightRepository.AddAsync(insight);
+            await _statusBroadcaster.BroadcastNewInsightAsync(insight);
+
             return insight;
         }
     }
