@@ -126,14 +126,16 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
             return enrichedList;
         }
 
-        // --- MAIN: UC-9 ARŞİVLEME VE TEMİZLİK METOTLARI (Conflict Hatasını Çözen Kısım) ---
+        // --- MAIN: UC-9 ARŞİVLEME VE TEMİZLİK METOTLARI ---
 
-        // Gece 03:00'te çalışan arşivleme motoru için, belirlenen günden (cutoffDate) daha eski olan "Soğuk" verileri getirir.
-        public async Task<IEnumerable<HealthSnapshot>> GetSnapshotsOlderThanAsync(DateTime cutoffDate)
+        // (YENİ) Aylık Arşivleme Motoru: Belirli tarih aralığındaki verileri RAM'i şişirmeden belirlenen paket limiti (batchSize) kadar getirir.
+        public async Task<List<HealthSnapshot>> GetSnapshotsByDateRangeAsync(DateTime startDate, DateTime endDate, int batchSize)
         {
             return await _context.HealthSnapshots
-                .AsNoTracking() // Bellek dostu: Binlerce satırı RAM'de takip etmez.
-                .Where(s => s.Timestamp < cutoffDate)
+                .AsNoTracking() // RAM dostu
+                .Where(s => s.Timestamp >= startDate && s.Timestamp <= endDate)
+                .OrderBy(s => s.Timestamp) // Arşivin zaman tüneline göre sırayla işlenmesi için önemli
+                .Take(batchSize) // RAM'i patlatmamak için 10.000 limitini uygular
                 .ToListAsync();
         }
 

@@ -5,67 +5,115 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Watchdog.Application.Interfaces.Repositories;
+using Watchdog.Domain.Entities; // SystemConfiguration için eklendi
 
 namespace Watchdog.Application.UseCases.HealthMonitoring
 {
     public class ArchiveSnapshotsUseCase
     {
         private readonly ISnapshotRepository _snapshotRepository;
+        private readonly ISystemConfigurationRepository _configRepository;
 
-        // Arşivlerin kaydedileceği sunucu klasörü
         private readonly string _archiveDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WatchDogArchives");
 
-        public ArchiveSnapshotsUseCase(ISnapshotRepository snapshotRepository)
+        public ArchiveSnapshotsUseCase(
+            ISnapshotRepository snapshotRepository,
+            ISystemConfigurationRepository configRepository)
         {
             _snapshotRepository = snapshotRepository;
+            _configRepository = configRepository;
 
-            // Klasör yoksa oluştur
             if (!Directory.Exists(_archiveDirectory))
             {
                 Directory.CreateDirectory(_archiveDirectory);
             }
         }
 
-        public async Task ExecuteAsync(int olderThanDays = 30)
+        public async Task ExecuteAsync()
         {
-            Console.WriteLine(">>>> ARŞİVLEYİCİ ÇALIŞIYOR - VERİ ARANIYOR...");
+            // 1. Senin repository'ni kullanarak sistem ayarlarını (Singleton) komple getiriyoruz
+            var config = await _configRepository.GetAsync();
 
-            var cutoffDate = DateTime.UtcNow.AddDays(-olderThanDays);
+            // Veritabanı boşsa (proje ilk kez ayağa kalktıysa) geçici bir config nesnesi yarat
+            if (config == null)
+            {
+                config = new SystemConfiguration();
+            }
 
-            // 1. Veritabanından belirlenen günden eski verileri (Soğuk Veri) çek
-            var oldSnapshots = await _snapshotRepository.GetSnapshotsOlderThanAsync(cutoffDate);
+            // 2. Hafızadan "En son bitirilen tarihi" al. Daha önce hiç yapılmadıysa varsayılan başlangıç tarihi (Örn: 1 Ocak 2026) ata.
+            DateTime lastFinishedDate = config.LastArchivedDate ?? new DateTime(2026, 01, 01);
 
-            if (oldSnapshots == null || !oldSnapshots.Any())
-                return; // Arşivlenecek eski veri yoksa işlemi bitir
+            DateTime today = DateTime.UtcNow;
+            DateTime targetEndDate = new DateTime(today.Year, today.Month, 1).AddTicks(-1);
 
-            // Dosya adı: Örn: Archive_20260407_1530.json.gz
-            var fileName = $"Archive_{DateTime.UtcNow:yyyyMMdd_HHmm}.json.gz";
+            // 3. Geçmiş ayları süpürme döngüsü (Catch-up)
+            while (lastFinishedDate < targetEndDate)
+            {
+                var processingMonthStart = new DateTime(lastFinishedDate.Year, lastFinishedDate.Month, 1).AddMonths(1);
+                var processingMonthEnd = processingMonthStart.AddMonths(1).AddTicks(-1);
+
+                if (processingMonthStart.Month == today.Month && processingMonthStart.Year == today.Year) break;
+
+                Console.WriteLine($">>>> ARŞİVLEYİCİ ÇALIŞIYOR - {processingMonthStart:MMMM yyyy} VERİLERİ İŞLENİYOR...");
+
+                await ProcessMonthlyArchive(processingMonthStart, processingMonthEnd);
+
+                // 4. Veritabanındaki hafızayı SADECE bu sınıfı kullanarak güncelle
+                lastFinishedDate = processingMonthStart;
+                config.LastArchivedDate = lastFinishedDate;
+                config.LastUpdated = DateTime.UtcNow;
+
+                // Senin projendeki Singleton update metodunu çağırıyoruz
+                await _configRepository.UpdateAsync(config);
+
+                Console.WriteLine($">>>> [DATABASE-STATE] Hafıza güncellendi: {lastFinishedDate:MMMM yyyy} başarıyla mühürlendi.");
+            }
+        }
+
+        // --- RAM Dostu Batch Zipleme Metodu (Aynı kalıyor) ---
+        private async Task ProcessMonthlyArchive(DateTime start, DateTime end)
+        {
+            var fileName = $"Archive_{start:yyyy_MM}.json.gz";
             var filePath = Path.Combine(_archiveDirectory, fileName);
+            int batchSize = 10000;
+            int totalArchived = 0;
 
             try
             {
-                // 2. Verileri JSON formatına çevir ve GZip ile sıkıştırarak diske yaz
-                var jsonString = JsonSerializer.Serialize(oldSnapshots);
-
                 using (var fileStream = new FileStream(filePath, FileMode.Create))
                 using (var gzipStream = new GZipStream(fileStream, CompressionLevel.Optimal))
                 using (var streamWriter = new StreamWriter(gzipStream))
                 {
-                    await streamWriter.WriteAsync(jsonString);
+                    while (true)
+                    {
+                        var batch = await _snapshotRepository.GetSnapshotsByDateRangeAsync(start, end, batchSize);
+                        if (batch == null || !batch.Any()) break;
+
+                        foreach (var snapshot in batch)
+                        {
+                            var jsonString = JsonSerializer.Serialize(snapshot);
+                            await streamWriter.WriteLineAsync(jsonString);
+                        }
+
+                        await _snapshotRepository.RemoveRangeAsync(batch);
+                        totalArchived += batch.Count;
+                        Console.WriteLine($">>>> Veritabanı rahatlatılıyor... Toplam {totalArchived} kayıt arşivlendi ve silindi.");
+                    }
                 }
 
-                // 3. Dosyanın diskte %100 oluştuğundan emin ol
-                if (File.Exists(filePath))
+                if (totalArchived == 0)
                 {
-                    // 4. Sıkıştırma başarılıysa, verileri veritabanından tamamen sil (Hard Delete)
-                    await _snapshotRepository.RemoveRangeAsync(oldSnapshots);
+                    if (File.Exists(filePath)) File.Delete(filePath);
+                    Console.WriteLine($">>>> {start:MMMM yyyy} için arşivlenecek log bulunamadı. Boş dosya silindi.");
+                }
+                else
+                {
+                    Console.WriteLine($">>>> [BAŞARILI] {start:MMMM yyyy} ayına ait {totalArchived} kayıt tek dosyaya sıkıştırıldı!");
                 }
             }
-            catch (IOException)
+            catch (IOException ex)
             {
-                // UC-9 Kuralı: Disk doluysa veya yetki yoksa (IOException) 
-                // hata yutulur ve veritabanından SİLME işlemi (RemoveRange) çalıştırılmaz. 
-                // Orijinal verilere dokunulmaz.
+                Console.WriteLine($">>>> [KRİTİK HATA] Diske yazılırken bir sorun oluştu: {ex.Message}");
             }
         }
     }

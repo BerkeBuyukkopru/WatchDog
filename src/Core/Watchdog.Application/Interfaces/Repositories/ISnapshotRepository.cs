@@ -22,12 +22,14 @@ namespace Watchdog.Application.Interfaces.Repositories
         // Rutin Yapay Zeka analizi için, belirli bir tarihten (örneğin son 1 saat) bu yana olan kayıtları getirir.
         Task<List<HealthSnapshot>> GetSnapshotsSinceAsync(Guid appId, DateTime since);
 
-
         // AIOps stratejik tahmini için zenginleştirilmiş günlük özet listesi döner.
         Task<List<DailyEnrichedSnapshotDto>> GetDailyEnrichedSnapshotsAsync(Guid appId, int days);
+   
 
-        // Gece 03:00'te çalışan arşivleme motoru için, belirlenen günden (cutoffDate) daha eski olan "Soğuk" verileri getirir.
-        Task<IEnumerable<HealthSnapshot>> GetSnapshotsOlderThanAsync(DateTime cutoffDate);
+        // --- ARŞİVLEME (UC-9) METOTLARI ---
+
+        // (YENİ) UC-9 Aylık Arşivleme Motoru: Belirli tarih aralığındaki verileri RAM'i şişirmeden belirlenen paket limiti (batchSize) kadar getirir.
+        Task<List<HealthSnapshot>> GetSnapshotsByDateRangeAsync(DateTime startDate, DateTime endDate, int batchSize);
 
         // Diske başarıyla sıkıştırılıp kaydedilen bu eski verileri, veritabanından kalıcı olarak siler (Hard Delete).
         Task RemoveRangeAsync(IEnumerable<HealthSnapshot> snapshots);

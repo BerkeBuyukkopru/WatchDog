@@ -21,7 +21,7 @@ namespace Watchdog.Worker.BackgroundServices
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("Data Archiver Worker (Soğuk Veri Arşivleme Motoru) başlatıldı.");
+            _logger.LogInformation("Data Archiver Worker (Aylık Arşivleme Motoru - State-Driven) başlatıldı.");
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -32,23 +32,21 @@ namespace Watchdog.Worker.BackgroundServices
                     {
                         var archiveUseCase = scope.ServiceProvider.GetRequiredService<ArchiveSnapshotsUseCase>();
 
-                        _logger.LogInformation("Sıcak/Soğuk veri analizi ve arşivleme işlemi başlatılıyor...");
-
-                        // 30 günden eski verileri tespit et, GZip ile sıkıştır ve DB'den sil
-                        await archiveUseCase.ExecuteAsync(olderThanDays: 30);
-
-                        _logger.LogInformation("Arşivleme işlemi başarıyla tamamlandı.");
+                        // Zeka ve tarih hesaplaması artık UseCase'in içinde (SystemConfigurations tablosundan okunuyor).
+                        // Bu yüzden dışarıdan "olderThanDays" parametresi göndermiyoruz.
+                        await archiveUseCase.ExecuteAsync();
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Arşivleme sırasında beklenmeyen bir hata oluştu.");
+                    _logger.LogError(ex, "Arşivleme döngüsü sırasında beklenmeyen bir hata oluştu.");
                 }
 
                 // Sistem performansı için döngüyü uyutuyoruz.
-                // Gerçek senaryoda bu Task.Delay hesaplanarak tam gece 03:00'e ayarlanır.
-                // Test edebilmen için şimdilik 1 saatte bir uyanacak şekilde ayarlıyoruz:
-                await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+                // İş mantığı ve tarih kontrolü artık UseCase içinde olduğu için,
+                // Worker'ın sadece günde 1 kez uyanıp "İş var mı?" diye sorması yeterlidir.
+                // Not: Test ederken burayı TimeSpan.FromMinutes(1) yapabilirsin.
+                await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
             }
         }
     }
