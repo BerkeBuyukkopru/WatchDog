@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text.Json.Serialization; // 1. BU SATIRI EKLEYİN
 using Watchdog.Domain.Enums;
 
 namespace Watchdog.Domain.Entities
@@ -7,6 +8,8 @@ namespace Watchdog.Domain.Entities
     {
         public Guid Id { get; set; } = Guid.NewGuid();
         public Guid AppId { get; set; }
+
+        [JsonIgnore] // 2. BU SATIRI EKLEYİN
         public virtual MonitoredApp? App { get; set; }
 
         // C# uyarılarını gidermek için varsayılan değer atıyoruz

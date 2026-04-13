@@ -19,28 +19,32 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
         private readonly IIncidentRepository _incidentRepository;
         private readonly INotificationSender _notificationSender;
         private readonly IMonitoredAppRepository _appRepository;
-
-        // KRİTİK EKLENTİ: Arka planda (Task.Run) yeni veritabanı bağlantıları açabilmek için fabrika
         private readonly IServiceScopeFactory _scopeFactory;
 
-        // Not: AI ve Prompt servislerini artık kurucuda değil, TriggerRootCauseAnalysisAsync içinde yeni Scope üzerinden çağıracağız. Aksi takdirde ObjectDisposedException alırız.
+        // YENİ EKLENEN 1: Canlı yayın sözleşmesi
+        private readonly IStatusBroadcaster _statusBroadcaster;
 
         public AnalyzeSystemHealthUseCase(
             ISnapshotRepository snapshotRepository,
             IIncidentRepository incidentRepository,
             INotificationSender notificationSender,
             IMonitoredAppRepository appRepository,
-            IServiceScopeFactory scopeFactory)
+            IServiceScopeFactory scopeFactory,
+            IStatusBroadcaster statusBroadcaster) // YENİ EKLENEN 2
         {
             _snapshotRepository = snapshotRepository;
             _incidentRepository = incidentRepository;
             _notificationSender = notificationSender;
             _appRepository = appRepository;
             _scopeFactory = scopeFactory;
+            _statusBroadcaster = statusBroadcaster; // YENİ EKLENEN 3
         }
 
         public async Task ExecuteAsync(HealthSnapshot latestSnapshot)
         {
+            // YENİ EKLENEN 4: Arayüze anında canlı veri gönderimi (Worker'dan buraya taşındı)
+            await _statusBroadcaster.BroadcastNewStatusAsync(latestSnapshot);
+
             var app = await _appRepository.GetByIdAsync(latestSnapshot.AppId);
             if (app == null) return;
 
@@ -68,6 +72,8 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                     };
 
                     await _incidentRepository.AddAsync(newIncident);
+
+                    // UC 6 (Bildirim) BURADA TETİKLENİYOR
                     await _notificationSender.SendDowntimeAlertAsync(newIncident, app);
 
                     // Arka plana atıyoruz ama artık kendi scope'unu yaratacak
@@ -81,6 +87,8 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                     Console.WriteLine($">>>> [RECOVERY] {app.Name} düzeldi. Olay kapatılıyor.");
                     activeIncident.ResolvedAt = DateTime.UtcNow;
                     await _incidentRepository.UpdateAsync(activeIncident);
+
+                    // UC 6 (İyileşme Bildirimi) BURADA TETİKLENİYOR
                     await _notificationSender.SendRecoveryAlertAsync(activeIncident, app);
                 }
             }
@@ -88,11 +96,8 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
 
         private async Task TriggerRootCauseAnalysisAsync(MonitoredApp app, List<HealthSnapshot> recentSnapshots)
         {
-            // HER ŞEY TRY-CATCH İÇİNDE! KAÇIŞ YOK.
             try
             {
-                // SCOPE YARATIMI: Ana thread burayı terk etse bile bu using bloğu sayesinde 
-                // veritabanı bağlantımız arka planda güvende ve açık kalır.
                 using var scope = _scopeFactory.CreateScope();
 
                 var insightRepository = scope.ServiceProvider.GetRequiredService<IAiInsightRepository>();
@@ -100,7 +105,6 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                 var promptBuilder = scope.ServiceProvider.GetRequiredService<IPromptBuilder>();
                 var aiClientFactory = scope.ServiceProvider.GetRequiredService<IAiClientFactory>();
 
-                // --- KURUMSAL LOG GÜNCELLEMESİ ---
                 Console.WriteLine($">>>> [RCA-START] {app.Name} için Kök Neden Analizi süreci başladı...");
 
                 var lastInsight = await insightRepository.GetLatestInsightAsync(app.Id);
@@ -119,7 +123,6 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                 var aiClient = await aiClientFactory.CreateClientAsync();
                 var aiResponse = await aiClient.AnalyzeAsync(prompt);
 
-                // --- KURUMSAL LOG GÜNCELLEMESİ ---
                 Console.WriteLine($">>>> [RCA-REPORT] {app.Name} Kriz Analiz Raporu:\n{aiResponse}\n--------------------------------------------------");
 
                 var newInsight = new AiInsight
@@ -137,7 +140,6 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
             }
             catch (Exception ex)
             {
-                // YAKALANDIN! Hatayı yutmayıp konsola basıyoruz.
                 Console.WriteLine($">>>> [RCA-FATAL-ERROR] Analiz tamamen patladı: {ex.ToString()}");
             }
         }

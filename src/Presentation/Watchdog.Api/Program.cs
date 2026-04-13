@@ -16,7 +16,17 @@ builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
 
 // === 3. Real-time İletişim ===
-builder.Services.AddSignalR();
+builder.Services.AddSignalR(options =>
+{
+    // Gelen mesaj limitini 32 KB'den 10 MB'a çıkartıyoruz. (1024 * 1024 * 10)
+    options.MaximumReceiveMessageSize = 10485760;
+    options.EnableDetailedErrors = true; // SignalR detaylı hatalarını açıyoruz
+})
+    .AddJsonProtocol(options =>
+    {
+        // Döngüsel referansları görmezden gelmeye devam et
+        options.PayloadSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    });
 
 var app = builder.Build();
 
