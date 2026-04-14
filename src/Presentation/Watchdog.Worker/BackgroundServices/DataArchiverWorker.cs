@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Watchdog.Application.Interfaces.Common;
 using Watchdog.Application.UseCases.HealthMonitoring;
 
 namespace Watchdog.Worker.BackgroundServices
@@ -30,6 +31,9 @@ namespace Watchdog.Worker.BackgroundServices
                     // Bağımsız bir işlem olduğu için yeni bir Scope (Kapsam) açıyoruz
                     using (var scope = _serviceProvider.CreateScope())
                     {
+                        var userService = (WorkerCurrentUserService)scope.ServiceProvider.GetRequiredService<ICurrentUserService>();
+                        userService.Username = "DataArchiverWorker";
+
                         var archiveUseCase = scope.ServiceProvider.GetRequiredService<ArchiveSnapshotsUseCase>();
 
                         // Zeka ve tarih hesaplaması artık UseCase'in içinde (SystemConfigurations tablosundan okunuyor).

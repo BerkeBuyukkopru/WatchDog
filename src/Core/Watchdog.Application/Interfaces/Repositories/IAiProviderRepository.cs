@@ -21,5 +21,7 @@ namespace Watchdog.Application.Interfaces.Repositories
 
         // Sağlayıcı bilgilerini (ApiKey vb.) günceller
         Task<bool> UpdateAsync(AiProvider provider);
+        Task<bool> AddAsync(AiProvider provider); // Yeni sağlayıcı ekle
+        Task<bool> DeleteAsync(Guid id); // Sağlayıcıyı sil (Soft Delete)
     }
 }

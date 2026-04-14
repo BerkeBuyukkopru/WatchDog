@@ -28,7 +28,7 @@ namespace Watchdog.Application.UseCases.Auth
             }
 
             // 2. OLUŞTURMA: Yeni admin nesnesi.
-            // DİKKAT: Id, CreatedAt ve CreatedBy alanlarını artık elle atamıyoruz (DbContext'e devredildi).
+            // Id, CreatedAt ve CreatedBy alanlarını artık elle atamıyoruz (DbContext'e devredildi).
             var newUser = new AdminUser
             {
                 Username = request.Username,

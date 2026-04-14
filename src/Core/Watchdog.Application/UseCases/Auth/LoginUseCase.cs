@@ -35,7 +35,7 @@ namespace Watchdog.Application.UseCases.Auth
                 return new LoginResponse { IsSuccess = false, ErrorMessage = "Kullanıcı adı veya şifre hatalı." };
             }
 
-            // DİKKAT: Eski kodda burada private bir metot vardı. Onu sildik.
+            // Eski kodda burada private bir metot vardı. Onu sildik.
             // Artık kurumsal, merkezi _passwordHasher servisimizi kullanıyoruz.
             var incomingHash = _passwordHasher.HashPassword(request.Password);
 

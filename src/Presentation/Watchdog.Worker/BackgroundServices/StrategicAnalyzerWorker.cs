@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Watchdog.Application.DTOs.AI;
+using Watchdog.Application.Interfaces.Common;
 using Watchdog.Application.Interfaces.Repositories;
 using Watchdog.Application.UseCases.AI;
 
@@ -31,6 +32,10 @@ namespace Watchdog.Worker.BackgroundServices
                     _logger.LogInformation("[STRATEGIC-AI] WatchDog: Günlük/Haftalık stratejik kapasite tahmini başlatılıyor...");
 
                     using var scope = _scopeFactory.CreateScope();
+
+                    var userService = (WorkerCurrentUserService)scope.ServiceProvider.GetRequiredService<ICurrentUserService>();
+                    userService.Username = "StrategicAnalyzerWorker";
+
                     var appRepository = scope.ServiceProvider.GetRequiredService<IMonitoredAppRepository>();
                     var useCase = scope.ServiceProvider.GetRequiredService<GenerateStrategicInsightUseCase>();
 
@@ -68,11 +73,21 @@ namespace Watchdog.Worker.BackgroundServices
 
                 _logger.LogInformation($"[STRATEGIC-AI] WatchDog: Bir sonraki Stratejik Analiz {delay.TotalHours:F1} saat sonra (TR 01:00 / UTC 22:00) çalışacak.");
 
-                await Task.Delay(delay, stoppingToken);
+                try
+                {
+                    // Kapanış sinyali (stoppingToken) geldiğinde fırlatılan hatayı yakalıyoruz.
+                    //await Task.Delay(delay, stoppingToken);
 
-                // TEST İÇİN GEÇİCİ OLARAK 1 DAKİKAYA İNDİRİLDİ
-                //_logger.LogInformation($"[STRATEGIC-AI] WatchDog: TEST MODU - Bir sonraki Stratejik Analiz 1 DAKİKA sonra çalışacak.");
-                //await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+                    // TEST İÇİN GEÇİCİ OLARAK 1 DAKİKAYA İNDİRİLDİ
+                    //_logger.LogInformation($"[STRATEGIC-AI] WatchDog: TEST MODU - Bir sonraki Stratejik Analiz 1 DAKİKA sonra çalışacak.");
+                    await Task.Delay(TimeSpan.FromSeconds(15), stoppingToken);
+                }
+                catch (TaskCanceledException)
+                {
+                    // Uygulama kapatılırken veya yeniden başlatılırken Task.Delay iptal edilir. Bu beklenen bir durumdur.
+                    _logger.LogInformation("[STRATEGIC-AI] WatchDog: Worker güvenli bir şekilde durduruluyor (Graceful Shutdown).");
+                    break; // Döngüyü kır ve işlemi güvenli bir şekilde bitir
+                }
             }
         }
     }

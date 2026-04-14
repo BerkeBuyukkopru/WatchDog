@@ -65,7 +65,7 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
             // Admin bulunamazsa veya zaten silinmişse işlemi iptal et.
             if (user == null || user.IsDeleted) return false;
 
-            // KRİTİK: Remove metodunu çağırıyoruz. 
+            //  Remove metodunu çağırıyoruz. 
             // DbContext'teki interceptor yapımız bunu yakalayıp IsDeleted = true yapacak.
             _context.AdminUsers.Remove(user);
 

@@ -66,5 +66,22 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
             // DbContext otomatik olarak ModifiedBy ve ModifiedAt alanlarını dolduracak.
             return await _context.SaveChangesAsync() > 0;
         }
+
+        public async Task<bool> AddAsync(AiProvider provider)
+        {
+            await _context.AiProviders.AddAsync(provider);
+            return await _context.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> DeleteAsync(Guid id)
+        {
+            var provider = await _context.AiProviders.FindAsync(id);
+            if (provider == null || provider.IsDeleted) return false;
+
+            // Infrastructure katmanındaki Interceptor yapımız sayesinde 
+            // Remove çağrısı otomatik olarak IsDeleted = true yapacaktır.
+            _context.AiProviders.Remove(provider);
+            return await _context.SaveChangesAsync() > 0;
+        }
     }
 }

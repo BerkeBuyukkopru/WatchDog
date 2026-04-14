@@ -83,6 +83,7 @@ namespace Watchdog.Application.UseCases.AI
             var insight = new AiInsight
             {
                 AppId = request.AppId,
+                AiProviderId = activeProviderEntity?.Id,
                 InsightType = InsightType.StrategicForecast,
                 Message = aiResponseText,
                 Evidence = $"[Karşılaştırma] {baselineDay.Date:dd/MM} vs {targetDay.Date:dd/MM} | Haftalık Trend CPU: {weeklyAvgCpu}%"

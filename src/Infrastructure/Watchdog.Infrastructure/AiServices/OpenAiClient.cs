@@ -58,7 +58,7 @@ namespace Watchdog.Infrastructure.AiServices
             {
                 // KRİTİK: Burada artık 'return string' yapmıyoruz. 
                 // Hatayı yukarıya (Factory/Fallback katmanına) fırlatıyoruz.
-                throw new Exception($"Bulut AI (Groq/OpenAI) Erişim Hatası: {ex.Message}", ex);
+                throw new Exception($"Bulut AI Erişim Hatası: {ex.Message}", ex);
             }
         }
     }

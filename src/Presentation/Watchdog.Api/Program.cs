@@ -1,13 +1,13 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models; // SADECE BU KALSIN
+using Microsoft.OpenApi.Models;
 using System.Text;
 using Watchdog.Api;
 using Watchdog.Application;
 using Watchdog.Infrastructure;
 using Watchdog.Infrastructure.Persistence;
-using Watchdog.Application.Interfaces.Common; // EKLE
-using Watchdog.Api.Services; // EKLE
+using Watchdog.Application.Interfaces.Common;
+using Watchdog.Api.Services; 
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,7 +15,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-// === KRİTİK: Kimlik Tespit Servisleri (Audit & Soft Delete İçin) ===
+// === Kimlik Tespit Servisleri (Audit & Soft Delete İçin) ===
 builder.Services.AddHttpContextAccessor(); // HttpContext'e erişim sağlar
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>(); // Kimliği bilet üzerinden okur
 
@@ -120,6 +120,7 @@ builder.Services.AddSignalR(options =>
 });
 
 var app = builder.Build();
+app.UseMiddleware<Watchdog.Api.Middlewares.ExceptionMiddleware>();
 
 // === 5. Middleware Pipeline ===
 if (app.Environment.IsDevelopment())

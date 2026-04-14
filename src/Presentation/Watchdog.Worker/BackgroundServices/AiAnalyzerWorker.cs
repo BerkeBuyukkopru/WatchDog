@@ -1,12 +1,13 @@
-﻿using System;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Watchdog.Application.DTOs.AI;
+using Watchdog.Application.Interfaces.Common;
 using Watchdog.Application.Interfaces.Repositories;
 using Watchdog.Application.UseCases.AI;
 
@@ -40,6 +41,9 @@ namespace Watchdog.Worker.BackgroundServices
 
                     // SCOPE AÇILIŞI: Veritabanı ve AI nesneleri için güvenli bir bellek alanı yaratıyoruz
                     using var scope = _scopeFactory.CreateScope();
+
+                    var userService = (WorkerCurrentUserService)scope.ServiceProvider.GetRequiredService<ICurrentUserService>();
+                    userService.Username = "AiAnalyzerWorker"; // Veritabanına bu isimle kaydedecek
 
                     var appRepository = scope.ServiceProvider.GetRequiredService<IMonitoredAppRepository>();
 

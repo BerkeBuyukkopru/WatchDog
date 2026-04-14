@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
+using Watchdog.Domain.Constants; // Yeni hiyerarşi sabitleri eklendi
 using Watchdog.Application.DTOs.SystemConfig;
 using Watchdog.Application.Interfaces.Common;
 
@@ -28,7 +29,9 @@ namespace Watchdog.Api.Controllers
         }
 
         [HttpPost] //Dashboard'dan gelen yeni ayarları kaydeder.
-        [Authorize(Roles = "Admin")] // Sistem ayarlarını sadece Admin değiştirebilir
+        // Sistem ayarları hem SuperAdmin hem de Admin tarafından değiştirilebilir.
+        // Sadece 'Admin' kısıtı kaldırıldı, böylece patron (SuperAdmin) yetki hatası almaz.
+        [Authorize(Roles = RoleConstants.AllAdmins)]
         public async Task<IActionResult> Update(
             [FromBody] SystemConfigDto dto,
             [FromServices] IUseCaseAsync<SystemConfigDto, bool> useCase)

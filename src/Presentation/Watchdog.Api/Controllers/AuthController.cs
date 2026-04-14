@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Watchdog.Domain.Constants; //Sabitleri ekledik
 using Watchdog.Application.DTOs.Auth;
 using Watchdog.Application.Interfaces.Common;
 
@@ -26,7 +27,8 @@ namespace Watchdog.Api.Controllers
         }
 
         [HttpPost("register")]
-        [Authorize(Roles = "Admin")] // Sadece elinde Admin bileti olanlar yeni admin ekleyebilir!
+        // Artık Magic String yok ve sisteme yeni kişileri SADECE SuperAdmin ekleyebilir!
+        [Authorize(Roles = RoleConstants.SuperAdmin)]
         public async Task<IActionResult> Register(
             [FromBody] RegisterRequest request,
             [FromServices] IUseCaseAsync<RegisterRequest, RegisterResponse> registerUseCase)

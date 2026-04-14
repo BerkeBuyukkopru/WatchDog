@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Watchdog.Application.Interfaces.Common;
 using Watchdog.Application.UseCases.HealthMonitoring;
 
 namespace Watchdog.Worker.BackgroundServices
@@ -32,6 +33,9 @@ namespace Watchdog.Worker.BackgroundServices
                 {
                     using (var scope = _serviceProvider.CreateScope())
                     {
+                        var userService = (WorkerCurrentUserService)scope.ServiceProvider.GetRequiredService<ICurrentUserService>();
+                        userService.Username = "HealthPollingWorker";
+
                         // Toplu tarama Use Case'ini çağırıyoruz
                         var pollAllAppsUseCase = scope.ServiceProvider.GetRequiredService<PollAllAppsUseCase>();
 

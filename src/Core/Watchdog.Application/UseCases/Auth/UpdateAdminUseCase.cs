@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using Watchdog.Application.DTOs.Auth;
 using Watchdog.Application.Interfaces.Common;
 using Watchdog.Application.Interfaces.Repositories;
@@ -26,18 +27,28 @@ namespace Watchdog.Application.UseCases.Auth
 
             if (admin == null) return false;
 
-            // 2. Kullanıcı adını güncelle.
-            admin.Username = request.Username;
+            // 2. GÜVENLİK: Eğer yeni bir kullanıcı adı gönderilmişse ve bu eskiden farklıysa
+            if (!string.IsNullOrWhiteSpace(request.Username) && !admin.Username.Equals(request.Username, StringComparison.OrdinalIgnoreCase))
+            {
+                // Veritabanında bu isimde başka biri var mı diye kontrol et
+                var isExist = await _authRepository.IsUsernameExistAsync(request.Username);
+                if (isExist)
+                {
+                    // Eğer isim alınmışsa güvenlik gereği işlemi durdur ve başarısız dön.
+                    // (İleride global hata yakalayıcımıza özel bir BusinessException fırlatılabilir).
+                    return false;
+                }
+
+                admin.Username = request.Username;
+            }
 
             // 3. Eğer yeni bir şifre gönderilmişse hashleyerek güncelle.
-            // Gönderilmemişse mevcut PasswordHash korunur.
             if (!string.IsNullOrEmpty(request.NewPassword))
             {
                 admin.PasswordHash = _passwordHasher.HashPassword(request.NewPassword);
             }
 
             // 4. Repository üzerinden güncellemeyi tamamla.
-            // DbContext otomatik olarak ModifiedBy ve ModifiedAt alanlarını dolduracaktır.
             return await _authRepository.UpdateUserAsync(admin);
         }
     }
