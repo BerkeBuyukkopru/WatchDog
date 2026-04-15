@@ -24,6 +24,10 @@ namespace Watchdog.Worker.BackgroundServices
         {
             _logger.LogInformation("Data Archiver Worker (Aylık Arşivleme Motoru - State-Driven) başlatıldı.");
 
+            // KRİTİK ÇÖZÜM: API tarafındaki DatabaseSeeder'ın veritabanını hazırlaması 
+            // ve çift kayıt (Race Condition) oluşmaması için Worker'a 5 saniye kalkış avansı veriyoruz.
+            await Task.Delay(5000, stoppingToken);
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 try

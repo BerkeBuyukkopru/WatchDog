@@ -27,6 +27,9 @@ namespace Watchdog.Worker.BackgroundServices
         {
             _logger.LogInformation("Watchdog Sadeleştirilmiş Tarama Motoru Başladı!");
 
+            // KRİTİK ÇÖZÜM: Seeder'ın işini bitirmesini bekle (Çift kayıt engelleme)
+            await Task.Delay(5000, stoppingToken);
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 try

@@ -39,7 +39,6 @@ namespace Watchdog.Infrastructure.Persistence
             {
                 await _context.SystemConfigurations.AddAsync(new SystemConfiguration
                 {
-                    // Configuration tablomuzun BaseEntity'si int ID alıyor varsayarak
                     CriticalCpuThreshold = 90.0,
                     CriticalRamThreshold = 90.0,
                     CriticalLatencyThreshold = 1000.0,
@@ -47,6 +46,11 @@ namespace Watchdog.Infrastructure.Persistence
                     CreatedBy = "System Seeder",
                     IsDeleted = false
                 });
+
+                // KRİTİK EKLEME: Kaydı hemen veritabanına mühürlüyoruz. 
+                // Böylece diğer projeler (Worker vb.) AnyAsync() kontrolü yaptığında kaydı hemen görür 
+                // ve duplikasyon (çift kayıt) oluşmaz.
+                await _context.SaveChangesAsync();
             }
 
             // 3. AI PROVIDERS TOHUMLAMA (Dinamik ID ve Çift Kontrol)

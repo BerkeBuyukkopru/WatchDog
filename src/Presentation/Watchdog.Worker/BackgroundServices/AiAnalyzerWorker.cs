@@ -32,6 +32,9 @@ namespace Watchdog.Worker.BackgroundServices
         {
             _logger.LogInformation("WatchDog: AI Analyzer Worker (Yapay Zeka İşçisi) başlatıldı.");
 
+            // KRİTİK ÇÖZÜM: Seeder'ın işini bitirmesini bekle (Çift kayıt engelleme)
+            await Task.Delay(5000, stoppingToken);
+
             // Worker durdurulana kadar sonsuz döngüde çalışır
             while (!stoppingToken.IsCancellationRequested)
             {

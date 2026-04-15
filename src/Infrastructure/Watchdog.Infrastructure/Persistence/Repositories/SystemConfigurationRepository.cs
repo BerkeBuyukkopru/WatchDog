@@ -22,8 +22,10 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
 
         public async Task<SystemConfiguration?> GetAsync()
         {
-            // FirstOrDefaultAsync: SQL'e "SELECT TOP 1 ... WHERE Id = 1" sorgusu fırlatır.
-            return await _context.SystemConfigurations.FirstOrDefaultAsync(x => x.Id == 1);
+            // Tablodaki Id'si kaç olursa olsun (1, 2, 3...) mevcut olan ilk konfigürasyonu getirir.
+            // KRİTİK DÜZELTME: Sadece okuma yapıldığı durumlarda EF Core'un bu nesneyi hafızaya alıp (ChangeTracker)
+            // başka işlemler sırasında yanlışlıkla veritabanına eklemesini engellemek için AsNoTracking() eklendi.
+            return await _context.SystemConfigurations.AsNoTracking().FirstOrDefaultAsync();
         }
 
         public async Task<bool> UpdateAsync(SystemConfiguration config)
