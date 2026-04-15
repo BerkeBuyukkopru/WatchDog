@@ -14,5 +14,12 @@ namespace Watchdog.Domain.Entities
 
         // İŞ MANTIĞI: İzleme aktif mi pasif mi? (Silme ile karıştırılmamalı)
         public bool IsActive { get; set; } = true;
+
+        // YENİ EKLENEN 1: Bu uygulamanın kullandığı aktif yapay zekanın ID'si
+        // (Uygulama ilk eklendiğinde henüz AI seçilmemiş olabileceği için '?' ile Nullable yapıyoruz)
+        public Guid? ActiveAiProviderId { get; set; }
+
+        // YENİ EKLENEN 2: Entity Framework'ün iki tabloyu birbirine bağlaması için (Navigation Property)
+        public virtual AiProvider? ActiveAiProvider { get; set; }
     }
 }

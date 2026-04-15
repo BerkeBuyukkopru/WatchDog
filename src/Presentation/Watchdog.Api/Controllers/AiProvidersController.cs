@@ -45,17 +45,7 @@ namespace Watchdog.Api.Controllers
             return BadRequest(new { message = "Sağlayıcı eklenirken bir hata oluştu." });
         }
 
-        // PUT: api/AiProviders/{id}/activate
-        // GÜNCELLEME: Hem SuperAdmin hem de Admin bu işlemi yapabilir.
-        [HttpPut("{id}/activate")]
-        [Authorize(Roles = RoleConstants.AllAdmins)]
-        public async Task<IActionResult> Activate(Guid id, [FromServices] SetActiveAiProviderUseCase useCase)
-        {
-            var result = await useCase.ExecuteAsync(id);
-            if (result) return Ok(new { message = "Yapay zeka sağlayıcısı başarıyla aktif edildi." });
-
-            return BadRequest(new { message = "Sağlayıcı aktifleştirilirken bir hata oluştu. ID bulunamamış olabilir." });
-        }
+       
 
         // PUT: api/AiProviders/{id}
         // Detay güncelleme ucu

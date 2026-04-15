@@ -7,6 +7,7 @@ using Watchdog.Domain.Constants;
 using Watchdog.Application.DTOs.Apps;
 using Watchdog.Application.Enums;
 using Watchdog.Application.Interfaces.Common;
+using Watchdog.Application.UseCases.Apps; // YENİ EKLENDİ: Yeni UseCase'i tanıyabilmesi için
 
 namespace Watchdog.Api.Controllers
 {
@@ -90,6 +91,25 @@ namespace Watchdog.Api.Controllers
                 return BadRequest(new { message = result.ErrorMessage });
             }
             return NoContent();
+        }
+
+        // --- YENİ EKLENEN KISIM ---
+        // PUT: api/Apps/{appId}/ai-provider/{providerId}
+        [HttpPut("{appId:guid}/ai-provider/{providerId:guid}")]
+        [Authorize(Roles = RoleConstants.AllAdmins)]
+        public async Task<IActionResult> SetAppAiProvider(
+            Guid appId,
+            Guid providerId,
+            [FromServices] SetAppAiProviderUseCase useCase)
+        {
+            var result = await useCase.ExecuteAsync(appId, providerId);
+
+            if (result)
+            {
+                return Ok(new { message = "Uygulamanın yapay zekası başarıyla güncellendi." });
+            }
+
+            return BadRequest(new { message = "İşlem başarısız. Uygulama ID'si veya Yapay Zeka ID'si hatalı olabilir." });
         }
     }
 }
