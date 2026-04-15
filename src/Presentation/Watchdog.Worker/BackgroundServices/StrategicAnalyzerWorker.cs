@@ -24,6 +24,9 @@ namespace Watchdog.Worker.BackgroundServices
         {
             _logger.LogInformation("WatchDog: Strategic Analyzer Worker (AIOps Tahmin Motoru) başlatıldı.");
 
+            // KRİTİK ÇÖZÜM: Seeder'ın işini bitirmesini bekle (Çift kayıt engelleme)
+            await Task.Delay(5000, stoppingToken);
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
@@ -76,11 +79,11 @@ namespace Watchdog.Worker.BackgroundServices
                 try
                 {
                     // Kapanış sinyali (stoppingToken) geldiğinde fırlatılan hatayı yakalıyoruz.
-                    //await Task.Delay(delay, stoppingToken);
+                    await Task.Delay(delay, stoppingToken);
 
                     // TEST İÇİN GEÇİCİ OLARAK 1 DAKİKAYA İNDİRİLDİ
                     //_logger.LogInformation($"[STRATEGIC-AI] WatchDog: TEST MODU - Bir sonraki Stratejik Analiz 1 DAKİKA sonra çalışacak.");
-                    await Task.Delay(TimeSpan.FromSeconds(15), stoppingToken);
+                    //await Task.Delay(TimeSpan.FromSeconds(15), stoppingToken);
                 }
                 catch (TaskCanceledException)
                 {

@@ -11,7 +11,7 @@ builder.Services.AddInfrastructureServices(builder.Configuration);
 
 // === KRİTİK: Worker Kimlik Kaydı ===
 // DbContext'in istediği ICurrentUserService'i burada "WorkerService" olarak çözüyoruz.
-builder.Services.AddSingleton<ICurrentUserService, WorkerCurrentUserService>();
+builder.Services.AddScoped<ICurrentUserService, WorkerCurrentUserService>();
 
 // === 2. Worker Servis Kayıtları ===
 builder.Services.AddHostedService<HealthPollingWorker>();             // Temel Sağlık Taraması (Health Polling)

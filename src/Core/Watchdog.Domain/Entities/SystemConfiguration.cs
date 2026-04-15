@@ -6,8 +6,6 @@ namespace Watchdog.Domain.Entities
     // Bu sınıf panel kısmına yönetici olarak girdiğinde cpu eşiği, yapay zeka çeşitleri, ram eşik değeri gibi şeyleri ayarlamak içindir.
     public class SystemConfiguration : BaseEntity<int>
     {
-        
-
         public double CriticalCpuThreshold { get; set; } = 90.0;
 
         public double CriticalRamThreshold { get; set; } = 90.0;

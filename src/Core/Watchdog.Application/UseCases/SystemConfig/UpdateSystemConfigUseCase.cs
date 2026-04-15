@@ -23,7 +23,8 @@ namespace Watchdog.Application.UseCases.SystemConfig
 
             if (existingConfig == null)
             {
-                existingConfig = new SystemConfiguration { Id = 1 };
+                // ID atamasını SQL Server Identity kolonu kendisi yapar.
+                existingConfig = new SystemConfiguration();
             }
 
             // AI ayarlarını kaydetme işi AiProviderRepository'ye devredildi.

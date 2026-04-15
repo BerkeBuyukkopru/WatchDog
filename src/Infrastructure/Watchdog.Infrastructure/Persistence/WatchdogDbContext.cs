@@ -42,9 +42,12 @@ namespace Watchdog.Infrastructure.Persistence
                     switch (entry.State)
                     {
                         case EntityState.Added:
-                            // EĞER ID boşsa (Örn: Seeder'dan geliyorsa) sistem otomatik GUID atar!
-                            if (entity is BaseEntity<Guid> && entity.Id == Guid.Empty)
-                                entity.Id = Guid.NewGuid();
+                            // DÜZELTME: Sadece GUID tipindeki ID'ler için otomatik atama yapıyoruz.
+                            // int tipindeki ID'ler (SystemConfiguration gibi) SQL Identity kontrolündedir.
+                            if (entry.Entity is BaseEntity<Guid> guidEntity && guidEntity.Id == Guid.Empty)
+                            {
+                                guidEntity.Id = Guid.NewGuid();
+                            }
 
                             entity.CreatedAt = DateTime.UtcNow;
                             entity.CreatedBy = user;
