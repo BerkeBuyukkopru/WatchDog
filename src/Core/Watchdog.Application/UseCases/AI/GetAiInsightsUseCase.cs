@@ -1,37 +1,75 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
+using System.Threading.Tasks;
 using Watchdog.Application.DTOs.AI;
 using Watchdog.Application.Interfaces.Common;
 using Watchdog.Application.Interfaces.Repositories;
+using Watchdog.Domain.Constants; // 🚨 Rol kontrolü için eklendi
 
 namespace Watchdog.Application.UseCases.AI
 {
     public class GetAiInsightsUseCase : IUseCaseAsync<Guid?, IEnumerable<AiInsightDto>>
     {
         private readonly IAiInsightRepository _insightRepository;
+        private readonly IAuthRepository _authRepository; // YENİ
+        private readonly ICurrentUserService _currentUserService; // YENİ
 
-        public GetAiInsightsUseCase(IAiInsightRepository insightRepository)
+        // Bağımlılıklar içeri alınıyor
+        public GetAiInsightsUseCase(
+            IAiInsightRepository insightRepository,
+            IAuthRepository authRepository,
+            ICurrentUserService currentUserService)
         {
             _insightRepository = insightRepository;
+            _authRepository = authRepository;
+            _currentUserService = currentUserService;
         }
 
         public async Task<IEnumerable<AiInsightDto>> ExecuteAsync(Guid? appId)
         {
-            // 1. Repository'den verileri çek (Virtual App property'sinin dolu geldiğinden emin olacağız)
+            // 1. Repository'den verileri çek 
             var insights = await _insightRepository.GetByAppIdAsync(appId);
 
-            // 2. Entity listesini DTO listesine "Map" et
+            // 2. YETKİ KONTROLÜ (GÜVENLİK DUVARI)
+            var currentRole = _currentUserService.Role;
+
+            if (currentRole != RoleConstants.SuperAdmin)
+            {
+                Guid userId = _currentUserService.UserId;
+
+                if (userId != Guid.Empty)
+                {
+                    var currentAdmin = await _authRepository.GetByIdAsync(userId);
+
+                    if (currentAdmin != null && currentAdmin.AllowedAppIds != null && currentAdmin.AllowedAppIds.Any())
+                    {
+                        // 🚨 Sadece yetkisi olan uygulamaları filtrele
+                        insights = insights.Where(i => currentAdmin.AllowedAppIds.Contains(i.AppId));
+                    }
+                    else
+                    {
+                        // Yetki yoksa boş dön
+                        return new List<AiInsightDto>();
+                    }
+                }
+                else
+                {
+                    return new List<AiInsightDto>();
+                }
+            }
+
+            // 3. Entity listesini DTO listesine "Map" et
             return insights.Select(i => new AiInsightDto
             {
                 Id = i.Id,
                 AppName = i.App?.Name ?? "Sistem Geneli",
                 Message = i.Message,
                 Evidence = i.Evidence,
-                InsightType = i.InsightType.ToString(), // UI tarafı için string dönüşümü
+                InsightType = i.InsightType.ToString(),
                 IsResolved = i.IsResolved,
                 CreatedAt = i.CreatedAt
-            });
+            }).OrderByDescending(i => i.CreatedAt).ToList(); // AI raporlarını en yeniden eskiye sıralamak ui için iyidir
         }
     }
 }

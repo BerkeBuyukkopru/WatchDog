@@ -48,7 +48,15 @@ namespace Watchdog.Application.UseCases.Auth
                 admin.PasswordHash = _passwordHasher.HashPassword(request.NewPassword);
             }
 
-            // 4. Repository üzerinden güncellemeyi tamamla.
+            // 4. 🚨 YENİ EKLENEN: Yetkili olduğu uygulamaları (AllowedAppIds) güncelle
+            // Eğer arayüzden (request) bir liste gönderilmişse, adminin listesini bununla değiştir.
+            // Boş liste gönderilirse tüm yetkileri silinmiş olur. null ise hiç dokunulmaz.
+            if (request.AllowedAppIds != null)
+            {
+                admin.AllowedAppIds = request.AllowedAppIds;
+            }
+
+            // 5. Repository üzerinden güncellemeyi tamamla.
             return await _authRepository.UpdateUserAsync(admin);
         }
     }

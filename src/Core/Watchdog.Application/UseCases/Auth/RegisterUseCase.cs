@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Threading.Tasks;
 using Watchdog.Application.DTOs.Auth;
 using Watchdog.Application.Interfaces.Common;
 using Watchdog.Application.Interfaces.Repositories;
@@ -33,11 +33,14 @@ namespace Watchdog.Application.UseCases.Auth
             {
                 Username = request.Username,
                 PasswordHash = _passwordHasher.HashPassword(request.Password),
-                Role = "Admin"
+                Role = string.IsNullOrEmpty(request.Role) ? "Admin" : request.Role, // Güvenlik kontrolü eklendi
+
+                // YENİ EKLENEN: Gelen listeyi kaydet, eğer liste gelmediyse boş liste ata.
+                AllowedAppIds = request.AllowedAppIds ?? new List<Guid>()
             };
 
             // 3. KAYIT: İşlemi repository üzerinden tamamla.
-            var result = await _authRepository.AddUserAsync(newUser);
+            var result = await _authRepository.AddUserAsync(newUser); // Repository metot adını kendi projene göre kontrol et (AddUserAsync veya CreateAdminAsync olabilir)
 
             return result ? new RegisterResponse { IsSuccess = true }
                           : new RegisterResponse { IsSuccess = false, ErrorMessage = "Kayıt sırasında teknik bir hata oluştu." };

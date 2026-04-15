@@ -1,4 +1,6 @@
-﻿using System.Security.Claims;
+﻿using System;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
 using Watchdog.Application.Interfaces.Common;
 
 namespace Watchdog.Api.Services
@@ -29,11 +31,16 @@ namespace Watchdog.Api.Services
             }
         }
 
-        // Token içindeki kullanıcı adını çeker, bulamazsa senin yazdığın varsayılan "System" değerini kullanır
+        // Token içindeki kullanıcı adını çeker, bulamazsa varsayılan "System" değerini kullanır
         public string? Username =>
             _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.Name)?.Value
             ?? _httpContextAccessor.HttpContext?.User?.FindFirst("unique_name")?.Value
             ?? _httpContextAccessor.HttpContext?.User?.Identity?.Name
             ?? "System";
+
+        // 🚨 YENİ EKLENEN: Token içindeki Rol bilgisini çeker
+        public string Role =>
+            _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.Role)?.Value
+            ?? "Admin"; // Eğer bulamazsa güvenlik gereği en düşük yetki olan Admin'i atarız.
     }
 }

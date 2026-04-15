@@ -9,7 +9,10 @@ namespace Watchdog.Worker.BackgroundServices
         // Sistem botu olduğu için geçerli bir kullanıcı ID'si yok.
         public Guid UserId => Guid.Empty;
 
-        // Varsayılan isim 'WorkerService' ancak artık dışarıdan değiştirilebilir.
+        // 🚨 ÇÖZÜM BURADA: { get; set; } sayesinde artık dışarıdan "StrategicAnalyzerWorker" gibi yeni isimler atanabilir.
         public string? Username { get; set; } = "WorkerService";
+
+        // 🚨 ÖNCEKİ ADIMDAN KALAN ZORUNLULUK: Sözleşmenin (Interface) hata vermemesi için Role bilgisini ekliyoruz.
+        public string Role => "SuperAdmin";
     }
 }

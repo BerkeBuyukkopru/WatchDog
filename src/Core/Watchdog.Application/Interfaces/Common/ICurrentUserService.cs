@@ -9,5 +9,6 @@ namespace Watchdog.Application.Interfaces.Common
     {
         Guid UserId { get; }
         string? Username { get; }
+        string Role { get; }
     }
 }

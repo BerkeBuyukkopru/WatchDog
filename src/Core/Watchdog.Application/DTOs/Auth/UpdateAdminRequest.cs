@@ -15,5 +15,8 @@ namespace Watchdog.Application.DTOs.Auth
 
         // Eğer şifre değiştirilmek isteniyorsa doldurulur.
         public string? NewPassword { get; set; }
+
+        // Sadece bu yeni listeyi ekledik, Role yok.
+        public List<Guid>? AllowedAppIds { get; set; }
     }
 }
