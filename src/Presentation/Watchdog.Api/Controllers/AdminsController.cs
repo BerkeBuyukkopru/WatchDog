@@ -16,16 +16,19 @@ namespace Watchdog.Api.Controllers
         private readonly IAuthRepository _authRepository;
         private readonly IUseCaseAsync<Guid, bool> _deleteAdminUseCase;
         private readonly IUseCaseAsync<UpdateAdminRequest, bool> _updateUseCase;
+        private readonly IUseCaseAsync<Guid, bool> _restoreAdminUseCase;
 
         // Dependency Injection: Tüm gerekli servisleri kurumsal yapıda içeri alıyoruz.
         public AdminsController(
             IAuthRepository authRepository,
             IUseCaseAsync<Guid, bool> deleteAdminUseCase,
-            IUseCaseAsync<UpdateAdminRequest, bool> updateUseCase)
+            IUseCaseAsync<UpdateAdminRequest, bool> updateUseCase,
+            IUseCaseAsync<Guid, bool> restoreAdminUseCase)
         {
             _authRepository = authRepository;
             _deleteAdminUseCase = deleteAdminUseCase;
             _updateUseCase = updateUseCase;
+            _restoreAdminUseCase = restoreAdminUseCase;
         }
 
         [HttpGet]
@@ -108,6 +111,38 @@ namespace Watchdog.Api.Controllers
                 return Ok(new { Message = "Şifreniz başarıyla güncellendi." });
 
             return BadRequest(new { Message = "Profil güncellenirken bir hata oluştu." });
+        }
+
+        // Silinmiş Adminleri Listele
+        [HttpGet("deleted")]
+        [Authorize(Roles = RoleConstants.SuperAdmin)]
+        public async Task<IActionResult> GetDeletedAdmins()
+        {
+            var deletedAdmins = await _authRepository.GetDeletedAdminsAsync();
+
+            var response = deletedAdmins.Select(a => new
+            {
+                a.Id,
+                a.Username,
+                a.Role,
+                a.DeletedAt,
+                a.DeletedBy
+            });
+
+            return Ok(response);
+        }
+
+        // Silinmiş Admini Geri Getir
+        [HttpPost("{id}/restore")]
+        [Authorize(Roles = RoleConstants.SuperAdmin)]
+        public async Task<IActionResult> Restore(Guid id)
+        {
+            var result = await _restoreAdminUseCase.ExecuteAsync(id);
+
+            if (result)
+                return Ok(new { Message = "Yönetici hesabı başarıyla yeniden aktif edildi." });
+
+            return BadRequest(new { Message = "Yönetici bulunamadı veya zaten aktif durumda." });
         }
     }
 }

@@ -54,6 +54,7 @@ public static class DependencyInjection
         services.AddScoped<IUseCaseAsync<RegisterRequest, RegisterResponse>, RegisterUseCase>();
         services.AddScoped<IUseCaseAsync<Guid, bool>, DeleteAdminUseCase>();
         services.AddScoped<IUseCaseAsync<UpdateAdminRequest, bool>, UpdateAdminUseCase>();
+        services.AddScoped<IUseCaseAsync<Guid, bool>, RestoreAdminUseCase>();
 
         return services;
     }

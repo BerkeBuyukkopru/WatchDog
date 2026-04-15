@@ -18,6 +18,9 @@ namespace Watchdog.Application.Interfaces.Repositories
         // Sistemdeki tüm (silinmemiş) adminleri listeler.
         Task<IEnumerable<AdminUser>> GetAllAsync();
 
+        // Sadece silinmiş adminleri listeler
+        Task<IEnumerable<AdminUser>> GetDeletedAdminsAsync();
+
         // Kullanıcı adının sistemde benzersiz olup olmadığını kontrol eder.
         Task<bool> IsUsernameExistAsync(string username);
 
@@ -30,5 +33,8 @@ namespace Watchdog.Application.Interfaces.Repositories
 
         // Admini sistemden (Soft Delete ile) uzaklaştırır.
         Task<bool> DeleteUserAsync(Guid id);
+
+        // Silinmiş bir admini geri getirir (Restore)
+        Task<bool> RestoreUserAsync(Guid id);
     }
 }

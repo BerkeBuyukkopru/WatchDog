@@ -28,7 +28,7 @@ namespace Watchdog.Api.Controllers
             return Ok(config); // 200 OK + JSON Ayar Paketi
         }
 
-        [HttpPost] //Dashboard'dan gelen yeni ayarları kaydeder.
+        [HttpPut] //Dashboard'dan gelen yeni ayarları kaydeder.
         // Sistem ayarları hem SuperAdmin hem de Admin tarafından değiştirilebilir.
         // Sadece 'Admin' kısıtı kaldırıldı, böylece patron (SuperAdmin) yetki hatası almaz.
         [Authorize(Roles = RoleConstants.AllAdmins)]

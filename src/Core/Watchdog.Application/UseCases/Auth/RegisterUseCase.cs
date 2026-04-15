@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Watchdog.Application.DTOs.Auth;
 using Watchdog.Application.Interfaces.Common;
 using Watchdog.Application.Interfaces.Repositories;
+using Watchdog.Domain.Constants;
 using Watchdog.Domain.Entities;
 
 namespace Watchdog.Application.UseCases.Auth
@@ -21,25 +22,32 @@ namespace Watchdog.Application.UseCases.Auth
 
         public async Task<RegisterResponse> ExecuteAsync(RegisterRequest request)
         {
-            // 1. KONTROL: Kullanıcı adı çakışmasını önle.
+            // KONTROL: Kullanıcı adı çakışmasını önle.
             if (await _authRepository.IsUsernameExistAsync(request.Username))
             {
                 return new RegisterResponse { IsSuccess = false, ErrorMessage = "Bu kullanıcı adı zaten alınmış." };
             }
 
-            // 2. OLUŞTURMA: Yeni admin nesnesi.
+            var normalizedRole = RoleConstants.NormalizeRole(request.Role);
+            if (normalizedRole == null)
+            {
+                // Geçersiz bir rol (örneğin "Moderator" vs) gönderilmişse reddet.
+                return new RegisterResponse { IsSuccess = false, ErrorMessage = $"Geçersiz rol belirtildi. Desteklenen roller: {RoleConstants.SuperAdmin}, {RoleConstants.Admin}." };
+            }
+
+            // OLUŞTURMA: Yeni admin nesnesi.
             // Id, CreatedAt ve CreatedBy alanlarını artık elle atamıyoruz (DbContext'e devredildi).
             var newUser = new AdminUser
             {
                 Username = request.Username,
                 PasswordHash = _passwordHasher.HashPassword(request.Password),
-                Role = string.IsNullOrEmpty(request.Role) ? "Admin" : request.Role, // Güvenlik kontrolü eklendi
+                Role = normalizedRole, // Güvenlik kontrolü eklendi
 
                 // YENİ EKLENEN: Gelen listeyi kaydet, eğer liste gelmediyse boş liste ata.
                 AllowedAppIds = request.AllowedAppIds ?? new List<Guid>()
             };
 
-            // 3. KAYIT: İşlemi repository üzerinden tamamla.
+            // KAYIT: İşlemi repository üzerinden tamamla.
             var result = await _authRepository.AddUserAsync(newUser); // Repository metot adını kendi projene göre kontrol et (AddUserAsync veya CreateAdminAsync olabilir)
 
             return result ? new RegisterResponse { IsSuccess = true }

@@ -40,9 +40,11 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
 
         public async Task<bool> IsUsernameExistAsync(string username)
         {
-            // Yeni kayıt sırasında kullanıcı adı kontrolü (Sadece silinmemişler arasında).
+            // KURUMSAL GÜVENLİK (Burned Username): Silinmiş (IsDeleted = true) olanlar DAHİL tüm kayıtlar kontrol edilir.
+            var normalizedUsername = username.Trim().ToLower();
+
             return await _context.AdminUsers
-                .AnyAsync(u => u.Username == username && !u.IsDeleted);
+                                 .AnyAsync(u => u.Username.ToLower() == normalizedUsername);
         }
 
         public async Task<bool> AddUserAsync(AdminUser user)
@@ -69,6 +71,31 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
             // DbContext'teki interceptor yapımız bunu yakalayıp IsDeleted = true yapacak.
             _context.AdminUsers.Remove(user);
 
+            return await _context.SaveChangesAsync() > 0;
+        }
+
+        public async Task<IEnumerable<AdminUser>> GetDeletedAdminsAsync()
+        {
+            // Sadece Soft Delete ile pasife çekilmiş adminleri getir.
+            return await _context.AdminUsers
+                .Where(u => u.IsDeleted)
+                .ToListAsync();
+        }
+
+        public async Task<bool> RestoreUserAsync(Guid id)
+        {
+            // ID'ye göre admini bul (IsDeleted filtrelemesi yapmadan, çünkü silinmiş adamı arıyoruz)
+            var user = await _context.AdminUsers.FirstOrDefaultAsync(u => u.Id == id);
+
+            // Kullanıcı yoksa veya zaten aktifse işlem yapma.
+            if (user == null || !user.IsDeleted) return false;
+
+            // Admini tekrar hayata döndür.
+            user.IsDeleted = false;
+            user.DeletedAt = null;
+            user.DeletedBy = null;
+
+            _context.AdminUsers.Update(user);
             return await _context.SaveChangesAsync() > 0;
         }
     }

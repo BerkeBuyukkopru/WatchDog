@@ -89,6 +89,13 @@ namespace Watchdog.Infrastructure.Persistence
                 entity.HasKey(e => e.Id);
                 // DİKKAT: HasData bloğu DatabaseSeeder'a taşındı.
             });
+            // AdminUser Tablo Kuralları (Kurumsal Güvenlik - Burned Username)
+            modelBuilder.Entity<AdminUser>(entity =>
+            {
+                // Username kolonu veritabanı seviyesinde eşsiz (Unique) olmalıdır.
+                // Bu sayede, aynı isme sahip ikinci bir kayıt fiziksel olarak reddedilir.
+                entity.HasIndex(e => e.Username).IsUnique();
+            });
         }
     }
 }
