@@ -12,18 +12,16 @@ using Watchdog.Domain.Enums;
 namespace Watchdog.Application.UseCases.AI
 {
     // Saatlik Rutin Kapasite Analizi Senaryosu.
-    // Bu sınıf Worker'dan (veya API'den) tetiklenir, son 24 saatin loglarını toplayıp AI Fabrikasına gönderir ve gelen cevabı AiInsight tablosuna kaydeder. Dış dünya (Ollama/OpenAI) bağımsızdır.
+    // Bu sınıf Worker'dan (veya API'den) tetiklenir, son 24 saatin loglarını toplayıp AI Fabrikasına gönderir ve gelen cevabı AiInsight tablosuna kaydeder.
     public class GenerateRoutineInsightUseCase : IUseCaseAsync<GenerateRoutineInsightRequest, AiInsight?>
     {
         private readonly IMonitoredAppRepository _appRepository;
         private readonly ISnapshotRepository _snapshotRepository;
         private readonly IAiInsightRepository _insightRepository;
         private readonly IAiClientFactory _aiClientFactory;
-        private readonly ISystemConfigurationRepository _systemConfigRepository; // Eşikler için
-        private readonly IAiProviderRepository _aiProviderRepository; // AI Provider için 
+        private readonly ISystemConfigurationRepository _systemConfigRepository;
+        private readonly IAiProviderRepository _aiProviderRepository;
         private readonly IPromptBuilder _promptBuilder;
-
-        // Canlı yayın sözleşmesi 
         private readonly IStatusBroadcaster _statusBroadcaster;
 
         public GenerateRoutineInsightUseCase(
@@ -43,7 +41,7 @@ namespace Watchdog.Application.UseCases.AI
             _systemConfigRepository = systemConfigRepository;
             _aiProviderRepository = aiProviderRepository;
             _promptBuilder = promptBuilder;
-            _statusBroadcaster = statusBroadcaster; 
+            _statusBroadcaster = statusBroadcaster;
         }
 
         public async Task<AiInsight?> ExecuteAsync(GenerateRoutineInsightRequest request)
@@ -57,9 +55,18 @@ namespace Watchdog.Application.UseCases.AI
             double ramLimit = config?.CriticalRamThreshold ?? 90.0;
             double latencyLimit = config?.CriticalLatencyThreshold ?? 1000.0;
 
-            // 2. Aktif Yapay Zekayı Çek 
-            var activeProviderEntity = await _aiProviderRepository.GetActiveProviderAsync();
-            string activeProvider = activeProviderEntity?.Name ?? "Ollama";
+            // 2. Aktif Yapay Zekayı Çek (UYGULAMAYA ÖZEL VEYA GLOBAL)
+            AiProvider targetProviderEntity = null;
+            if (app.ActiveAiProviderId.HasValue)
+            {
+                targetProviderEntity = await _aiProviderRepository.GetByIdAsync(app.ActiveAiProviderId.Value);
+            }
+
+            // Eğer uygulamaya özel seçilmemişse global olanı kayıtlara geçmek için bul
+            if (targetProviderEntity == null)
+            {
+                targetProviderEntity = await _aiProviderRepository.GetActiveProviderAsync();
+            }
 
             var sinceTime = DateTime.UtcNow.AddHours(-request.HoursToAnalyze);
             var snapshots = await _snapshotRepository.GetSnapshotsSinceAsync(request.AppId, sinceTime);
@@ -67,7 +74,6 @@ namespace Watchdog.Application.UseCases.AI
             if (snapshots == null || !snapshots.Any()) return null;
 
             // --- KESİNTİ KONTROLÜ (Ölü Adamın Nabzı Sorunu Çözümü) ---
-            // Analiz edilen periyot içinde herhangi bir "Unhealthy" durumu var mı hesaplıyoruz.
             int outageCount = snapshots.Count(s => s.Status == HealthStatus.Unhealthy);
             bool hasOutages = outageCount > 0;
 
@@ -98,8 +104,6 @@ namespace Watchdog.Application.UseCases.AI
                 .Take(5)
                 .ToList();
 
-            // Stabilite kontrolüne hasOutages (Kesinti Var mı?) şartı eklendi.
-            // Eğer sistem bir kez bile çöktüyse (outageCount > 0), metrikler 0 olsa bile "Stable" diyemez.
             bool isCpuStable = avgCpu2h < cpuLimit && avgCpu24h < cpuLimit && maxCpu2h < (cpuLimit + 15);
             bool isRamStable = avgRam2h < ramLimit && avgRam24h < ramLimit;
             bool isLatencyStable = avgLatency2h < latencyLimit;
@@ -111,14 +115,13 @@ namespace Watchdog.Application.UseCases.AI
                 var stableInsight = new AiInsight
                 {
                     AppId = request.AppId,
-                    AiProviderId = activeProviderEntity?.Id, // Hangi AI'nın aktif olduğu bilgisi mühürlendi
+                    AiProviderId = targetProviderEntity?.Id, // Hangi AI'nın aktif olduğu bilgisi mühürlendi
                     InsightType = InsightType.SystemStable,
                     Message = $"STATUS: STABLE. Sistem metrikleri Dashboard üzerinde belirlenen ({cpuLimit}% CPU, {ramLimit}% RAM, {latencyLimit}ms Latency) sınırlarının altındadır. Önemli bir anlık patlama (spike) gözlenmedi.",
                     Evidence = $"CPU Avg/Max: {avgCpu2h}%/{maxCpu2h}% | RAM Avg/Max: {avgRam2h}%/{maxRam2h}% | Latency Peak: {maxLatency2h}ms | Bağımlılıklar: Temiz"
                 };
 
                 await _insightRepository.AddAsync(stableInsight);
-
                 await _statusBroadcaster.BroadcastNewInsightAsync(stableInsight);
 
                 return stableInsight;
@@ -128,7 +131,6 @@ namespace Watchdog.Application.UseCases.AI
                             ? "STATUS: DEGRADED | ERRORS: " + string.Join(", ", dependencyIssues)
                             : "STATUS: HEALTHY | ALL SUB-SERVICES OPERATIONAL";
 
-            // PromptBuilder'a kesinti sayısı (outageCount) parametre olarak eklendi.
             string aiPrompt = _promptBuilder.BuildRoutinePrompt(
                 app, cpuLimit, ramLimit, latencyLimit,
                 avgCpu24h, avgRam24h, avgLatency24h,
@@ -137,20 +139,20 @@ namespace Watchdog.Application.UseCases.AI
                 peakCpuTime, dependencyContext,
                 outageCount);
 
-            var aiClient = await _aiClientFactory.CreateClientAsync();
+            // 3. FACTORY'E UYGULAMANIN KENDİ AI TERCİHİNİ GÖNDERİYORUZ
+            var aiClient = await _aiClientFactory.CreateClientAsync(app.ActiveAiProviderId);
             var aiResponseText = await aiClient.AnalyzeAsync(aiPrompt);
 
             var insight = new AiInsight
             {
                 AppId = request.AppId,
-                AiProviderId = activeProviderEntity?.Id, // Analizi yapan sağlayıcı kimliği kaydedildi
+                AiProviderId = targetProviderEntity?.Id, // Analizi yapan sağlayıcı kimliği kaydedildi
                 InsightType = InsightType.ScalingAdvice,
                 Message = aiResponseText,
                 Evidence = $"CPU Peak: {maxCpu2h}% at {peakCpuTime} | Kesinti Sayısı: {outageCount} | Bağımlılıklar: {(dependencyIssues.Any() ? "Sorunlu" : "Temiz")}"
             };
 
             await _insightRepository.AddAsync(insight);
-
             await _statusBroadcaster.BroadcastNewInsightAsync(insight);
 
             return insight;

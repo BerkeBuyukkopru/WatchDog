@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq; // OrderBy vb. için eklendi
+using System.Threading.Tasks;
 using Watchdog.Application.DTOs.AI;
 using Watchdog.Application.Interfaces.Common;
 using Watchdog.Application.Interfaces.ExternalClients;
@@ -19,8 +20,6 @@ namespace Watchdog.Application.UseCases.AI
         private readonly IAiClientFactory _aiClientFactory;
         private readonly IPromptBuilder _promptBuilder;
         private readonly IAiProviderRepository _aiProviderRepository;
-
-        // Canlı yayın sözleşmesi
         private readonly IStatusBroadcaster _statusBroadcaster;
 
         public GenerateStrategicInsightUseCase(
@@ -30,7 +29,7 @@ namespace Watchdog.Application.UseCases.AI
             IAiClientFactory aiClientFactory,
             IPromptBuilder promptBuilder,
             IAiProviderRepository aiProviderRepository,
-            IStatusBroadcaster statusBroadcaster) 
+            IStatusBroadcaster statusBroadcaster)
         {
             _appRepository = appRepository;
             _snapshotRepository = snapshotRepository;
@@ -38,7 +37,7 @@ namespace Watchdog.Application.UseCases.AI
             _aiClientFactory = aiClientFactory;
             _promptBuilder = promptBuilder;
             _aiProviderRepository = aiProviderRepository;
-            _statusBroadcaster = statusBroadcaster; 
+            _statusBroadcaster = statusBroadcaster;
         }
 
         public async Task<AiInsight?> ExecuteAsync(GenerateStrategicInsightRequest request)
@@ -46,9 +45,18 @@ namespace Watchdog.Application.UseCases.AI
             var app = await _appRepository.GetByIdAsync(request.AppId);
             if (app == null) return null;
 
-            // Hangi zekanın çalıştığını builder'a söylemek için yeni tablodan çekiyoruz.
-            var activeProviderEntity = await _aiProviderRepository.GetActiveProviderAsync();
-            string activeProvider = activeProviderEntity?.Name ?? "Ollama";
+            // --- YENİ MANTIK: UYGULAMAYA ÖZEL AI SEÇİMİ ---
+            AiProvider targetProviderEntity = null;
+            if (app.ActiveAiProviderId.HasValue)
+            {
+                targetProviderEntity = await _aiProviderRepository.GetByIdAsync(app.ActiveAiProviderId.Value);
+            }
+
+            // Eğer uygulamaya özel seçilmemişse global aktif olanı bul (Yedek)
+            if (targetProviderEntity == null)
+            {
+                targetProviderEntity = await _aiProviderRepository.GetActiveProviderAsync();
+            }
 
             var dailyStats = await _snapshotRepository.GetDailyEnrichedSnapshotsAsync(request.AppId, 8);
             if (dailyStats == null || dailyStats.Count < 2) return null;
@@ -59,8 +67,8 @@ namespace Watchdog.Application.UseCases.AI
             var targetBaselineDate = targetDay.Date.AddDays(-7).Date;
 
             var baselineDay = dailyStats
-                .Where(d => d.Date.Date >= targetBaselineDate.AddDays(-1) && d.Date.Date <= targetBaselineDate.AddDays(1)) // 6, 7 veya 8. güne esneklik tanı
-                .OrderBy(d => Math.Abs((d.Date.Date - targetBaselineDate).Days)) // 7. güne en yakın olanı seç
+                .Where(d => d.Date.Date >= targetBaselineDate.AddDays(-1) && d.Date.Date <= targetBaselineDate.AddDays(1))
+                .OrderBy(d => Math.Abs((d.Date.Date - targetBaselineDate).Days))
                 .FirstOrDefault();
 
             if (baselineDay == null) return null;
@@ -77,13 +85,14 @@ namespace Watchdog.Application.UseCases.AI
                 weeklyAvgCpu, weeklyAvgRam,
                 baselineErrors, targetErrors);
 
-            var aiClient = await _aiClientFactory.CreateClientAsync();
+            // --- FACTORY'E UYGULAMANIN KENDİ AI ID'SİNİ GÖNDERİYORUZ ---
+            var aiClient = await _aiClientFactory.CreateClientAsync(app.ActiveAiProviderId);
             var aiResponseText = await aiClient.AnalyzeAsync(aiPrompt);
 
             var insight = new AiInsight
             {
                 AppId = request.AppId,
-                AiProviderId = activeProviderEntity?.Id,
+                AiProviderId = targetProviderEntity?.Id, // Analizi yapan gerçek AI kaydedildi
                 InsightType = InsightType.StrategicForecast,
                 Message = aiResponseText,
                 Evidence = $"[Karşılaştırma] {baselineDay.Date:dd/MM} vs {targetDay.Date:dd/MM} | Haftalık Trend CPU: {weeklyAvgCpu}%"
