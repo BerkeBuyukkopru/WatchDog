@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Threading.Tasks;
 using Watchdog.Domain.Entities;
 
 namespace Watchdog.Application.Interfaces.ExternalClients
@@ -12,5 +10,8 @@ namespace Watchdog.Application.Interfaces.ExternalClients
 
         // Sistem tekrar ayağa kalktığında gönderilecek "Her şey yolunda" e-postası
         Task SendRecoveryAlertAsync(Incident incident, MonitoredApp app);
+
+        // === YENİ EKLENEN: Şifre sıfırlama vb. işlemler için GENEL mail atma metodu ===
+        Task SendEmailAsync(string toEmail, string subject, string htmlMessage);
     }
 }

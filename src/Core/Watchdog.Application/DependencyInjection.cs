@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Collections.Generic;
 using Watchdog.Application.DTOs.AI;
 using Watchdog.Application.DTOs.Apps;
@@ -23,10 +24,10 @@ public static class DependencyInjection
         services.AddScoped<IUseCaseAsync<GetSystemConfigRequest, SystemConfigDto?>, GetSystemConfigUseCase>();
         services.AddScoped<IUseCaseAsync<SystemConfigDto, bool>, UpdateSystemConfigUseCase>();
 
-        // === apay Zeka Sağlayıcı Yönetimi Use Case'leri ===
+        // === Yapay Zeka Sağlayıcı Yönetimi Use Case'leri ===
         services.AddScoped<IUseCaseAsync<GetAllAiProvidersRequest, IEnumerable<AiProviderDto>>, GetAllAiProvidersUseCase>();
-        services.AddScoped<SetActiveAiProviderUseCase>(); 
-        services.AddScoped<UpdateAiProviderUseCase>();    
+        services.AddScoped<SetActiveAiProviderUseCase>();
+        services.AddScoped<UpdateAiProviderUseCase>();
 
         services.AddScoped<IUseCaseAsync<GetAllAppsRequest, IEnumerable<AppDto>>, GetAllAppsUseCase>();
         services.AddScoped<IUseCaseAsync<DeleteAppRequest, bool>, DeleteAppUseCase>();
@@ -49,12 +50,17 @@ public static class DependencyInjection
         services.AddScoped<IUseCaseAsync<Guid, bool>, ResolveInsightUseCase>();
         services.AddScoped<ArchiveSnapshotsUseCase>();
 
-        // Auth Use Case
+        // === Auth Use Case'leri ===
         services.AddScoped<IUseCaseAsync<LoginRequest, LoginResponse>, LoginUseCase>();
         services.AddScoped<IUseCaseAsync<RegisterRequest, RegisterResponse>, RegisterUseCase>();
         services.AddScoped<IUseCaseAsync<Guid, bool>, DeleteAdminUseCase>();
         services.AddScoped<IUseCaseAsync<UpdateAdminRequest, bool>, UpdateAdminUseCase>();
         services.AddScoped<IUseCaseAsync<Guid, bool>, RestoreAdminUseCase>();
+
+        // ŞİFRE SIFIRLAMA İÇİN EKLENEN YENİ İŞÇİLER:
+        services.AddScoped<IUseCaseAsync<string, bool>, SendResetCodeUseCase>();
+        services.AddScoped<IUseCaseAsync<ResetPasswordRequest, bool>, ResetPasswordUseCase>();
+
         services.AddScoped<SetAppAiProviderUseCase>();
 
         return services;

@@ -20,5 +20,10 @@ namespace Watchdog.Application.DTOs.Apps
         // Yeni eklediğimiz çoklu mail alanı
         [CommaSeparatedEmails(ErrorMessage = "Geçersiz e-posta formatı")]
         public string? NotificationEmails { get; set; }
+
+        // YENİ EKLENEN: Super Admin'in bu uygulama için belirlediği merkezi e-posta adresi
+        [Required(ErrorMessage = "Yönetici (Admin) e-posta adresi zorunludur.")]
+        [EmailAddress(ErrorMessage = "Lütfen geçerli bir e-posta adresi giriniz.")]
+        public string AdminEmail { get; set; } = string.Empty;
     }
 }

@@ -12,14 +12,16 @@ namespace Watchdog.Domain.Entities
         public string? NotificationEmails { get; set; }
         public string? ApiKey { get; set; }
 
+        // YENİ EKLENEN: SuperAdmin'in bu uygulama için atadığı merkezi iletişim/şifre sıfırlama maili
+        public string AdminEmail { get; set; } = string.Empty;
+
         // İŞ MANTIĞI: İzleme aktif mi pasif mi? (Silme ile karıştırılmamalı)
         public bool IsActive { get; set; } = true;
 
         // YENİ EKLENEN 1: Bu uygulamanın kullandığı aktif yapay zekanın ID'si
-        // (Uygulama ilk eklendiğinde henüz AI seçilmemiş olabileceği için '?' ile Nullable yapıyoruz)
         public Guid? ActiveAiProviderId { get; set; }
 
-        // YENİ EKLENEN 2: Entity Framework'ün iki tabloyu birbirine bağlaması için (Navigation Property)
+        // YENİ EKLENEN 2: Entity Framework'ün iki tabloyu birbirine bağlaması için
         public virtual AiProvider? ActiveAiProvider { get; set; }
     }
 }

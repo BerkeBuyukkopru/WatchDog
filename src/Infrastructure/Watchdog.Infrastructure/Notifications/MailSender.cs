@@ -71,7 +71,25 @@ namespace Watchdog.Infrastructure.Notifications
             await SendViaApiAsync(emailData, app.Name);
         }
 
-        // === 3. ORTAK API GÖNDERİM MOTORU ===
+        // === 3. GENEL MAİL GÖNDERİM METODU (Şifre Sıfırlama vb. için) ===
+        public async Task SendEmailAsync(string toEmail, string subject, string htmlMessage)
+        {
+            _logger.LogInformation("===> [API] {Email} adresi için özel mail (Örn: Şifre Sıfırlama) hazırlanıyor...", toEmail);
+
+            // Mailtrap API'nin beklediği JSON formatı
+            var emailData = new
+            {
+                from = new { email = _settings.From, name = _settings.DisplayName },
+                to = new[] { new { email = toEmail } }, // Sadece parametreden gelen kişiye atar
+                subject = subject,
+                html = htmlMessage
+            };
+
+            // Mevcut motorunu kullanarak maili API'ye yolla
+            await SendViaApiAsync(emailData, "Auth System");
+        }
+
+        // === 4. ORTAK API GÖNDERİM MOTORU ===
         private async Task SendViaApiAsync(object payload, string appName)
         {
             try

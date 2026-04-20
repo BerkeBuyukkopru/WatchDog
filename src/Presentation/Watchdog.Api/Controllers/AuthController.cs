@@ -1,8 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Watchdog.Domain.Constants; //Sabitleri ekledik
-using Watchdog.Application.DTOs.Auth;
+using System.Threading.Tasks;
+using Watchdog.Application.DTOs.Auth; // Sadece senin kendi DTO'ların kullanılacak
 using Watchdog.Application.Interfaces.Common;
+using Watchdog.Domain.Constants;
 
 namespace Watchdog.Api.Controllers
 {
@@ -11,7 +12,7 @@ namespace Watchdog.Api.Controllers
     public class AuthController : ControllerBase
     {
         [HttpPost("login")]
-        [AllowAnonymous] // Kilitli kapıların dışındaki tek açık gişe
+        [AllowAnonymous]
         public async Task<IActionResult> Login(
             [FromBody] LoginRequest request,
             [FromServices] IUseCaseAsync<LoginRequest, LoginResponse> loginUseCase)
@@ -27,7 +28,6 @@ namespace Watchdog.Api.Controllers
         }
 
         [HttpPost("register")]
-        // Artık Magic String yok ve sisteme yeni kişileri SADECE SuperAdmin ekleyebilir!
         [Authorize(Roles = RoleConstants.SuperAdmin)]
         public async Task<IActionResult> Register(
             [FromBody] RegisterRequest request,
@@ -41,6 +41,39 @@ namespace Watchdog.Api.Controllers
             }
 
             return Ok(new { message = "Yeni yönetici başarıyla eklendi." });
+        }
+
+        // ---------------- YENİ EKLENEN UÇ NOKTALAR ----------------
+
+        [HttpPost("forgot-password")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ForgotPassword(
+            [FromBody] string username,
+            [FromServices] IUseCaseAsync<string, bool> sendResetCodeUseCase)
+        {
+            await sendResetCodeUseCase.ExecuteAsync(username);
+            return Ok(new { Message = "Eğer kullanıcı adı sistemimizde kayıtlıysa, doğrulama kodunuz ilişkili e-posta adresine gönderilmiştir." });
+        }
+
+        [HttpPost("reset-password")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ResetPassword(
+            [FromBody] ResetPasswordRequest request,
+            [FromServices] IUseCaseAsync<ResetPasswordRequest, bool> resetPasswordUseCase)
+        {
+            try
+            {
+                var success = await resetPasswordUseCase.ExecuteAsync(request);
+                if (success)
+                {
+                    return Ok(new { Message = "Şifreniz başarıyla güncellendi. Giriş sayfasına yönlendiriliyorsunuz..." });
+                }
+                return BadRequest(new { Message = "İşlem başarısız." });
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
         }
     }
 }
