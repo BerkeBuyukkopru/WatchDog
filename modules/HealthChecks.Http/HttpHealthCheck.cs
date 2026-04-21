@@ -12,36 +12,37 @@ namespace HealthChecks.Http
     public class HttpHealthCheck : IHealthCheck
     {
         private readonly HttpClient _httpClient;
-        private readonly string _url;
+        private readonly Func<string> _urlProvider;
 
-        public string Name => $"HTTP_Check_{_url}";
+        // İsim sabit kalmalı ki WatchDog ararken kaybetmesin
+        public string Name => "HTTP_Dynamic_Check";
 
-        public HttpHealthCheck(HttpClient httpClient, string url)
+        public HttpHealthCheck(HttpClient httpClient, Func<string> urlProvider)
         {
             _httpClient = httpClient;
-            _url = url;
+            _urlProvider = urlProvider;
         }
 
         public async Task<HealthCheckResult> CheckHealthAsync(CancellationToken cancellationToken = default)
         {
             var stopwatch = Stopwatch.StartNew();
 
+            // KRİTİK: Her ping atıldığında güncel URL'i okuyoruz!
+            string currentUrl = _urlProvider();
+
             try
             {
-                // Sadece Header'ları okuyarak gövdeyi (Body) indirmekten kurtuluyoruz (Performans Artışı)
-                using var request = new HttpRequestMessage(HttpMethod.Get, _url);
+                using var request = new HttpRequestMessage(HttpMethod.Get, currentUrl);
                 using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
                 stopwatch.Stop();
 
-                // Telemetri verilerini hazırlıyoruz
                 var telemetryData = new Dictionary<string, object>
                 {
                     { "StatusCode", (int)response.StatusCode },
-                    { "Url", _url }
+                    { "Url", currentUrl }
                 };
 
-                // Mentör Özel Revizyonu: SADECE 404 ise Unhealthy say!
                 if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
                     var unhealthyResult = HealthCheckResult.Unhealthy($"HTTP isteği başarısız oldu. Sadece 404 Not Found alındı.", data: telemetryData);
@@ -49,7 +50,6 @@ namespace HealthChecks.Http
                     return unhealthyResult;
                 }
 
-                // 404 harici tüm yanıtlarda (500 dahil) uç noktanın var olduğu kabul edilir
                 var result = HealthCheckResult.Healthy($"Uç nokta yanıt verdi. Status Code: {(int)response.StatusCode}", data: telemetryData);
                 result.Duration = stopwatch.Elapsed;
                 return result;
@@ -57,7 +57,7 @@ namespace HealthChecks.Http
             catch (Exception ex)
             {
                 stopwatch.Stop();
-                var exceptionResult = HealthCheckResult.Unhealthy($"HTTP isteği sırasında bağlantı hatası: {ex.Message}", ex);
+                var exceptionResult = HealthCheckResult.Unhealthy($"HTTP isteği sırasında bağlantı hatası ({currentUrl}): {ex.Message}", ex);
                 exceptionResult.Duration = stopwatch.Elapsed;
                 return exceptionResult;
             }

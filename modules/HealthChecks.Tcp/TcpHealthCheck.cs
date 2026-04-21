@@ -1,4 +1,5 @@
 ﻿using HealthChecks.Abstractions;
+using HealthChecks.Abstractions.Enums;
 using System;
 using System.Diagnostics;
 using System.Net.Sockets;
@@ -10,17 +11,17 @@ namespace HealthChecks.Tcp
 {
     public class TcpHealthCheck : IHealthCheck
     {
-        private readonly string _host;
-        private readonly int _port;
+        private readonly Func<string> _hostProvider;
+        private readonly Func<int> _portProvider;
         private readonly string? _payload;
         private readonly string? _response;
 
         public string Name => "Tcp_Client_Check";
 
-        public TcpHealthCheck(string host, int port, string? payload = null, string? response = null)
+        public TcpHealthCheck(Func<string> hostProvider, Func<int> portProvider, string? payload = null, string? response = null)
         {
-            _host = host;
-            _port = port;
+            _hostProvider = hostProvider;
+            _portProvider = portProvider;
             _payload = payload;
             _response = response;
         }
@@ -29,25 +30,25 @@ namespace HealthChecks.Tcp
         {
             var stopwatch = Stopwatch.StartNew();
 
+            // O anki güncel hedef IP ve Port'u okuyoruz
+            string currentHost = _hostProvider();
+            int currentPort = _portProvider();
+
             try
             {
                 using var client = new TcpClient();
-
-                // 1. İyileştirme: Bağlantı aşamasına iptal jetonunu ekliyoruz
-                await client.ConnectAsync(_host, _port, cancellationToken);
+                await client.ConnectAsync(currentHost, currentPort, cancellationToken);
 
                 if (string.IsNullOrEmpty(_payload))
                 {
-                    var result = HealthCheckResult.Healthy($"TCP bağlantısı başarılı. Hedef: {_host}:{_port}");
+                    var result = HealthCheckResult.Healthy($"TCP bağlantısı başarılı. Hedef: {currentHost}:{currentPort}");
                     result.Duration = stopwatch.Elapsed;
                     return result;
                 }
 
                 using var stream = client.GetStream();
-
                 byte[] dataToSend = Encoding.UTF8.GetBytes(_payload);
 
-                // 2. İyileştirme: Modern AsMemory() kullanımı ile Write/Read işlemlerine jetonu ekliyoruz
                 await stream.WriteAsync(dataToSend.AsMemory(), cancellationToken);
 
                 byte[] buffer = new byte[1024];
@@ -68,13 +69,12 @@ namespace HealthChecks.Tcp
             }
             catch (Exception ex)
             {
-                var unhealthyResult = HealthCheckResult.Unhealthy($"TCP hatası ({_host}:{_port}): {ex.Message}", ex);
+                var unhealthyResult = HealthCheckResult.Unhealthy($"TCP hatası ({currentHost}:{currentPort}): {ex.Message}", ex);
                 unhealthyResult.Duration = stopwatch.Elapsed;
                 return unhealthyResult;
             }
             finally
             {
-                // 3. İyileştirme: Süreyi durdurma işlemini tek bir merkeze topladık
                 if (stopwatch.IsRunning)
                 {
                     stopwatch.Stop();

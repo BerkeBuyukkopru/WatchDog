@@ -51,17 +51,35 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                 finalDuration = probeResult.DurationMilliseconds;
                 errorOrJson = probeResult.JsonContent;
 
-                // 3. Başarılıysa JSON verisini ayrıştır (Parse)
-                if (finalStatus == HealthStatus.Healthy && !string.IsNullOrEmpty(errorOrJson))
+                // 3. Başarılıysa veya JSON verisi geldiyse ayrıştır (Parse)
+                if (!string.IsNullOrEmpty(errorOrJson) && errorOrJson.TrimStart().StartsWith("{"))
                 {
                     try
                     {
                         using var jsonDoc = JsonDocument.Parse(errorOrJson);
-                        if (jsonDoc.RootElement.TryGetProperty("metrics", out var metricsElement))
+                        var root = jsonDoc.RootElement;
+
+                        // HTTP 200 gelse bile JSON içindeki gerçek statüyü okuyarak False-Positive engelliyoruz
+                        if (root.TryGetProperty("status", out var statusProp))
                         {
-                            if (metricsElement.TryGetProperty("system_cpu_percent", out var cpuProp)) realCpu = cpuProp.GetDouble();
-                            if (metricsElement.TryGetProperty("system_ram_percent", out var ramProp)) realRamPercent = ramProp.GetDouble();
-                            if (metricsElement.TryGetProperty("free_disk_gb", out var diskProp)) realDisk = diskProp.GetDouble();
+                            string statusStr = statusProp.GetString() ?? "";
+                            if (statusStr.Equals("Unhealthy", StringComparison.OrdinalIgnoreCase))
+                                finalStatus = HealthStatus.Unhealthy;
+                            else if (statusStr.Equals("Degraded", StringComparison.OrdinalIgnoreCase))
+                                finalStatus = HealthStatus.Degraded;
+                            else if (statusStr.Equals("Healthy", StringComparison.OrdinalIgnoreCase))
+                                finalStatus = HealthStatus.Healthy;
+                        }
+
+                        // Metrikleri JSON root dizininden doğru isimlerle çekiyoruz
+                        if (root.TryGetProperty("cpuUsage", out var cpuProp)) realCpu = cpuProp.GetDouble();
+                        if (root.TryGetProperty("ramUsage", out var ramProp)) realRamPercent = ramProp.GetDouble();
+                        if (root.TryGetProperty("freeDiskGb", out var diskProp)) realDisk = diskProp.GetDouble();
+
+                        // Sadece alt detayları (SQL vb.) AI analizi için sakla
+                        if (root.TryGetProperty("dependencyDetails", out var depProp))
+                        {
+                            errorOrJson = depProp.GetString() ?? errorOrJson;
                         }
                     }
                     catch { /* JSON okunamasa bile uygulamanın ayakta olduğunu biliyoruz. */ }

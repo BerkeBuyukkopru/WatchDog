@@ -22,8 +22,8 @@ namespace Watchdog.Infrastructure.Probing
         {
             _httpClient = httpClient;
 
-            // POLLY KURALI: Bir siteye ping attığımızda 5 saniye içinde cevap gelmezse bekleme, fişini çek!
-            _timeoutPolicy = Policy.TimeoutAsync(5, TimeoutStrategy.Pessimistic);
+            // POLLY KURALI: Bir siteye ping attığımızda 10 saniye içinde cevap gelmezse bekleme, fişini çek!
+            _timeoutPolicy = Policy.TimeoutAsync(10, TimeoutStrategy.Pessimistic);
         }
 
         public async Task<ProbeResult> CheckHealthAsync(string healthUrl, CancellationToken cancellationToken = default)
@@ -42,15 +42,20 @@ namespace Watchdog.Infrastructure.Probing
                 stopwatch.Stop();
                 result.DurationMilliseconds = stopwatch.ElapsedMilliseconds;
 
+                // JSON verisini HTTP durum kodundan bağımsız olarak KESİNLİKLE okuyoruz.
+                result.JsonContent = await response.Content.ReadAsStringAsync(cancellationToken);
+
                 if (response.IsSuccessStatusCode)
                 {
                     result.Status = HealthStatus.Healthy;
-                    result.JsonContent = await response.Content.ReadAsStringAsync(cancellationToken);
                 }
                 else
                 {
-                    // Site ayakta ama 404 veya 500 gibi bir hata kodu dönüyor.
-                    result.Status = HealthStatus.Degraded;
+                    // Site ayakta ama 404 veya 500/503 gibi bir hata kodu dönüyor.
+                    // 503 Service Unavailable dönerse direkt Unhealthy kabul ediyoruz.
+                    result.Status = response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable
+                        ? HealthStatus.Unhealthy
+                        : HealthStatus.Degraded;
                 }
             }
             catch (TimeoutRejectedException)
@@ -59,13 +64,15 @@ namespace Watchdog.Infrastructure.Probing
                 stopwatch.Stop();
                 result.DurationMilliseconds = stopwatch.ElapsedMilliseconds;
                 result.Status = HealthStatus.Unhealthy;
+                result.JsonContent = "Timeout: Hedef uygulama 10 saniye içinde yanıt vermedi.";
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 // DNS hatası, sunucu kapalı vb. durumlar
                 stopwatch.Stop();
                 result.DurationMilliseconds = stopwatch.ElapsedMilliseconds;
                 result.Status = HealthStatus.Unhealthy;
+                result.JsonContent = $"Connection Error: {ex.Message}";
             }
 
             return result;
