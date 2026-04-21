@@ -16,7 +16,7 @@ services:
   watchdog-api:
     build:
       context: .
-      dockerfile: src/Presentation/Watchdog.Api/Dockerfile
+      dockerfile: backend/src/Presentation/Watchdog.Api/Dockerfile
     container_name: watchdog-api
     ports:
       # .env dosyasındaki API_PORT değerini (5000) dış port olarak kullanır
@@ -31,7 +31,7 @@ services:
   watchdog-worker:
     build:
       context: .
-      dockerfile: src/Presentation/Watchdog.Worker/Dockerfile
+      dockerfile: backend/src/Presentation/Watchdog.Worker/Dockerfile
     container_name: watchdog-worker
     environment:
       - ConnectionStrings__DefaultConnection=Server=watchdog-db;Database=${DB_NAME};User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True
