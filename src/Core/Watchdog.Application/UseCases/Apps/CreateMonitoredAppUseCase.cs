@@ -46,10 +46,8 @@ namespace Watchdog.Application.UseCases.Apps
                 Name = request.Name,
                 HealthUrl = request.HealthUrl,
                 PollingIntervalSeconds = request.PollingIntervalSeconds,
-                NotificationEmails = request.NotificationEmails,
 
-                // YENİ EKLENEN: SuperAdmin'in bu uygulama için atadığı merkezi mail (Request DTO'na AdminEmail eklemeyi unutma!)
-                AdminEmail = request.AdminEmail,
+                // YENİ GÜNCELLEME: Mail kısımları (NotificationEmails ve AdminEmail) buradan tamamen silindi!
 
                 // Profesyonel, güvenli ve benzersiz bir API Key üretimi
                 ApiKey = "wdg_live_" + Guid.NewGuid().ToString("N").ToLower(),

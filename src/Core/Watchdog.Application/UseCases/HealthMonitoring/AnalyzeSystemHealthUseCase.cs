@@ -20,9 +20,10 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
         private readonly INotificationSender _notificationSender;
         private readonly IMonitoredAppRepository _appRepository;
         private readonly IServiceScopeFactory _scopeFactory;
-
-        // Canlı yayın sözleşmesi
         private readonly IStatusBroadcaster _statusBroadcaster;
+
+        // YENİ EKLENEN: Sorumlu Adminleri bulmak için AuthRepository'i ekliyoruz.
+        private readonly IAuthRepository _authRepository;
 
         public AnalyzeSystemHealthUseCase(
             ISnapshotRepository snapshotRepository,
@@ -30,7 +31,8 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
             INotificationSender notificationSender,
             IMonitoredAppRepository appRepository,
             IServiceScopeFactory scopeFactory,
-            IStatusBroadcaster statusBroadcaster)
+            IStatusBroadcaster statusBroadcaster,
+            IAuthRepository authRepository) // Constructora Eklendi
         {
             _snapshotRepository = snapshotRepository;
             _incidentRepository = incidentRepository;
@@ -38,11 +40,11 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
             _appRepository = appRepository;
             _scopeFactory = scopeFactory;
             _statusBroadcaster = statusBroadcaster;
+            _authRepository = authRepository;
         }
 
         public async Task ExecuteAsync(HealthSnapshot latestSnapshot)
         {
-            // Arayüze anında canlı veri gönderimi (Worker'dan buraya taşındı)
             await _statusBroadcaster.BroadcastNewStatusAsync(latestSnapshot);
 
             var app = await _appRepository.GetByIdAsync(latestSnapshot.AppId);
@@ -59,7 +61,6 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
 
                 if (IncidentRules.ShouldOpenIncident(recentSnapshots, hasActiveIncident))
                 {
-                    // --- KURUMSAL LOG GÜNCELLEMESİ ---
                     Console.WriteLine($">>>> [INCIDENT-TRIGGER] [CRITICAL] {app.Name} ÜST ÜSTE 3 KEZ YANIT VERMEDİ! Olay başlatılıyor...");
 
                     var newIncident = new Incident
@@ -73,10 +74,9 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
 
                     await _incidentRepository.AddAsync(newIncident);
 
-                    // UC 6 (Bildirim) BURADA TETİKLENİYOR
-                    await _notificationSender.SendDowntimeAlertAsync(newIncident, app);
+                    // --- YENİ MAİL MANTIĞI: SADECE SORUMLU ADMİNLERİ BUL VE MAİL AT ---
+                    await SendAlertToResponsibleAdminsAsync(app, "🚨 KRİTİK KESİNTİ", $"{app.Name} uygulaması an itibarıyla çöktü. Hata: {newIncident.ErrorMessage}");
 
-                    // Arka plana atıyoruz ama artık kendi scope'unu yaratacak
                     _ = Task.Run(async () => await TriggerRootCauseAnalysisAsync(app, recentSnapshots));
                 }
             }
@@ -88,18 +88,36 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                     activeIncident.ResolvedAt = DateTime.UtcNow;
                     await _incidentRepository.UpdateAsync(activeIncident);
 
-                    // UC 6 (İyileşme Bildirimi) BURADA TETİKLENİYOR
-                    await _notificationSender.SendRecoveryAlertAsync(activeIncident, app);
+                    // --- YENİ MAİL MANTIĞI: İYİLEŞMEYİ ADMİNLERE BİLDİR ---
+                    await SendAlertToResponsibleAdminsAsync(app, "✅ SİSTEM DÜZELDİ", $"{app.Name} uygulaması tekrar sağlıklı duruma döndü.");
                 }
+            }
+        }
+
+        // Kodu kirletmemek için mail gönderme işini küçük bir metoda aldık:
+        private async Task SendAlertToResponsibleAdminsAsync(MonitoredApp app, string subject, string message)
+        {
+            var responsibleAdmins = await _authRepository.GetAdminsByAppIdAsync(app.Id);
+
+            var adminEmails = responsibleAdmins
+                .Where(a => !string.IsNullOrEmpty(a.Email))
+                .Select(a => a.Email)
+                .ToList();
+
+            if (adminEmails.Any())
+            {
+                string toEmails = string.Join(",", adminEmails);
+                await _notificationSender.SendEmailAsync(toEmails, subject, message);
+                Console.WriteLine($">>>> [MAIL] Uyarı {adminEmails.Count} sorumlu admine gönderildi.");
             }
         }
 
         private async Task TriggerRootCauseAnalysisAsync(MonitoredApp app, List<HealthSnapshot> recentSnapshots)
         {
+            // (Burası aynı kaldı, değiştirmedim)
             try
             {
                 using var scope = _scopeFactory.CreateScope();
-
                 var insightRepository = scope.ServiceProvider.GetRequiredService<IAiInsightRepository>();
                 var aiProviderRepository = scope.ServiceProvider.GetRequiredService<IAiProviderRepository>();
                 var promptBuilder = scope.ServiceProvider.GetRequiredService<IPromptBuilder>();
@@ -136,7 +154,6 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
 
                 await insightRepository.AddAsync(newInsight);
 
-                // React (SignalR) tüneline canlı fırlatma
                 var statusBroadcaster = scope.ServiceProvider.GetRequiredService<IStatusBroadcaster>();
                 await statusBroadcaster.BroadcastNewInsightAsync(newInsight);
 

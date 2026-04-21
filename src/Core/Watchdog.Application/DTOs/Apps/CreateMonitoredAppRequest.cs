@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Text;
-using Watchdog.Application.Attributes;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace Watchdog.Application.DTOs.Apps
 {
@@ -11,19 +7,13 @@ namespace Watchdog.Application.DTOs.Apps
         [Required(ErrorMessage = "Uygulama adı zorunludur.")]
         public string Name { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Health URL zorunludur.")]
-        [Url(ErrorMessage = "Lütfen geçerli bir URL giriniz.")] // TTD Format kuralı!
+        [Required(ErrorMessage = "İzlenecek URL zorunludur.")]
+        [Url(ErrorMessage = "Geçerli bir URL giriniz.")]
         public string HealthUrl { get; set; } = string.Empty;
 
+        [Range(10, 3600, ErrorMessage = "İzleme aralığı 10 saniye ile 1 saat arasında olmalıdır.")]
         public int PollingIntervalSeconds { get; set; } = 60;
 
-        // Yeni eklediğimiz çoklu mail alanı
-        [CommaSeparatedEmails(ErrorMessage = "Geçersiz e-posta formatı")]
-        public string? NotificationEmails { get; set; }
-
-        // YENİ EKLENEN: Super Admin'in bu uygulama için belirlediği merkezi e-posta adresi
-        [Required(ErrorMessage = "Yönetici (Admin) e-posta adresi zorunludur.")]
-        [EmailAddress(ErrorMessage = "Lütfen geçerli bir e-posta adresi giriniz.")]
-        public string AdminEmail { get; set; } = string.Empty;
+        // BURADAKİ NotificationEmails ve AdminEmail SATIRLARI SİLİNDİ!
     }
 }
