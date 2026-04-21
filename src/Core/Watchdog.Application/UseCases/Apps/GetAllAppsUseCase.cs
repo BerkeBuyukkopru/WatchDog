@@ -35,42 +35,36 @@ namespace Watchdog.Application.UseCases.Apps
             var currentRole = _currentUserService.Role;
 
             // 3. EĞER kullanıcı SuperAdmin DEĞİLSE filtreleme yap.
-            if (currentRole != RoleConstants.SuperAdmin) // Projende RoleConstants varsa kullan, yoksa "SuperAdmin" yazabilirsin.
+            if (currentRole != RoleConstants.SuperAdmin)
             {
-                // Mevcut kullanıcının ID'sini alıp veritabanından admin bilgilerini buluyoruz.
-                // 3. EĞER kullanıcı SuperAdmin DEĞİLSE filtreleme yap.
-                if (currentRole != RoleConstants.SuperAdmin)
+                // UserId artık direkt Guid geldiği için Parse etmeye gerek yok!
+                Guid userId = _currentUserService.UserId;
+
+                if (userId != Guid.Empty)
                 {
-                    // UserId artık direkt Guid geldiği için Parse etmeye gerek yok! Sadece boş mu diye bakıyoruz.
-                    Guid userId = _currentUserService.UserId;
+                    var currentAdmin = await _authRepository.GetByIdAsync(userId);
 
-                    if (userId != Guid.Empty)
+                    if (currentAdmin != null && currentAdmin.AllowedAppIds != null && currentAdmin.AllowedAppIds.Any())
                     {
-                        var currentAdmin = await _authRepository.GetByIdAsync(userId);
-
-                        if (currentAdmin != null && currentAdmin.AllowedAppIds != null && currentAdmin.AllowedAppIds.Any())
-                        {
-                            // Sadece yetkisi olan uygulamaları filtrele.
-                            allApps = allApps.Where(app => currentAdmin.AllowedAppIds.Contains(app.Id)).ToList();
-                        }
-                        else
-                        {
-                            // Eğer adminin hiçbir uygulamaya yetkisi yoksa veya bilgisi bulunamadıysa boş liste dön.
-                            return new List<AppDto>();
-                        }
+                        // Sadece yetkisi olan uygulamaları filtrele.
+                        allApps = allApps.Where(app => currentAdmin.AllowedAppIds.Contains(app.Id)).ToList();
+                    }
+                    else
+                    {
+                        // Eğer adminin hiçbir uygulamaya yetkisi yoksa veya bilgisi bulunamadıysa boş liste dön.
+                        return new List<AppDto>();
                     }
                 }
             }
 
-            // 4. Sonuçları DTO'ya dönüştür.
+            // 4. Sonuçları DTO'ya dönüştür. (NotificationEmails silindi!)
             return allApps.Select(a => new AppDto
             {
                 Id = a.Id,
                 Name = a.Name,
                 HealthUrl = a.HealthUrl,
                 PollingIntervalSeconds = a.PollingIntervalSeconds,
-                CreatedAt = a.CreatedAt,
-                NotificationEmails = a.NotificationEmails ?? string.Empty
+                CreatedAt = a.CreatedAt
             });
         }
     }

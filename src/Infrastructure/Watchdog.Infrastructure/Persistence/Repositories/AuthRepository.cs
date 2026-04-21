@@ -90,5 +90,14 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
             _context.AdminUsers.Update(user);
             return await _context.SaveChangesAsync() > 0;
         }
+
+        // === YENİ EKLENEN METOT: Sorumlu Adminleri Bulma ===
+        public async Task<List<AdminUser>> GetAdminsByAppIdAsync(Guid appId)
+        {
+            // AllowedAppIds listesinin içinde bu appId'yi barındıran aktif ve silinmemiş adminleri getir
+            return await _context.AdminUsers
+                .Where(a => a.AllowedAppIds.Contains(appId) && !a.IsDeleted)
+                .ToListAsync();
+        }
     }
 }

@@ -20,5 +20,8 @@ namespace Watchdog.Application.Interfaces.Repositories
         Task<bool> UpdateUserAsync(AdminUser user);
         Task<bool> DeleteUserAsync(Guid id);
         Task<bool> RestoreUserAsync(Guid id);
+
+        // === YENİ EKLENEN: Uygulamadan sorumlu adminleri bulma metodu ===
+        Task<List<AdminUser>> GetAdminsByAppIdAsync(Guid appId);
     }
 }
