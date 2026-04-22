@@ -77,24 +77,24 @@ namespace Watchdog.Application.UseCases.AI
             int outageCount = snapshots.Count(s => s.Status == HealthStatus.Unhealthy);
             bool hasOutages = outageCount > 0;
 
-            double avgCpu24h = Math.Round((double)snapshots.Average(s => s.CpuUsage), 2);
-            double avgRam24h = Math.Round((double)snapshots.Average(s => s.RamUsage), 2);
+            double avgCpu24h = Math.Round((double)snapshots.Average(s => s.AppCpuUsage), 2);
+            double avgRam24h = Math.Round((double)snapshots.Average(s => s.AppRamUsage), 2);
             double avgLatency24h = Math.Round((double)snapshots.Average(s => s.TotalDuration), 2);
 
             var twoHoursAgo = DateTime.UtcNow.AddHours(-2);
             var snapshots2h = snapshots.Where(s => s.Timestamp >= twoHoursAgo).ToList();
 
-            double avgCpu2h = snapshots2h.Any() ? Math.Round((double)snapshots2h.Average(s => s.CpuUsage), 2) : avgCpu24h;
-            double avgRam2h = snapshots2h.Any() ? Math.Round((double)snapshots2h.Average(s => s.RamUsage), 2) : avgRam24h;
+            double avgCpu2h = snapshots2h.Any() ? Math.Round((double)snapshots2h.Average(s => s.AppCpuUsage), 2) : avgCpu24h;
+            double avgRam2h = snapshots2h.Any() ? Math.Round((double)snapshots2h.Average(s => s.AppRamUsage), 2) : avgRam24h;
             double avgLatency2h = snapshots2h.Any() ? Math.Round((double)snapshots2h.Average(s => s.TotalDuration), 2) : avgLatency24h;
 
             var snapshotsForPeak = snapshots2h.Any() ? snapshots2h : snapshots.Take(20).ToList();
 
-            var peakCpuRecord = snapshotsForPeak.OrderByDescending(s => s.CpuUsage).First();
-            double maxCpu2h = Math.Round((double)peakCpuRecord.CpuUsage, 2);
+            var peakCpuRecord = snapshotsForPeak.OrderByDescending(s => s.AppCpuUsage).First();
+            double maxCpu2h = Math.Round((double)peakCpuRecord.AppCpuUsage, 2);
             string peakCpuTime = peakCpuRecord.Timestamp.ToLocalTime().ToString("HH:mm");
 
-            double maxRam2h = Math.Round((double)snapshotsForPeak.Max(s => s.RamUsage), 2);
+            double maxRam2h = Math.Round((double)snapshotsForPeak.Max(s => s.AppRamUsage), 2);
             double maxLatency2h = Math.Round((double)snapshotsForPeak.Max(s => s.TotalDuration), 2);
 
             var dependencyIssues = snapshots

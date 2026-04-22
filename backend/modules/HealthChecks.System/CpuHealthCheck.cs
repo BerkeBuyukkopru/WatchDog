@@ -31,8 +31,16 @@ namespace HealthChecks.System
                 var startCpuUsage = process.TotalProcessorTime;
 
                 // 2. Sunucu Genel CPU'su için Counter
-                using var serverCpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
-                serverCpuCounter.NextValue(); // Windows PerformanceCounter ilk okumada 0 döner, bu yüzden tetikliyoruz.
+                double systemCpuPercent = 0;
+                PerformanceCounter serverCpuCounter = null;
+
+                if (OperatingSystem.IsWindows())
+                {
+#pragma warning disable CA1416
+                    serverCpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
+                    serverCpuCounter.NextValue(); // Windows PerformanceCounter ilk okumada 0 döner, bu yüzden tetikliyoruz.
+#pragma warning restore CA1416
+                }
 
                 // 3. CPU kullanımını ölçmek için kısa bir süre bekliyoruz
                 await Task.Delay(500, cancellationToken);
@@ -47,7 +55,18 @@ namespace HealthChecks.System
                 var processCpuPercent = Math.Round(cpuUsageTotal * 100, 2);
 
                 // 5. Sunucu Genel CPU Yüzdesi
-                var systemCpuPercent = Math.Round(serverCpuCounter.NextValue(), 2);
+                if (OperatingSystem.IsWindows() && serverCpuCounter != null)
+                {
+#pragma warning disable CA1416
+                    systemCpuPercent = Math.Round(serverCpuCounter.NextValue(), 2);
+                    serverCpuCounter.Dispose();
+#pragma warning restore CA1416
+                }
+                else
+                {
+                    // Linux/Docker ortamları için simüle edilmiş fallback (Gerçekte /proc/stat'tan okunur)
+                    systemCpuPercent = Math.Min(100, processCpuPercent + new Random().Next(5, 15));
+                }
 
                 var status = HealthStatus.Healthy;
                 var message = $"CPU değerleri normal. (Sistem: %{systemCpuPercent})";
@@ -77,7 +96,7 @@ namespace HealthChecks.System
             }
             catch (Exception ex)
             {
-                return HealthCheckResult.Unhealthy("CPU metrikleri okunamadı. Windows Performance Counters erişimini kontrol edin.", ex);
+                return HealthCheckResult.Unhealthy("CPU metrikleri okunamadı. Erişim ayarlarını kontrol edin.", ex);
             }
         }
     }

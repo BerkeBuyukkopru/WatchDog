@@ -13,8 +13,10 @@ namespace Watchdog.Domain.Entities
         public HealthStatus Status { get; set; }
         public long TotalDuration { get; set; }
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;
-        public double CpuUsage { get; set; }
-        public double RamUsage { get; set; }
+        public double AppCpuUsage { get; set; }
+        public double SystemCpuUsage { get; set; }
+        public double AppRamUsage { get; set; }
+        public double SystemRamUsage { get; set; }
         public double FreeDiskGb { get; set; }
         public string? DependencyDetails { get; set; }
     }

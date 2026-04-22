@@ -7,11 +7,11 @@ using Watchdog.Domain.Enums;
 namespace Watchdog.Application.UseCases.AI
 {
     // Bütün yapay zeka soruları (Promptlar) UseCase'lerden çıkarılıp buraya taşındı. Artık metinlerde bir değişiklik yapacaksak UseCase sınıflarını kirletmeden buradan yapacağız.
-    // Tüm promptlar "Birleşik (Unified)" formata geçirildi. Hangi AI motoru (OpenAI veya Ollama)  çalışırsa çalışsın, aynı veri setini alacak ve ÇOK KATI bir şekilde aynı 3 başlıkta cevap vermeye zorlanacak.
+    // Tüm promptlar "Birleşik (Unified)" formata geçirildi. Hangi AI motoru (OpenAI veya Ollama)  çalışırsa çalışsın, aynı veri setini alacak ve ÇOK KATI bir şekilde aynı 3 başlıkta cevap vermeye zorlanacak.
     public class PromptBuilder : IPromptBuilder
     {
-        // --- 1. KRİZ ANI (EVENT-DRIVEN) PROMPTU ---
-        public string BuildRootCausePrompt(List<HealthSnapshot> recentSnapshots, string appName)
+        // --- 1. KRİZ ANI (EVENT-DRIVEN) PROMPTU ---
+        public string BuildRootCausePrompt(List<HealthSnapshot> recentSnapshots, string appName)
         {
             var summary = AggregateSnapshots(recentSnapshots);
             var jsonContext = JsonSerializer.Serialize(summary);
@@ -36,16 +36,16 @@ ACTIONABLE ADVICE:
 (Write 1-2 direct technical steps to recover the system)";
         }
 
-        // --- 2. SAATLİK RUTİN (CAPACITY) PROMPTU ---
-        public string BuildRoutinePrompt(
+        // --- 2. SAATLİK RUTİN (CAPACITY) PROMPTU ---
+        public string BuildRoutinePrompt(
       MonitoredApp app,
       double cpuLimit, double ramLimit, double latencyLimit,
       double avgCpu24h, double avgRam24h, double avgLatency24h,
       double avgCpu2h, double avgRam2h, double avgLatency2h,
       double maxCpu2h, double maxRam2h, double maxLatency2h,
       string peakCpuTime, string dependencyContext,
-      int outageCount) 
-        {
+      int outageCount)
+        {
             return $@"SYSTEM ROLE: You are an automated SRE diagnostic engine.
 
 [STRICT INTERPRETATION RULE]:
@@ -77,8 +77,8 @@ ACTIONABLE ADVICE:
 (Provide recovery or scaling steps)";
         }
 
-        // --- 3. HAFTALIK STRATEJİK (FORECAST) PROMPTU ---
-        public string BuildStrategicPrompt(
+        // --- 3. HAFTALIK STRATEJİK (FORECAST) PROMPTU ---
+        public string BuildStrategicPrompt(
       MonitoredApp app,
       DailyEnrichedSnapshotDto baselineDay,
       DailyEnrichedSnapshotDto targetDay,
@@ -113,14 +113,16 @@ STRATEGIC RECOMMENDATION:
 (Provide 1-2 architectural or scaling recommendations to handle future load here)";
         }
 
-        // Kriz anında logları hafifleten özel metot
-        private object AggregateSnapshots(List<HealthSnapshot> snapshots)
+        // Kriz anında logları hafifleten özel metot (App ve System ayrımı yapıldı)
+        private object AggregateSnapshots(List<HealthSnapshot> snapshots)
         {
             return new
             {
                 TotalRecords = snapshots.Count,
-                AverageCpu = snapshots.Average(s => s.CpuUsage),
-                AverageRam = snapshots.Average(s => s.RamUsage),
+                AverageAppCpu = snapshots.Average(s => s.AppCpuUsage),
+                AverageSystemCpu = snapshots.Average(s => s.SystemCpuUsage), // AI Sunucuyu da görsün
+                AverageAppRam = snapshots.Average(s => s.AppRamUsage),
+                AverageSystemRam = snapshots.Average(s => s.SystemRamUsage), // AI Sunucuyu da görsün
                 LowestDiskSpace = snapshots.Min(s => s.FreeDiskGb),
                 ErrorCounts = snapshots.Count(s => s.Status == HealthStatus.Unhealthy),
                 LatestDependencies = snapshots.OrderByDescending(s => s.Timestamp).FirstOrDefault()?.DependencyDetails

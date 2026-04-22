@@ -79,8 +79,10 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                 Status = x.Status.ToString(),
                 TotalDuration = x.TotalDuration,
                 Timestamp = x.Timestamp,
-                CpuUsage = x.CpuUsage,
-                RamUsage = x.RamUsage,
+                AppCpuUsage = x.AppCpuUsage,
+                SystemCpuUsage = x.SystemCpuUsage,
+                AppRamUsage = x.AppRamUsage,
+                SystemRamUsage = x.SystemRamUsage,
                 FreeDiskGb = x.FreeDiskGb
             })
             .OrderBy(x => x.Timestamp)

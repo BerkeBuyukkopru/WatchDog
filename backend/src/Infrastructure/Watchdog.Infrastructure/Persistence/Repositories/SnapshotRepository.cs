@@ -74,8 +74,8 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
                 .Select(s => new
                 {
                     s.Timestamp,
-                    s.CpuUsage,
-                    s.RamUsage,
+                    s.AppCpuUsage,
+                    s.AppRamUsage,
                     s.TotalDuration,
                     s.Status,
                     s.DependencyDetails
@@ -96,7 +96,7 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
                     var dailyRecords = g.ToList();
 
                     // O gün içindeki en yüksek CPU kullanımının olduğu anı (Zirve - Peak) bul
-                    var peakRecord = dailyRecords.OrderByDescending(x => x.CpuUsage).First();
+                    var peakRecord = dailyRecords.OrderByDescending(x => x.AppCpuUsage).First();
 
                     // O günkü hataları topla, adetlerine göre say ve en çok tekrar eden ilk 3'ünü al
                     var topErrors = dailyRecords
@@ -110,11 +110,11 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
                     return new DailyEnrichedSnapshotDto
                     {
                         Date = g.Key,
-                        AvgCpu = Math.Round((double)dailyRecords.Average(x => x.CpuUsage), 2),
-                        AvgRam = Math.Round((double)dailyRecords.Average(x => x.RamUsage), 2),
+                        AvgCpu = Math.Round((double)dailyRecords.Average(x => x.AppCpuUsage), 2),
+                        AvgRam = Math.Round((double)dailyRecords.Average(x => x.AppRamUsage), 2),
                         AvgLatency = Math.Round((double)dailyRecords.Average(x => x.TotalDuration), 2),
-                        MaxCpu = Math.Round((double)peakRecord.CpuUsage, 2),
-                        MaxRam = Math.Round((double)peakRecord.RamUsage, 2),
+                        MaxCpu = Math.Round((double)peakRecord.AppCpuUsage, 2),
+                        MaxRam = Math.Round((double)peakRecord.AppRamUsage, 2),
                         // Zirve saatini de rapor için TR saatine çeviriyoruz
                         PeakHour = TimeZoneInfo.ConvertTimeFromUtc(peakRecord.Timestamp, turkeyTimeZone).ToString("HH:mm"),
                         TopErrors = topErrors

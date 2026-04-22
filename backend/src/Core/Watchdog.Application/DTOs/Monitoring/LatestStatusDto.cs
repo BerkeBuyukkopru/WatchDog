@@ -14,8 +14,10 @@ namespace Watchdog.Application.DTOs.Monitoring
         public string Status { get; set; } // "1" veya "3" yerine "Healthy" veya "Unhealthy" yazacak
         public long TotalDuration { get; set; }
         public DateTime Timestamp { get; set; }
-        public double CpuUsage { get; set; }
-        public double RamUsage { get; set; }
+        public double AppCpuUsage { get; set; }
+        public double SystemCpuUsage { get; set; }
+        public double AppRamUsage { get; set; }
+        public double SystemRamUsage { get; set; }
         public double FreeDiskGb { get; set; }
         // DependencyDetails (ham JSON) kısmını dışarıya basmıyoruz, arayüzü kirletmeye gerek yok.
     }

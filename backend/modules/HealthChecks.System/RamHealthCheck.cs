@@ -25,17 +25,17 @@ namespace HealthChecks.System
         {
             try
             {
-                // Uygulamanın Kendi Tükettiği RAM (MB) - APM Analizi için kritik [cite: 91, 421]
+                // Uygulamanın Kendi Tükettiği RAM (MB) - APM Analizi için kritik
                 var process = Process.GetCurrentProcess();
                 var appWorkingSetMb = Math.Round(process.WorkingSet64 / (1024.0 * 1024.0), 2);
 
-                // Sunucudaki toplam "Kullanılabilir" (Free) belleği okuyoruz.
-                using var ramCounter = new PerformanceCounter("Memory", "Available MBytes");
-                var serverAvailableRamMb = Math.Round(ramCounter.NextValue(), 2);
-
-                // Toplam fiziksel belleği öğreniyoruz. [cite: 329]
+                // Toplam fiziksel belleği öğreniyoruz.
                 var gcMemoryInfo = GC.GetGCMemoryInfo();
                 var totalPhysicalMemoryMb = Math.Round(gcMemoryInfo.TotalAvailableMemoryBytes / (1024.0 * 1024.0), 2);
+
+                // Sunucudaki toplam "Kullanılabilir" (Free) belleği okuyoruz. (Cross-Platform uyumlu hale getirildi)
+                var systemMemoryLoadMb = Math.Round(gcMemoryInfo.MemoryLoadBytes / (1024.0 * 1024.0), 2);
+                var serverAvailableRamMb = totalPhysicalMemoryMb - systemMemoryLoadMb;
 
                 // Sistem Genel Yüzdelik Kullanımı: ((Toplam - Boş) / Toplam) * 100
                 var usedRamMb = totalPhysicalMemoryMb - serverAvailableRamMb;
@@ -76,7 +76,7 @@ namespace HealthChecks.System
             }
             catch (Exception ex)
             {
-                return Task.FromResult(HealthCheckResult.Unhealthy("RAM metrikleri okunamadı. Windows Performance Counters erişimini kontrol edin.", ex));
+                return Task.FromResult(HealthCheckResult.Unhealthy("RAM metrikleri okunamadı. Erişim ayarlarını kontrol edin.", ex));
             }
         }
     }

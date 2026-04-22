@@ -40,7 +40,7 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
             HealthStatus finalStatus = HealthStatus.Unhealthy;
             long finalDuration = 0;
             string errorOrJson = "";
-            double realCpu = 0, realRamPercent = 0, realDisk = 0;
+            double appCpu = 0, sysCpu = 0, appRam = 0, sysRam = 0, realDisk = 0;
 
             try
             {
@@ -72,12 +72,21 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                         }
 
                         // Metrikleri JSON root dizininden doğru isimlerle çekiyoruz
-                        if (root.TryGetProperty("cpuUsage", out var cpuProp)) realCpu = cpuProp.GetDouble();
-                        if (root.TryGetProperty("ramUsage", out var ramProp)) realRamPercent = ramProp.GetDouble();
-                        if (root.TryGetProperty("freeDiskGb", out var diskProp)) realDisk = diskProp.GetDouble();
+                        if (root.TryGetProperty("metrics", out var metricsProp))
+                        {
+                            if (metricsProp.TryGetProperty("process_cpu_percent", out var aC)) appCpu = aC.GetDouble();
+                            if (metricsProp.TryGetProperty("system_cpu_percent", out var sC)) sysCpu = sC.GetDouble();
+                            if (metricsProp.TryGetProperty("process_ram_mb", out var aR)) appRam = aR.GetDouble();
+                            if (metricsProp.TryGetProperty("system_ram_percent", out var sR)) sysRam = sR.GetDouble();
+                            if (metricsProp.TryGetProperty("free_disk_gb", out var d)) realDisk = d.GetDouble();
+                        }
 
                         // Sadece alt detayları (SQL vb.) AI analizi için sakla
-                        if (root.TryGetProperty("dependencyDetails", out var depProp))
+                        if (root.TryGetProperty("checks", out var checksProp))
+                        {
+                            errorOrJson = checksProp.ToString();
+                        }
+                        else if (root.TryGetProperty("dependencyDetails", out var depProp))
                         {
                             errorOrJson = depProp.GetString() ?? errorOrJson;
                         }
@@ -101,8 +110,10 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                 Timestamp = DateTime.UtcNow,
                 Status = finalStatus,
                 TotalDuration = finalDuration,
-                CpuUsage = realCpu,
-                RamUsage = realRamPercent,
+                AppCpuUsage = appCpu,           // Ayrıştırıldı!
+                SystemCpuUsage = sysCpu,        // Ayrıştırıldı!
+                AppRamUsage = appRam,           // Ayrıştırıldı!
+                SystemRamUsage = sysRam,        // Ayrıştırıldı!
                 FreeDiskGb = realDisk,
                 DependencyDetails = errorOrJson // Yapay Zeka buradaki hatayı okuyup yorumlayacak!
             };
