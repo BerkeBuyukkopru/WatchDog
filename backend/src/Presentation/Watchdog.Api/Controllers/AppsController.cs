@@ -111,5 +111,41 @@ namespace Watchdog.Api.Controllers
 
             return BadRequest(new { message = "İşlem başarısız. Uygulama ID'si veya Yapay Zeka ID'si hatalı olabilir." });
         }
+
+        [HttpPut("{id:guid}")]
+        [Authorize(Roles = RoleConstants.SuperAdmin)]
+        public async Task<IActionResult> Update(
+            Guid id,
+            [FromBody] UpdateMonitoredAppRequest request,
+            [FromServices] IUseCaseAsync<UpdateMonitoredAppRequest, UpdateMonitoredAppResponse> useCase)
+        {
+            // Güvenlik: Route'daki ID ile Body'deki ID tutmalı
+            if (id != request.Id) return BadRequest(new { message = "Kimlik uyuşmazlığı!" });
+
+            var result = await useCase.ExecuteAsync(request);
+
+            if (!result.IsSuccess)
+            {
+                // Uygulama bulunamadıysa NotFound dönüyoruz
+                if (result.ErrorCode == AppErrorCode.AppNotFound)
+                {
+                    return NotFound(new { message = result.ErrorMessage });
+                }
+
+                // URL başka bir uygulamada varsa Conflict dönüyoruz (Create ile tutarlı)
+                if (result.ErrorCode == AppErrorCode.UrlAlreadyExists)
+                {
+                    return Conflict(new
+                    {
+                        errorCode = "URL_ALREADY_EXISTS",
+                        message = result.ErrorMessage
+                    });
+                }
+
+                return BadRequest(new { message = result.ErrorMessage });
+            }
+
+            return Ok(new { message = "Uygulama başarıyla güncellendi." });
+        }
     }
 }

@@ -23,6 +23,7 @@ public static class DependencyInjection
         // === Use Case Kayıtları ===
         services.AddScoped<IUseCaseAsync<GetSystemConfigRequest, SystemConfigDto?>, GetSystemConfigUseCase>();
         services.AddScoped<IUseCaseAsync<SystemConfigDto, bool>, UpdateSystemConfigUseCase>();
+        services.AddScoped<IUseCaseAsync<UpdateMonitoredAppRequest, UpdateMonitoredAppResponse>, UpdateMonitoredAppUseCase>();
 
         // === Yapay Zeka Sağlayıcı Yönetimi Use Case'leri ===
         services.AddScoped<IUseCaseAsync<GetAllAiProvidersRequest, IEnumerable<AiProviderDto>>, GetAllAiProvidersUseCase>();
@@ -62,6 +63,8 @@ public static class DependencyInjection
         services.AddScoped<IUseCaseAsync<ResetPasswordRequest, bool>, ResetPasswordUseCase>();
 
         services.AddScoped<SetAppAiProviderUseCase>();
+
+
 
         return services;
     }
