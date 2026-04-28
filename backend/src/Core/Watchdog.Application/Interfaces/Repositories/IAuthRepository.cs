@@ -8,9 +8,10 @@ namespace Watchdog.Application.Interfaces.Repositories
     public interface IAuthRepository
     {
         Task<AdminUser?> GetUserByUsernameAsync(string username);
-
-        // === ŞİFRE SIFIRLAMA İÇİN EKLENEN YENİ METOT ===
         Task<AdminUser?> GetByUsernameAsync(string username);
+
+        // === ŞİFRE SIFIRLAMA İÇİN EKLENEN YENİ METOT (E-posta ile Arama) ===
+        Task<AdminUser?> GetByEmailAsync(string email);
 
         Task<AdminUser?> GetByIdAsync(Guid id);
         Task<IEnumerable<AdminUser>> GetAllAsync();
@@ -21,7 +22,7 @@ namespace Watchdog.Application.Interfaces.Repositories
         Task<bool> DeleteUserAsync(Guid id);
         Task<bool> RestoreUserAsync(Guid id);
 
-        // === YENİ EKLENEN: Uygulamadan sorumlu adminleri bulma metodu ===
+        // === Uygulamadan sorumlu adminleri bulma metodu ===
         Task<List<AdminUser>> GetAdminsByAppIdAsync(Guid appId);
     }
 }

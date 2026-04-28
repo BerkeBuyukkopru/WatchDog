@@ -1,11 +1,12 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace Watchdog.Application.DTOs.Auth
 {
     public class ResetPasswordRequest
     {
-        [Required(ErrorMessage = "Kullanıcı adı zorunludur.")]
-        public string Username { get; set; } = string.Empty;
+        [Required(ErrorMessage = "E-posta zorunludur.")]
+        [EmailAddress(ErrorMessage = "Geçerli bir e-posta adresi giriniz.")]
+        public string Email { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Doğrulama kodu zorunludur.")]
         [StringLength(6, MinimumLength = 6, ErrorMessage = "Doğrulama kodu 6 haneli olmalıdır.")]

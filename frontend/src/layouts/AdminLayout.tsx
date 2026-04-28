@@ -1,8 +1,9 @@
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { LogOut, Activity } from 'lucide-react';
 
 const AdminLayout = () => {
-  const navigate = useNavigate();
+  const { logout } = useAuth();
 
   return (
     <div className="min-h-screen bg-background-darker flex flex-col">
@@ -21,7 +22,7 @@ const AdminLayout = () => {
         </div>
         
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/login')} className="flex items-center gap-2 text-sm text-rose-400 hover:text-rose-300 transition-colors">
+          <button onClick={logout} className="flex items-center gap-2 text-sm text-rose-400 hover:text-rose-300 transition-colors">
             <LogOut size={16} />
             <span className="hidden sm:inline">Çıkış</span>
           </button>

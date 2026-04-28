@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
-using System.Linq; // Where sorguları için eklendi
+using System.Linq;
 using System.Threading.Tasks;
 using Watchdog.Application.Interfaces.Repositories;
 using Watchdog.Domain.Entities;
@@ -23,11 +23,21 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
                 .FirstOrDefaultAsync(u => u.Username == username && !u.IsDeleted);
         }
 
-        // === ŞİFRE SIFIRLAMA İÇİN EKLENEN YENİ METOT (Aynısı ama UseCase'ler bu ismi arıyor) ===
         public async Task<AdminUser?> GetByUsernameAsync(string username)
         {
             return await _context.AdminUsers
                 .FirstOrDefaultAsync(u => u.Username == username && !u.IsDeleted);
+        }
+
+        // === ŞİFRE SIFIRLAMA İÇİN EKLENEN YENİ METOT ===
+        public async Task<AdminUser?> GetByEmailAsync(string email)
+        {
+            if (string.IsNullOrWhiteSpace(email)) return null;
+
+            var normalizedEmail = email.Trim().ToLower();
+
+            return await _context.AdminUsers
+                .FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail && !u.IsDeleted);
         }
 
         public async Task<AdminUser?> GetByIdAsync(Guid id)
@@ -91,10 +101,8 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
             return await _context.SaveChangesAsync() > 0;
         }
 
-        // === YENİ EKLENEN METOT: Sorumlu Adminleri Bulma ===
         public async Task<List<AdminUser>> GetAdminsByAppIdAsync(Guid appId)
         {
-            // AllowedAppIds listesinin içinde bu appId'yi barındıran aktif ve silinmemiş adminleri getir
             return await _context.AdminUsers
                 .Where(a => a.AllowedAppIds.Contains(appId) && !a.IsDeleted)
                 .ToListAsync();

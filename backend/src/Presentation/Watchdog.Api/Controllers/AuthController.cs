@@ -48,11 +48,11 @@ namespace Watchdog.Api.Controllers
         [HttpPost("forgot-password")]
         [AllowAnonymous]
         public async Task<IActionResult> ForgotPassword(
-            [FromBody] string username,
+            [FromBody] string email, // username yerine email
             [FromServices] IUseCaseAsync<string, bool> sendResetCodeUseCase)
         {
-            await sendResetCodeUseCase.ExecuteAsync(username);
-            return Ok(new { Message = "Eğer kullanıcı adı sistemimizde kayıtlıysa, doğrulama kodunuz ilişkili e-posta adresine gönderilmiştir." });
+            await sendResetCodeUseCase.ExecuteAsync(email);
+            return Ok(new { Message = "Eğer bu e-posta adresi sistemimizde kayıtlıysa, doğrulama kodunuz gönderilmiştir." });
         }
 
         [HttpPost("reset-password")]

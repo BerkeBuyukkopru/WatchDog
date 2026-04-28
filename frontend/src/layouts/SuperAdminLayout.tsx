@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { Activity, Users, Bot, AppWindow, Settings, LogOut, Menu, X } from 'lucide-react';
 
 const SuperAdminLayout = () => {
-  const navigate = useNavigate();
+  const { logout } = useAuth();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -85,7 +86,7 @@ const SuperAdminLayout = () => {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <button onClick={() => navigate('/login')} className="flex items-center gap-2 text-sm text-rose-400 hover:text-rose-300 transition-colors">
+            <button onClick={logout} className="flex items-center gap-2 text-sm text-rose-400 hover:text-rose-300 transition-colors">
               <LogOut size={16} />
               <span className="hidden sm:inline">Çıkış</span>
             </button>

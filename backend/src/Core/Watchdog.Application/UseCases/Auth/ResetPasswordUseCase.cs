@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using Watchdog.Application.DTOs.Auth;
 using Watchdog.Application.Interfaces.Common;
@@ -19,7 +19,7 @@ namespace Watchdog.Application.UseCases.Auth
 
         public async Task<bool> ExecuteAsync(ResetPasswordRequest request)
         {
-            var user = await _authRepository.GetByUsernameAsync(request.Username);
+            var user = await _authRepository.GetByEmailAsync(request.Email);
             if (user == null) throw new Exception("Kullanıcı bulunamadı.");
 
             // 1. Kod boş mu kontrolü
