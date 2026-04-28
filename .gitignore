@@ -480,3 +480,34 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+
+# ====================================================================
+# VITE + REACT (FRONTEND)
+# ====================================================================
+
+# Node dependencies
+frontend/node_modules/
+
+# Vite build outputs and cache
+frontend/dist/
+frontend/dist-ssr/
+frontend/.vite/
+
+# NPM / Yarn logs
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+
+# Environment files
+frontend/.env
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+
+# Exceptions
+!frontend/_designs/
+!frontend/_designs/**
+
