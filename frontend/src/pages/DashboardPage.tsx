@@ -32,7 +32,7 @@ export const DashboardPage: React.FC = () => {
       </div>
 
       {/* AI Insight Tower (Right 30%) */}
-      <div className="w-[30%] min-w-[320px] max-w-sm hidden xl:block shrink-0">
+      <div className="w-[30%] min-w-[320px] max-w-sm shrink-0 border-l border-white/5">
         <AiTower />
       </div>
     </div>

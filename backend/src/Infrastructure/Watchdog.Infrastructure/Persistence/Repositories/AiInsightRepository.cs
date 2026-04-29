@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -55,6 +55,23 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
         {
             _context.AiInsights.Update(insight);
             await _context.SaveChangesAsync();
+        }
+
+        public async Task ResolveAllActiveInsightsForAppAsync(Guid appId)
+        {
+            var activeInsights = await _context.AiInsights
+                .Where(i => i.AppId == appId && !i.IsResolved && !i.IsDeleted)
+                .ToListAsync();
+
+            if (activeInsights.Any())
+            {
+                foreach (var insight in activeInsights)
+                {
+                    insight.IsResolved = true;
+                    insight.ModifiedAt = DateTime.UtcNow;
+                }
+                await _context.SaveChangesAsync();
+            }
         }
     }
 }

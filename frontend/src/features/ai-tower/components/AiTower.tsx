@@ -15,6 +15,7 @@ export const AiTower: React.FC = () => {
   
   const [isProviderMenuOpen, setIsProviderMenuOpen] = useState(false);
   const [showFallbackLabel, setShowFallbackLabel] = useState(false);
+  const [selectedInsight, setSelectedInsight] = useState<AiInsight | null>(null);
 
   // KRİTİK: Seçili motorun Key'i yoksa fallback durumu
   const isFallbackActive = activeProvider && !activeProvider.hasApiKey && !activeProvider.name.includes('Ollama');
@@ -33,7 +34,7 @@ export const AiTower: React.FC = () => {
   }, [activeProvider?.id, isFallbackActive]);
 
   return (
-    <div className="h-full flex flex-col bg-black/20 backdrop-blur-sm border-l border-white/5 w-full max-w-sm ml-auto relative">
+    <div className="h-full flex flex-col bg-black/20 backdrop-blur-sm border-l border-white/5 w-full relative">
       {/* Header */}
       <div className="p-6 border-b border-white/5 bg-white/5 shrink-0">
         <div className="flex items-center gap-3 mb-1">
@@ -70,10 +71,58 @@ export const AiTower: React.FC = () => {
               key={insight.id} 
               insight={insight} 
               onResolve={resolveInsight} 
+              onViewDetails={() => setSelectedInsight(insight)}
             />
           ))
         )}
       </div>
+
+      {/* Modal / Pop-up */}
+      {selectedInsight && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div 
+            className="bg-[#1A1A1E] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl animate-in zoom-in-95 duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/5">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400">
+                  <BrainCircuit size={20} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">{selectedInsight.appName} - Analiz Raporu</h3>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
+                    {new Date(selectedInsight.createdAt).toLocaleString('tr-TR')} tarihinde oluşturuldu
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setSelectedInsight(null)}
+                className="p-2 hover:bg-white/10 rounded-full text-slate-400 transition-colors"
+              >
+                <ChevronUp className="rotate-180" size={20} />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6 custom-scrollbar text-slate-300 text-sm leading-relaxed whitespace-pre-wrap">
+              <div className="p-4 bg-indigo-500/5 border border-indigo-500/10 rounded-xl mb-4 italic text-indigo-300">
+                "Sistem hatalarını analiz ettim. İşte kök neden ve çözüm önerilerim:"
+              </div>
+              {selectedInsight.message}
+            </div>
+
+            <div className="p-4 border-t border-white/5 bg-white/5 flex justify-end gap-3">
+              <button 
+                onClick={() => setSelectedInsight(null)}
+                className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20"
+              >
+                Anladım
+              </button>
+            </div>
+          </div>
+          <div className="absolute inset-0 -z-10" onClick={() => setSelectedInsight(null)}></div>
+        </div>
+      )}
 
       {/* Fallback Warning (Her zaman görünür ama küçük) */}
       {isFallbackActive && (
@@ -97,37 +146,37 @@ export const AiTower: React.FC = () => {
             </span>
           </div>
           
-          <div className="flex flex-col items-end gap-1 relative">
-            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
+          <div className="flex flex-col items-end gap-1.5 relative">
+            <span className="text-xs text-slate-500 uppercase tracking-widest font-black">
               AI Motoru
             </span>
             <button 
               onClick={() => setIsProviderMenuOpen(!isProviderMenuOpen)}
-              className={`flex items-center gap-2 px-2 py-1 rounded-lg border transition-all group ${
+              className={`flex items-center gap-3 px-4 py-2 rounded-xl border transition-all duration-300 group ${
                 isFallbackActive 
-                ? 'bg-amber-500/10 border-amber-500/30' 
-                : 'bg-white/5 border-white/5 hover:bg-white/10'
+                ? 'bg-amber-500/10 border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.1)]' 
+                : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
               }`}
               disabled={loading}
             >
-              <div className={`w-1.5 h-1.5 rounded-full animate-pulse shadow-sm ${
+              <div className={`w-2 h-2 rounded-full animate-pulse shadow-md ${
                 isFallbackActive ? 'bg-amber-500 shadow-amber-500/50' : 'bg-emerald-500 shadow-emerald-500/50'
               }`}></div>
-              <span className="text-[10px] text-slate-300 font-bold tracking-tight uppercase">
+              <span className="text-xs text-slate-200 font-black tracking-wide uppercase">
                 {loading 
                   ? '...' 
                   : (showFallbackLabel ? 'Ollama (Fallback)' : (activeProvider?.name || 'Seçilmedi'))}
               </span>
-              <ChevronUp size={12} className={`text-slate-500 transition-transform duration-300 ${isProviderMenuOpen ? 'rotate-180' : ''}`} />
+              <ChevronUp size={14} className={`text-slate-500 transition-transform duration-300 ${isProviderMenuOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {/* Provider Menu */}
             {isProviderMenuOpen && (
               <div className="absolute bottom-full right-0 mb-2 w-48 bg-[#1A1A1E] border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200">
-                <div className="p-2 border-b border-white/5 bg-white/5">
-                  <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-2">Motoru Değiştir</span>
+                <div className="p-3 border-b border-white/5 bg-white/10">
+                  <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Motoru Değiştir</span>
                 </div>
-                <div className="p-1">
+                <div className="p-1.5">
                   {providers.map((p) => {
                     const isSelected = activeProvider?.id === p.id;
                     const hasNoKey = !p.hasApiKey && !p.name.includes('Ollama');
@@ -139,17 +188,17 @@ export const AiTower: React.FC = () => {
                           changeActiveProvider(p.id);
                           setIsProviderMenuOpen(false);
                         }}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[10px] font-bold transition-all ${
+                        className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-black transition-all duration-200 ${
                           isSelected 
-                          ? 'bg-indigo-500/10 text-indigo-400' 
-                          : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                          ? 'bg-indigo-500/20 text-indigo-300' 
+                          : 'text-slate-400 hover:bg-white/10 hover:text-white'
                         }`}
                       >
-                        <div className="flex items-center gap-2">
-                          <span>{p.name}</span>
-                          {hasNoKey && <AlertCircle size={10} className="text-amber-500" />}
+                        <div className="flex items-center gap-3">
+                          <span className="tracking-wide">{p.name}</span>
+                          {hasNoKey && <AlertCircle size={14} className="text-amber-500" />}
                         </div>
-                        {isSelected && <div className="w-1 h-1 rounded-full bg-indigo-400"></div>}
+                        {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.5)]"></div>}
                       </button>
                     );
                   })}

@@ -63,6 +63,33 @@ namespace Watchdog.Infrastructure.Notifications
             }
         }
 
+        public async Task BroadcastAllInsightsResolvedAsync(Guid appId)
+        {
+            await EnsureConnectedAsync(default);
+            if (_hubConnection.State == HubConnectionState.Connected)
+            {
+                await _hubConnection.InvokeAsync("BroadcastAllInsightsResolved", appId);
+            }
+        }
+
+        public async Task BroadcastNewIncidentAsync(Watchdog.Application.DTOs.Monitoring.IncidentDto incident, CancellationToken cancellationToken = default)
+        {
+            await EnsureConnectedAsync(cancellationToken);
+            if (_hubConnection.State == HubConnectionState.Connected)
+            {
+                await _hubConnection.InvokeAsync("BroadcastNewIncident", incident, cancellationToken);
+            }
+        }
+
+        public async Task BroadcastResolvedIncidentAsync(Watchdog.Application.DTOs.Monitoring.IncidentDto incident, CancellationToken cancellationToken = default)
+        {
+            await EnsureConnectedAsync(cancellationToken);
+            if (_hubConnection.State == HubConnectionState.Connected)
+            {
+                await _hubConnection.InvokeAsync("BroadcastResolvedIncident", incident, cancellationToken);
+            }
+        }
+
         // Uygulama kapanırken bağlantıyı temizle
         public async ValueTask DisposeAsync()
         {

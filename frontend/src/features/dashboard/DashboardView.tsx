@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { AiTower } from '../ai-tower/components/AiTower';
 import Metrics from './components/Metrics';
 import Incidents from './components/Incidents';
 import HealthTable from './components/HealthTable';
@@ -164,9 +165,9 @@ const DashboardView: React.FC = () => {
 
         </div>
 
-        {/* Sağ Taraf: AI Kulesi (30%) - Geliştirici B İçin Rezerve */}
-        <div className="lg:col-span-3 border border-slate-800 rounded-lg bg-background flex flex-col items-center justify-center text-slate-500">
-          <p>AI Insight Kulesi (Geliştirici B Yapacak)</p>
+        {/* Sağ Taraf: AI Kulesi (30%) - Geliştirici B (Senin) Tarafın */}
+        <div className="lg:col-span-3 border border-slate-800 rounded-xl bg-background-light overflow-hidden shadow-2xl">
+          <AiTower />
         </div>
       </div>
     </div>

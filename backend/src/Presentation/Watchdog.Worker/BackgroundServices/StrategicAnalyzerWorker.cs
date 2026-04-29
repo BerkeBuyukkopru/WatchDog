@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Watchdog.Application.DTOs.AI;
@@ -61,29 +61,23 @@ namespace Watchdog.Worker.BackgroundServices
                     _logger.LogError(ex, "[STRATEGIC-AI] WatchDog: StrategicAnalyzerWorker çalışırken hata oluştu.");
                 }
 
-                // KURUMSAL STANDART: Günde 1 kez çalışması idealdir. 
-                // --- KURUMSAL STANDART: Her gün UTC 22:00'de (TR 01:00) çalıştır ---
-                var nowUtc = DateTime.UtcNow;
-                var nextRunTimeUtc = nowUtc.Date.AddHours(22); // Bugün UTC 22:00
-
-                // Eğer saati kaçırdıysak (örneğin UTC 23:00'te sunucu açıldıysa), yarına kur
-                if (nowUtc >= nextRunTimeUtc)
-                {
-                    nextRunTimeUtc = nextRunTimeUtc.AddDays(1);
-                }
-
-                var delay = nextRunTimeUtc - nowUtc;
-
-                _logger.LogInformation($"[STRATEGIC-AI] WatchDog: Bir sonraki Stratejik Analiz {delay.TotalHours:F1} saat sonra (TR 01:00 / UTC 22:00) çalışacak.");
-
                 try
                 {
-                    // Kapanış sinyali (stoppingToken) geldiğinde fırlatılan hatayı yakalıyoruz.
-                    await Task.Delay(delay, stoppingToken);
+                    // KURUMSAL STANDART: Her gün UTC 22:00'de (TR 01:00) çalıştır ---
+                    var nowUtc = DateTime.UtcNow;
+                    var nextRunTimeUtc = nowUtc.Date.AddHours(22); // Bugün UTC 22:00
 
-                    // TEST İÇİN GEÇİCİ OLARAK 1 DAKİKAYA İNDİRİLDİ
-                   // _logger.LogInformation($"[STRATEGIC-AI] WatchDog: TEST MODU - Bir sonraki Stratejik Analiz 1 DAKİKA sonra çalışacak.");
-                   // await Task.Delay(TimeSpan.FromSeconds(15), stoppingToken);
+                    // Eğer saati kaçırdıysak (örneğin UTC 23:00'te sunucu açıldıysa), yarına kur
+                    if (nowUtc >= nextRunTimeUtc)
+                    {
+                        nextRunTimeUtc = nextRunTimeUtc.AddDays(1);
+                    }
+
+                    var delay = nextRunTimeUtc - nowUtc;
+
+                    _logger.LogInformation($"[STRATEGIC-AI] WatchDog: Bir sonraki Stratejik Analiz {delay.TotalHours:F1} saat sonra (TR 01:00 / UTC 22:00) çalışacak.");
+                    
+                    await Task.Delay(delay, stoppingToken);
                 }
                 catch (TaskCanceledException)
                 {

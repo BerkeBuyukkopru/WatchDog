@@ -8,6 +8,7 @@ using Watchdog.Application.Interfaces.Common;
 using Watchdog.Application.Interfaces.ExternalClients;
 using Watchdog.Application.Interfaces.Repositories;
 using Watchdog.Application.UseCases.AI;
+using Watchdog.Application.DTOs.Monitoring;
 using Watchdog.Domain.Entities;
 using Watchdog.Domain.Enums;
 using Watchdog.Domain.Rules;
@@ -78,89 +79,122 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                     
                     if (ShouldTriggerIncidentForComponent(recentSnapshots, componentName))
                     {
-                        Console.WriteLine($">>>> [INCIDENT-TRIGGER] {app.Name} - {componentName} ÜST ÜSTE 3 KEZ HATA VERDİ!");
+                        Console.WriteLine($">>>> [INCIDENT-TRIGGER] {app.Name} - {componentName} ÜST ÜSTE 3 KEZ HATA VERDİ! Analiz başlıyor...");
 
                         var newIncident = new Incident
                         {
                             AppId = app.Id,
                             FailedComponent = componentName,
-                            StartedAt = DateTime.UtcNow,
-                            ErrorMessage = latestSnapshot.DependencyDetails // Tüm JSON veya hata mesajını sakla
+                            ErrorMessage = latestSnapshot.DependencyDetails ?? "Bilinmeyen bileşen hatası.",
+                            StartedAt = DateTime.UtcNow
                         };
 
                         await _incidentRepository.AddAsync(newIncident);
 
+                        // 🚨 CANLI BİLDİRİM: Yeni olayı tüm adminlere fırlat
+                        await _statusBroadcaster.BroadcastNewIncidentAsync(new IncidentDto
+                        {
+                            Id = newIncident.Id,
+                            AppId = newIncident.AppId,
+                            AppName = app.Name,
+                            FailedComponent = newIncident.FailedComponent,
+                            ErrorMessage = newIncident.ErrorMessage,
+                            StartedAt = newIncident.StartedAt
+                        });
+
                         await SendAlertToResponsibleAdminsAsync(app, $"🚨 KESİNTİ: {componentName}", 
                             $"{app.Name} uygulamasında {componentName} bileşeni çöktü.\nDetay: {latestSnapshot.DependencyDetails}");
 
-                        // Sadece ilk kritik hatada RCA tetikleyelim (Opsiyonel)
-                        if (componentName == "System" || componentsStatus.Count == 1)
-                        {
-                             _ = Task.Run(async () => await TriggerRootCauseAnalysisAsync(app, recentSnapshots));
-                        }
+                        // Yapay Zeka Analizini (RCA) tetikle
+                        _ = Task.Run(async () => await TriggerRootCauseAnalysisAsync(app, recentSnapshots));
+                    }
+                    else
+                    {
+                        Console.WriteLine($">>>> [INFO] {app.Name} - {componentName} Unhealthy ama henüz 3 hata birikmedi ({recentSnapshots.Count}/3).");
                     }
                 }
-                else if (hasActiveIncident && currentStatus == HealthStatus.Healthy)
+                else if (currentStatus == HealthStatus.Healthy)
                 {
-                    // İyileşme Kontrolü
-                    Console.WriteLine($">>>> [RECOVERY] {app.Name} - {componentName} düzeldi.");
-                    activeIncident.ResolvedAt = DateTime.UtcNow;
-                    await _incidentRepository.UpdateAsync(activeIncident);
+                    // 🟢 OTOMATİK İYİLEŞME KONTROLÜ: 
+                    // İsim uyuşmazlıklarını önlemek için (Örn: MongoDb vs MongoDB_Check) daha esnek arama yapıyoruz
+                    var activeIncidents = await _incidentRepository.GetActiveIncidentsAsync(app.Id);
+                    var incidentToResolve = activeIncidents.FirstOrDefault(i => 
+                        i.FailedComponent.Contains(componentName, StringComparison.OrdinalIgnoreCase) || 
+                        componentName.Contains(i.FailedComponent, StringComparison.OrdinalIgnoreCase));
 
-                    await SendAlertToResponsibleAdminsAsync(app, $"✅ DÜZELDİ: {componentName}", 
-                        $"{app.Name} uygulamasında {componentName} bileşeni tekrar sağlıklı.");
+                    if (incidentToResolve != null)
+                    {
+                        Console.WriteLine($">>>> [RECOVERY] {app.Name} - {componentName} düzeldi. Olay kapatılıyor.");
+                        incidentToResolve.ResolvedAt = DateTime.UtcNow;
+                        await _incidentRepository.UpdateAsync(incidentToResolve);
+
+                        // 🚨 CANLI BİLDİRİM: Olayın çözüldüğünü tüm adminlere fırlat
+                        await _statusBroadcaster.BroadcastResolvedIncidentAsync(new IncidentDto
+                        {
+                            Id = incidentToResolve.Id,
+                            AppId = incidentToResolve.AppId,
+                            AppName = app.Name,
+                            FailedComponent = incidentToResolve.FailedComponent,
+                            ErrorMessage = incidentToResolve.ErrorMessage,
+                            StartedAt = incidentToResolve.StartedAt,
+                            ResolvedAt = incidentToResolve.ResolvedAt
+                        });
+
+                        // 🧠 AI AUTO-RESOLVE: Hata düzeldiğine göre bu hataya dair AI önerilerini de kapat
+                        using var scope = _scopeFactory.CreateScope();
+                        var insightRepository = scope.ServiceProvider.GetRequiredService<IAiInsightRepository>();
+                        await insightRepository.ResolveAllActiveInsightsForAppAsync(app.Id);
+                        
+                        // 🚨 CANLI BİLDİRİM: AI önerilerinin kapandığını frontend'e bildir
+                        await _statusBroadcaster.BroadcastAllInsightsResolvedAsync(app.Id);
+
+                        Console.WriteLine($">>>> [AI-AUTO-RESOLVE] {app.Name} için tüm aktif yapay zeka önerileri kapatıldı ve bildirildi.");
+
+                        await SendAlertToResponsibleAdminsAsync(app, $"✅ DÜZELDİ: {componentName}", 
+                            $"{app.Name} uygulamasında {componentName} bileşeni tekrar sağlıklı.");
+                    }
                 }
             }
         }
 
         private Dictionary<string, HealthStatus> ParseComponentStatuses(string dependencyDetails)
         {
-            var results = new Dictionary<string, HealthStatus>();
-            if (string.IsNullOrEmpty(dependencyDetails)) return results;
-
-            try
+            if (string.IsNullOrEmpty(dependencyDetails)) return new Dictionary<string, HealthStatus>();
+            
+            try 
             {
-                using var doc = JsonDocument.Parse(dependencyDetails);
-                if (doc.RootElement.ValueKind == JsonValueKind.Object)
-                {
-                    foreach (var prop in doc.RootElement.EnumerateObject())
-                    {
-                        string statusStr = "";
-                        if (prop.Value.ValueKind == JsonValueKind.Object && prop.Value.TryGetProperty("status", out var statusProp))
-                        {
-                            statusStr = statusProp.ToString();
-                        }
-                        else
-                        {
-                            statusStr = prop.Value.ToString();
-                        }
-
-                        if (statusStr.Contains("Unhealthy", StringComparison.OrdinalIgnoreCase) || statusStr == "3")
-                            results[prop.Name] = HealthStatus.Unhealthy;
-                        else if (statusStr.Contains("Degraded", StringComparison.OrdinalIgnoreCase) || statusStr == "2")
-                            results[prop.Name] = HealthStatus.Degraded;
-                        else
-                            results[prop.Name] = HealthStatus.Healthy;
-                    }
-                }
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                return JsonSerializer.Deserialize<Dictionary<string, HealthStatus>>(dependencyDetails, options) 
+                       ?? new Dictionary<string, HealthStatus>();
             }
-            catch { /* Not a JSON or invalid format */ }
-
-            return results;
+            catch 
+            {
+                return new Dictionary<string, HealthStatus>();
+            }
         }
 
         private bool ShouldTriggerIncidentForComponent(List<HealthSnapshot> snapshots, string componentName)
         {
+            // Eğer 3 snapshot henüz birikmemişse tetikleme yapma
             if (snapshots == null || snapshots.Count < 3) return false;
 
-            // Son 3 kaydın tamamında bu bileşen Unhealthy mi?
-            foreach (var snapshot in snapshots.Take(3))
+            var fiveMinutesAgo = DateTime.UtcNow.AddMinutes(-5);
+
+            // Son 3 kaydın tamamında bu bileşen Unhealthy mi? 
+            // VE bu kayıtlar taze mi? (Son 5 dakika içinde mi?)
+            foreach (var snapshot in snapshots)
             {
+                if (snapshot.Timestamp < fiveMinutesAgo) 
+                {
+                    Console.WriteLine($">>>> [INFO] {componentName} için bulunan kayıt çok eski ({snapshot.Timestamp}). Analiz tetiklenmiyor.");
+                    return false;
+                }
+
                 var statusMap = ParseComponentStatuses(snapshot.DependencyDetails);
                 
-                // Eğer bileşen JSON'da yoksa ve biz "System" arıyorsak, snapshot statüsüne bak
                 if (!statusMap.ContainsKey(componentName))
                 {
+                    // Eğer bileşen listede yoksa ama snapshot genel olarak Unhealthy ise ve "System" bakıyorsak
                     if (componentName == "System" && snapshot.Status == HealthStatus.Unhealthy) continue;
                     return false;
                 }
@@ -191,7 +225,6 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
 
         private async Task TriggerRootCauseAnalysisAsync(MonitoredApp app, List<HealthSnapshot> recentSnapshots)
         {
-            // (Burası aynı kaldı, değiştirmedim)
             try
             {
                 using var scope = _scopeFactory.CreateScope();
@@ -199,31 +232,47 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                 var aiProviderRepository = scope.ServiceProvider.GetRequiredService<IAiProviderRepository>();
                 var promptBuilder = scope.ServiceProvider.GetRequiredService<IPromptBuilder>();
                 var aiClientFactory = scope.ServiceProvider.GetRequiredService<IAiClientFactory>();
+                var statusBroadcaster = scope.ServiceProvider.GetRequiredService<IStatusBroadcaster>();
 
                 Console.WriteLine($">>>> [RCA-START] {app.Name} için Kök Neden Analizi süreci başladı...");
 
                 var lastInsight = await insightRepository.GetLatestInsightAsync(app.Id);
-                if (lastInsight != null && lastInsight.CreatedAt > DateTime.UtcNow.AddMinutes(-5))
+                // ⏱ COOLDOWN: 10 dakika (Aynı hata için sürekli analiz yapıp motoru yormayalım)
+                if (lastInsight != null && lastInsight.CreatedAt > DateTime.UtcNow.AddMinutes(-10))
                 {
-                    Console.WriteLine($">>>> [RCA-SKIP] Cooldown aktif. Son 5 dakika içinde analiz yapılmış.");
+                    Console.WriteLine($">>>> [RCA-SKIP] Cooldown aktif. Son 10 dakika içinde analiz yapılmış.");
                     return;
                 }
 
                 var activeProviderEntity = await aiProviderRepository.GetActiveProviderAsync();
-                string activeProvider = activeProviderEntity?.Name ?? "Ollama";
+                
+                // 🔍 KRİTİK DÜZELTME: Eğer uygulamaya özel bir motor seçilmediyse, sistemin aktif motorunu kullan
+                var providerIdToUse = app.ActiveAiProviderId ?? activeProviderEntity?.Id;
+
+                if (providerIdToUse == null)
+                {
+                    Console.WriteLine($">>>> [RCA-ERROR] Hata: Hiçbir AI sağlayıcısı aktif değil!");
+                    return;
+                }
 
                 var prompt = promptBuilder.BuildRootCausePrompt(recentSnapshots, app.Name);
 
-                Console.WriteLine($">>>> [RCA-REQUEST] Yapay Zeka motoruna istek atılıyor...");
-                var aiClient = await aiClientFactory.CreateClientAsync(app.ActiveAiProviderId);
-                var aiResponse = await aiClient.AnalyzeAsync(prompt);
+                Console.WriteLine($">>>> [RCA-REQUEST] {activeProviderEntity?.Name ?? "Yapay Zeka"} motoruna istek atılıyor...");
+                var aiClient = await aiClientFactory.CreateClientAsync(providerIdToUse.Value);
+                var aiResponse = await aiClient.AnalyzeAsync(prompt); 
 
-                Console.WriteLine($">>>> [RCA-REPORT] {app.Name} Kriz Analiz Raporu:\n{aiResponse}\n--------------------------------------------------");
+                if (string.IsNullOrEmpty(aiResponse))
+                {
+                    Console.WriteLine($">>>> [RCA-ERROR] Yapay zeka boş cevap döndü!");
+                    return;
+                }
+
+                Console.WriteLine($">>>> [RCA-REPORT] {app.Name} Kriz Analiz Raporu Tamamlandı.");
 
                 var newInsight = new AiInsight
                 {
                     AppId = app.Id,
-                    AiProviderId = activeProviderEntity?.Id,
+                    AiProviderId = providerIdToUse,
                     InsightType = InsightType.CrashWarning,
                     Message = aiResponse,
                     IsResolved = false
@@ -231,7 +280,6 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
 
                 await insightRepository.AddAsync(newInsight);
 
-                var statusBroadcaster = scope.ServiceProvider.GetRequiredService<IStatusBroadcaster>();
                 var newInsightDto = new Watchdog.Application.DTOs.AI.AiInsightDto
                 {
                     Id = newInsight.Id,

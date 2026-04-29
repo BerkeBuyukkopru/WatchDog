@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import * as signalR from '@microsoft/signalr';
 import { AlertTriangle, Loader2, CheckCircle2, Clock, ShieldAlert, X, Maximize2 } from 'lucide-react';
 import { dashboardService } from '../api/dashboardService';
+import { useAuth } from '../../../context/AuthContext';
 import type { IncidentDto } from '../../../types/dashboard.types';
 
 type TabType = 'active' | 'resolved';
@@ -10,10 +12,13 @@ interface IncidentsProps {
 }
 
 const Incidents: React.FC<IncidentsProps> = ({ selectedAppId }) => {
+  const { token } = useAuth();
   const [incidents, setIncidents] = useState<IncidentDto[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<TabType>('active');
   const [selectedIncident, setSelectedIncident] = useState<IncidentDto | null>(null);
+  
+  const connectionRef = useRef<signalR.HubConnection | null>(null);
 
   // JSON Parser Helper: Sadece Unhealthy olanları ayıklar
   const parseUnhealthyComponents = (errorMessage: string) => {
@@ -49,7 +54,51 @@ const Incidents: React.FC<IncidentsProps> = ({ selectedAppId }) => {
     if (selectedAppId) {
       fetchIncidents();
     }
-  }, [selectedAppId]);
+
+    if (!token) return;
+
+    // SignalR Hub Bağlantısı
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl(`${import.meta.env.VITE_API_URL || 'http://localhost:5226'}/statushub`, {
+        accessTokenFactory: () => token || ''
+      })
+      .withAutomaticReconnect()
+      .configureLogging(signalR.LogLevel.None)
+      .build();
+
+    connection.on('ReceiveNewIncident', (newIncident: IncidentDto) => {
+      setIncidents(prev => {
+        if (prev.some(i => i.id === newIncident.id)) return prev;
+        return [newIncident, ...prev];
+      });
+    });
+
+    connection.on('ReceiveResolvedIncident', (resolvedIncident: IncidentDto) => {
+      setIncidents(prev => prev.map(i => i.id === resolvedIncident.id ? resolvedIncident : i));
+    });
+
+    const startConnection = async () => {
+      if (connection.state === signalR.HubConnectionState.Disconnected) {
+        try {
+          await connection.start();
+          console.log('>>>> [SIGNALR] Incidents Bağlantısı Başarılı.');
+        } catch (err: any) {
+          const errorMsg = err.toString();
+          // Müzakere kesilme hatalarını (React Strict Mode) sustur
+          if (errorMsg.includes('AbortError') || errorMsg.includes('stopped')) return;
+          console.error('>>>> [SIGNALR] Incidents Bağlantı Hatası:', err);
+        }
+      }
+    };
+
+    startConnection();
+
+    return () => {
+      if (connection) {
+        connection.stop().catch(() => {});
+      }
+    };
+  }, [selectedAppId, token]);
 
   const fetchIncidents = async () => {
     try {
@@ -70,9 +119,27 @@ const Incidents: React.FC<IncidentsProps> = ({ selectedAppId }) => {
 
   const displayList = activeTab === 'active' ? activeIncidents : resolvedIncidents;
 
+  const handleResolve = async (id: string) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5226'}/api/Incidents/${id}/resolve`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        // State güncellenmesi SignalR üzerinden de gelecek ama hızlı tepki için burada da yapabiliriz
+        setIncidents(prev => prev.map(i => i.id === id ? { ...i, resolvedAt: new Date().toISOString() } : i));
+      }
+    } catch (error) {
+      console.error('Hata çözülürken bir sorun oluştu:', error);
+    }
+  };
+
   return (
     <div className="bg-background-light border border-slate-800 rounded-xl shadow-lg flex flex-col overflow-hidden min-h-[300px]">
-      {/* Header & Tabs */}
+      {/* ... (Header & Tabs aynı kalıyor) */}
       <div className="flex flex-col border-b border-slate-800 bg-slate-800/20">
         <div className="h-14 px-5 flex items-center justify-between border-b border-slate-800/50">
           <div className="flex items-center gap-2">
@@ -166,13 +233,25 @@ const Incidents: React.FC<IncidentsProps> = ({ selectedAppId }) => {
                   )}
                 </div>
 
-                <button 
-                  onClick={() => setSelectedIncident(incident)}
-                  className="w-full flex items-center justify-center gap-2 py-2 text-xs font-medium text-slate-400 hover:text-indigo-400 bg-slate-800/50 hover:bg-indigo-500/10 rounded border border-slate-700 hover:border-indigo-500/30 transition-all"
-                >
-                  <Maximize2 size={14} />
-                  Detayları Gör
-                </button>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => setSelectedIncident(incident)}
+                    className="flex-1 flex items-center justify-center gap-2 py-2 text-xs font-medium text-slate-400 hover:text-indigo-400 bg-slate-800/50 hover:bg-indigo-500/10 rounded border border-slate-700 hover:border-indigo-500/30 transition-all"
+                  >
+                    <Maximize2 size={14} />
+                    Detaylar
+                  </button>
+                  
+                  {activeTab === 'active' && (
+                    <button 
+                      onClick={() => handleResolve(incident.id)}
+                      className="flex-1 flex items-center justify-center gap-2 py-2 text-xs font-medium text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 rounded border border-emerald-500/20 hover:border-emerald-500/40 transition-all"
+                    >
+                      <CheckCircle2 size={14} />
+                      Çözüldü Yap
+                    </button>
+                  )}
+                </div>
               </div>
             );
           })

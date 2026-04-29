@@ -59,19 +59,29 @@ namespace Watchdog.Application.UseCases.AI
             }
 
             var dailyStats = await _snapshotRepository.GetDailyEnrichedSnapshotsAsync(request.AppId, 8);
-            if (dailyStats == null || dailyStats.Count < 2) return null;
+            if (dailyStats == null || dailyStats.Count < 1) return null;
 
-            var targetDay = dailyStats.OrderByDescending(d => d.Date).FirstOrDefault();
+            var sortedStats = dailyStats.OrderByDescending(d => d.Date).ToList();
+            var targetDay = sortedStats.FirstOrDefault();
 
-            // --- KURUMSAL STANDART: Esnek Hedef Eşleştirme (Toleranslı Arama) ---
+            // --- ESNEK MANTIK: 7 gün öncesini ara, bulamazsan eldeki en eski veriyi al ---
             var targetBaselineDate = targetDay.Date.AddDays(-7).Date;
-
-            var baselineDay = dailyStats
-                .Where(d => d.Date.Date >= targetBaselineDate.AddDays(-1) && d.Date.Date <= targetBaselineDate.AddDays(1))
+            var baselineDay = sortedStats
+                .Where(d => d.Date.Date <= targetBaselineDate.AddDays(1) && d.Date != targetDay.Date)
                 .OrderBy(d => Math.Abs((d.Date.Date - targetBaselineDate).Days))
                 .FirstOrDefault();
 
-            if (baselineDay == null) return null;
+            // Eğer 7 gün civarı veri yoksa, targetDay'den farklı herhangi bir günü al (Karşılaştırma için)
+            if (baselineDay == null && sortedStats.Count > 1)
+            {
+                baselineDay = sortedStats.LastOrDefault(d => d.Date.Date < targetDay.Date.Date);
+            }
+
+            if (baselineDay == null) 
+            {
+                // Karşılaştıracak hiçbir geçmiş veri yoksa, tek gün üzerinden "Durum Raporu" üretelim
+                baselineDay = targetDay; // Baseline'ı kendisi yapıp farkları 0 gösteririz
+            }
 
             var last7Days = dailyStats.Where(d => d.Date > targetDay.Date.AddDays(-7)).ToList();
             double weeklyAvgCpu = Math.Round(last7Days.Average(d => d.AvgCpu), 2);

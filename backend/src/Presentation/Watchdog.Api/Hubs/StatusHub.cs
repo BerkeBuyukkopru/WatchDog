@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.SignalR;
 using Watchdog.Domain.Entities;
+using Watchdog.Application.DTOs.AI;
+using Watchdog.Application.DTOs.Monitoring;
 
 namespace Watchdog.Api.Hubs
 {
@@ -16,10 +18,25 @@ namespace Watchdog.Api.Hubs
         }
 
         // Yapay zeka analiz raporlarını (Insights) React'e fırlatır
-        public async Task BroadcastNewInsight(Watchdog.Application.DTOs.AI.AiInsightDto newInsight)
+        public async Task BroadcastNewInsight(AiInsightDto newInsight)
         {
             // Frontend tarafı bu veriyi "ReceiveNewInsight" olayını (event) dinleyerek yakalayacak
             await Clients.All.SendAsync("ReceiveNewInsight", newInsight);
+        }
+
+        public async Task BroadcastAllInsightsResolved(Guid appId)
+        {
+            await Clients.All.SendAsync("ReceiveAllInsightsResolved", appId);
+        }
+
+        public async Task BroadcastNewIncident(IncidentDto newIncident)
+        {
+            await Clients.All.SendAsync("ReceiveNewIncident", newIncident);
+        }
+
+        public async Task BroadcastResolvedIncident(IncidentDto resolvedIncident)
+        {
+            await Clients.All.SendAsync("ReceiveResolvedIncident", resolvedIncident);
         }
     }
 }

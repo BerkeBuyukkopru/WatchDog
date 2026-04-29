@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Watchdog.Domain.Entities;
@@ -14,5 +14,6 @@ namespace Watchdog.Application.Interfaces.Repositories
         Task<AiInsight?> GetLatestInsightAsync(Guid appId);
         Task<AiInsight?> GetByIdAsync(Guid id);
         Task UpdateAsync(AiInsight insight);
+        Task ResolveAllActiveInsightsForAppAsync(Guid appId);
     }
 }

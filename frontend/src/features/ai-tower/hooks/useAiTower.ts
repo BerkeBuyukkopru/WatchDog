@@ -60,37 +60,63 @@ export const useAiTower = () => {
     // SignalR Hub Bağlantısı
     const connection = new signalR.HubConnectionBuilder()
       .withUrl(`${import.meta.env.VITE_API_URL || 'http://localhost:5226'}/statushub`, {
-        accessTokenFactory: () => token
+        accessTokenFactory: () => token || ''
       })
       .withAutomaticReconnect()
-      .configureLogging(signalR.LogLevel.Information)
+      .configureLogging(signalR.LogLevel.None) // Konsolu kirletmemek için logları kıstık
       .build();
 
     // Yeni Öneri Geldiğinde Tetiklenecek Olay
     connection.on('ReceiveNewInsight', (newInsight: AiInsight) => {
-      console.log('Canlı AI Önerisi Geldi:', newInsight);
-      
-      // Sadece ana uygulamaya aitse veya admin her şeyi görmeye yetkiliyse ekle
       setInsights(prev => {
-        // Aynı ID'li kayıt varsa mükerrer ekleme yapma
         if (prev.some(i => i.id === newInsight.id)) return prev;
-        
-        // Yeni geleni en başa ekle ve listeyi (isteğe bağlı) 10-15 kayıtla sınırla
-        const updated = [newInsight, ...prev];
-        return updated.slice(0, 15); 
+        return [newInsight, ...prev];
       });
     });
 
-    connection.start()
-      .then(() => console.log('SignalR AI Tower Bağlantısı Başarılı.'))
-      .catch(err => console.error('SignalR Bağlantı Hatası:', err));
+    connection.on('ReceiveAllInsightsResolved', (resolvedAppId: string) => {
+      setInsights(prev => prev.filter(i => i.appId !== resolvedAppId));
+    });
+
+    const startConnection = async () => {
+      if (connection.state === signalR.HubConnectionState.Disconnected) {
+        try {
+          await connection.start();
+          console.log('>>>> [SIGNALR] AI Tower Bağlantısı Başarılı.');
+        } catch (err: any) {
+          const errorMsg = err.toString();
+          // Müzakere kesilme hatalarını (React Strict Mode) sustur
+          if (errorMsg.includes('AbortError') || errorMsg.includes('stopped')) return;
+          console.error('>>>> [SIGNALR] AI Tower Bağlantı Hatası:', err);
+        }
+      }
+    };
+
+    startConnection();
 
     connectionRef.current = connection;
 
+    // 🔄 FALLBACK POLLING: SignalR kaçarsa diye her 30sn'de bir sessizce tazele
+    const pollInterval = setInterval(() => {
+      if (mainApp?.id) {
+        aiTowerService.getInsights(mainApp.id, 5).then(data => {
+          setInsights(prev => {
+            // Sadece yeni olanları ekle
+            const newOnes = data.filter(d => !prev.some(p => p.id === d.id));
+            if (newOnes.length === 0) return prev;
+            return [...newOnes, ...prev].slice(0, 15);
+          });
+        }).catch(() => {}); // Polling hatalarını da sessize al
+      }
+    }, 30000);
+
     return () => {
-      connection.stop();
+      if (connection) {
+        connection.stop().catch(() => {}); // Kapatma hatalarını sustur
+      }
+      clearInterval(pollInterval);
     };
-  }, [token]);
+  }, [token, mainApp?.id]);
 
   const resolveInsight = async (id: string) => {
     try {

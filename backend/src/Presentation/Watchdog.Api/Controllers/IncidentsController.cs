@@ -15,10 +15,12 @@ namespace Watchdog.Api.Controllers
     public class IncidentsController : ControllerBase
     {
         private readonly IIncidentRepository _incidentRepository;
+        private readonly Watchdog.Application.Interfaces.ExternalClients.IStatusBroadcaster _statusBroadcaster;
 
-        public IncidentsController(IIncidentRepository incidentRepository)
+        public IncidentsController(IIncidentRepository incidentRepository, Watchdog.Application.Interfaces.ExternalClients.IStatusBroadcaster statusBroadcaster)
         {
             _incidentRepository = incidentRepository;
+            _statusBroadcaster = statusBroadcaster;
         }
 
         [HttpGet]
@@ -28,6 +30,7 @@ namespace Watchdog.Api.Controllers
             var dtos = incidents.Select(i => new IncidentDto
             {
                 Id = i.Id,
+                AppId = i.AppId, // SignalR filtresi için gerekli
                 AppName = i.App?.Name ?? "Bilinmeyen Uygulama",
                 FailedComponent = i.FailedComponent,
                 ErrorMessage = i.ErrorMessage,
@@ -54,6 +57,19 @@ namespace Watchdog.Api.Controllers
 
             incident.ResolvedAt = DateTime.UtcNow;
             await _incidentRepository.UpdateAsync(incident);
+
+            // 🚨 CANLI GÜNCELLEME: Tüm dashboardlara bildir
+            var dto = new IncidentDto
+            {
+                Id = incident.Id,
+                AppId = incident.AppId,
+                AppName = incident.App?.Name ?? "Uygulama",
+                FailedComponent = incident.FailedComponent,
+                ErrorMessage = incident.ErrorMessage,
+                StartedAt = incident.StartedAt,
+                ResolvedAt = incident.ResolvedAt
+            };
+            await _statusBroadcaster.BroadcastResolvedIncidentAsync(dto);
 
             return Ok(new { message = "Olay çözüldü olarak işaretlendi." });
         }
