@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -12,5 +12,6 @@ namespace Watchdog.Application.DTOs.AI
         public string ModelName { get; set; } = string.Empty;
         public string? ApiUrl { get; set; } // Kullanıcı URL'i görüp düzenleyebilmeli
         public bool IsActive { get; set; }
+        public bool HasApiKey { get; set; }
     }
 }

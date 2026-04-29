@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -64,7 +64,8 @@ namespace Watchdog.Application.UseCases.Apps
                 Name = a.Name,
                 HealthUrl = a.HealthUrl,
                 PollingIntervalSeconds = a.PollingIntervalSeconds,
-                CreatedAt = a.CreatedAt
+                CreatedAt = a.CreatedAt,
+                ActiveAiProviderId = a.ActiveAiProviderId
             });
         }
     }

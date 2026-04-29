@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Watchdog.Application.DTOs.AI;
 using Watchdog.Application.Interfaces.Common;
@@ -61,6 +61,18 @@ namespace Watchdog.Api.Controllers
             if (result) return Ok(new { message = "Ayarlar başarıyla kaydedildi." });
 
             return BadRequest(new { message = "Güncelleme sırasında hata oluştu. Sağlayıcı bulunamadı." });
+        }
+
+        // PATCH: api/AiProviders/{id}/set-active
+        // Belirli bir sağlayıcıyı sistemin aktif beyni olarak işaretler.
+        [HttpPatch("{id}/set-active")]
+        [Authorize(Roles = RoleConstants.SuperAdmin)]
+        public async Task<IActionResult> SetActive(Guid id, [FromServices] SetActiveAiProviderUseCase useCase)
+        {
+            var result = await useCase.ExecuteAsync(id);
+            if (result) return Ok(new { message = "AI sağlayıcısı başarıyla aktif edildi." });
+
+            return BadRequest(new { message = "İşlem başarısız. Sağlayıcı bulunamadı." });
         }
 
         // DELETE: Sağlayıcı silme SADECE SuperAdmin yetkisindedir.

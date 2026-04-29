@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Watchdog.Application.DTOs.Monitoring;
@@ -66,7 +66,8 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                             if (statusStr.Equals("Unhealthy", StringComparison.OrdinalIgnoreCase))
                                 finalStatus = HealthStatus.Unhealthy;
                             else if (statusStr.Equals("Degraded", StringComparison.OrdinalIgnoreCase))
-                                finalStatus = HealthStatus.Degraded;
+                                // Kullanıcı isteği: Degraded durumlarını da kritik (Unhealthy) kabul et ki AI tetiklensin.
+                                finalStatus = HealthStatus.Unhealthy;
                             else if (statusStr.Equals("Healthy", StringComparison.OrdinalIgnoreCase))
                                 finalStatus = HealthStatus.Healthy;
                         }

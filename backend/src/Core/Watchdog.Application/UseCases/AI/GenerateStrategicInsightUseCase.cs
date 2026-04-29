@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq; // OrderBy vb. için eklendi
 using System.Threading.Tasks;
@@ -99,7 +99,19 @@ namespace Watchdog.Application.UseCases.AI
             };
 
             await _insightRepository.AddAsync(insight);
-            await _statusBroadcaster.BroadcastNewInsightAsync(insight);
+
+            var newInsightDto = new Watchdog.Application.DTOs.AI.AiInsightDto
+            {
+                Id = insight.Id,
+                AppName = app.Name,
+                Message = insight.Message,
+                Evidence = insight.Evidence,
+                InsightType = insight.InsightType.ToString(),
+                IsResolved = insight.IsResolved,
+                CreatedAt = insight.CreatedAt
+            };
+
+            await _statusBroadcaster.BroadcastNewInsightAsync(newInsightDto);
 
             return insight;
         }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Watchdog.Application.DTOs.AI;
@@ -27,7 +27,8 @@ namespace Watchdog.Application.UseCases.AI
                 Name = p.Name,
                 ModelName = p.ModelName,
                 ApiUrl = p.ApiUrl,
-                IsActive = p.IsActive
+                IsActive = p.IsActive,
+                HasApiKey = !string.IsNullOrWhiteSpace(p.ApiKey) || p.Name.Contains("Ollama", StringComparison.OrdinalIgnoreCase)
             });
         }
     }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq; // Pencere filtrelemeleri (Where) için eklendi
 using System.Threading.Tasks;
@@ -122,7 +122,8 @@ namespace Watchdog.Application.UseCases.AI
                 };
 
                 await _insightRepository.AddAsync(stableInsight);
-                await _statusBroadcaster.BroadcastNewInsightAsync(stableInsight);
+                var stableDto = new Watchdog.Application.DTOs.AI.AiInsightDto { Id = stableInsight.Id, AppName = app.Name, Message = stableInsight.Message, Evidence = stableInsight.Evidence, InsightType = stableInsight.InsightType.ToString(), IsResolved = stableInsight.IsResolved, CreatedAt = stableInsight.CreatedAt };
+                await _statusBroadcaster.BroadcastNewInsightAsync(stableDto);
 
                 return stableInsight;
             }
@@ -153,7 +154,8 @@ namespace Watchdog.Application.UseCases.AI
             };
 
             await _insightRepository.AddAsync(insight);
-            await _statusBroadcaster.BroadcastNewInsightAsync(insight);
+            var insightDto = new Watchdog.Application.DTOs.AI.AiInsightDto { Id = insight.Id, AppName = app.Name, Message = insight.Message, Evidence = insight.Evidence, InsightType = insight.InsightType.ToString(), IsResolved = insight.IsResolved, CreatedAt = insight.CreatedAt };
+            await _statusBroadcaster.BroadcastNewInsightAsync(insightDto);
 
             return insight;
         }

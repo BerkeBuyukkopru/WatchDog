@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Text;
 using System.Text.Json;
@@ -26,10 +26,8 @@ namespace Watchdog.Infrastructure.Notifications
         {
             _logger.LogWarning("===> [API] {AppName} için HTTP üzerinden DOWNTIME maili hazırlanıyor...", app.Name);
 
-            // Alıcı yönetimi (Fallback mantığı aynı)
-            var targetEmails = !string.IsNullOrWhiteSpace(app.NotificationEmails)
-                ? app.NotificationEmails.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries).Select(e => e.Trim())
-                : new[] { _settings.ToEmail };
+            // Alıcı yönetimi (Sadece varsayılan yöneticiye gönderilir)
+            var targetEmails = new[] { _settings.ToEmail };
 
             // Mailtrap API beklediği JSON formatı
             var emailData = new
@@ -48,9 +46,7 @@ namespace Watchdog.Infrastructure.Notifications
         {
             _logger.LogWarning("===> [API] {AppName} için HTTP üzerinden KURTARMA maili hazırlanıyor...", app.Name);
 
-            var targetEmails = !string.IsNullOrWhiteSpace(app.NotificationEmails)
-                ? app.NotificationEmails.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries).Select(e => e.Trim())
-                : new[] { _settings.ToEmail };
+            var targetEmails = new[] { _settings.ToEmail };
 
             var emailData = new
             {
@@ -111,6 +107,12 @@ namespace Watchdog.Infrastructure.Notifications
                 if (response.IsSuccessStatusCode)
                 {
                     _logger.LogInformation(">>> E-POSTA API ÜZERİNDEN BAŞARIYLA GÖNDERİLDİ: {AppName}", appName);
+                }
+                else if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                {
+                    _logger.LogWarning("⚠️ MAILTRAP KOTA DOLDU: Günlük mail gönderim limitine ulaştınız. Mailler şu an gerçek adrese gitmiyor ancak terminale loglanıyor.");
+                    // Opsiyonel: Mail içeriğini terminale basarak kullanıcının görmesini sağlayabiliriz.
+                    Console.WriteLine($">>>> [MOCK-MAIL] {appName} için gönderilmek istenen mail kotalar nedeniyle gönderilemedi.");
                 }
                 else
                 {

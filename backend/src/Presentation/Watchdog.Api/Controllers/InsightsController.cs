@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Watchdog.Application.DTOs.AI;
 using Watchdog.Application.Interfaces.Common;
@@ -24,9 +24,9 @@ namespace Watchdog.Api.Controller
 
         //Belirli bir uygulama için veya tüm sistemdeki AI tavsiyelerini getirir.
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<AiInsightDto>>> GetAll([FromQuery] Guid? appId)
+        public async Task<ActionResult<IEnumerable<AiInsightDto>>> GetAll([FromQuery] Guid? appId, [FromQuery] int limit = 5)
         {
-            var result = await _getInsightsUseCase.ExecuteAsync(appId);
+            var result = await _getInsightsUseCase.ExecuteAsync(appId, limit);
             return Ok(result);
         }
 
@@ -50,7 +50,7 @@ namespace Watchdog.Api.Controller
 
         // Kullanıcı UI üzerinden bir tavsiyeyi 'Çözüldü' olarak işaretler.
         [HttpPatch("{id}/resolve")]
-        public async Task<IActionResult> Resolve(Guid id, [FromServices] IUseCaseAsync<Guid, bool> resolveUseCase)
+        public async Task<IActionResult> Resolve(Guid id, [FromServices] ResolveInsightUseCase resolveUseCase)
         {
             var result = await resolveUseCase.ExecuteAsync(id);
 

@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using Watchdog.Application.DTOs.AI;
@@ -34,7 +34,6 @@ public static class DependencyInjection
         services.AddScoped<IUseCaseAsync<DeleteAppRequest, bool>, DeleteAppUseCase>();
 
         services.AddScoped<IUseCaseAsync<CreateMonitoredAppRequest, CreateMonitoredAppResponse>, CreateMonitoredAppUseCase>();
-        services.AddScoped<IUseCaseAsync<UpdateAppEmailsRequest, (bool IsSuccess, string ErrorMessage)>, UpdateAppEmailsUseCase>();
 
         services.AddTransient<IUseCaseAsync<HealthSnapshot>, AnalyzeSystemHealthUseCase>();
         services.AddScoped<IUseCaseAsync<PollSingleAppRequest, HealthSnapshot?>, PollSingleAppUseCase>();
@@ -48,7 +47,7 @@ public static class DependencyInjection
         services.AddScoped<IPromptBuilder, PromptBuilder>();
 
         // Okundu/Çözüldü İşaretleme Senaryosu 
-        services.AddScoped<IUseCaseAsync<Guid, bool>, ResolveInsightUseCase>();
+        services.AddScoped<ResolveInsightUseCase>();
         services.AddScoped<ArchiveSnapshotsUseCase>();
 
         // === Auth Use Case'leri ===

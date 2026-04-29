@@ -1,4 +1,4 @@
-﻿using Watchdog.Application.DTOs.Apps;
+using Watchdog.Application.DTOs.Apps;
 using Watchdog.Application.Enums;
 using Watchdog.Application.Interfaces.Common;
 using Watchdog.Application.Interfaces.Repositories;
@@ -47,8 +47,6 @@ namespace Watchdog.Application.UseCases.Apps
             app.Name = request.Name;
             app.HealthUrl = request.HealthUrl;
             app.PollingIntervalSeconds = request.PollingIntervalSeconds;
-            app.NotificationEmails = request.NotificationEmails;
-            app.AdminEmail = request.AdminEmail;
             app.IsActive = request.IsActive;
             app.ActiveAiProviderId = request.ActiveAiProviderId;
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
@@ -19,13 +19,6 @@ namespace Watchdog.Application.DTOs.Apps
 
         [Range(10, 3600, ErrorMessage = "İzleme aralığı 10 saniye ile 1 saat arasında olmalıdır.")]
         public int PollingIntervalSeconds { get; set; }
-
-        public string? NotificationEmails { get; set; } // Virgülle ayrılmış liste
-
-        [Required(ErrorMessage = "Admin e-postası zorunludur.")]
-        [EmailAddress(ErrorMessage = "Geçerli bir e-posta adresi giriniz.")]
-        public string AdminEmail { get; set; } = string.Empty;
-
         public bool IsActive { get; set; }
         public Guid? ActiveAiProviderId { get; set; }
     }

@@ -1,0 +1,42 @@
+[
+  {
+    "id": "1",
+    "title": "Yüksek CPU Kullanımı",
+    "description": "Ödeme servisi son 5 dakikadır %90 CPU üzerinde çalışıyor. Yatay ölçekleme önerilir.",
+    "timestamp": "2024-04-28T10:00:00Z",
+    "severity": "critical",
+    "category": "Performance"
+  },
+  {
+    "id": "2",
+    "title": "Bellek Sızıntısı Şüphesi",
+    "description": "Auth servisinde bellek kullanımı doğrusal artış gösteriyor. Heap dump analizi önerilir.",
+    "timestamp": "2024-04-28T10:05:00Z",
+    "severity": "high",
+    "category": "Memory"
+  },
+  {
+    "id": "3",
+    "title": "Anormal Trafik Artışı",
+    "description": "API Gateway üzerinde alışılmadık bir IP bloğundan yoğun istek geliyor. Rate limiting kontrol edilmeli.",
+    "timestamp": "2024-04-28T10:10:00Z",
+    "severity": "medium",
+    "category": "Security"
+  },
+  {
+    "id": "4",
+    "title": "Veritabanı Yanıt Süresi",
+    "description": "PostgreSQL sorgu süreleri ortalamanın %20 üzerine çıktı. İndeksleme gözden geçirilmeli.",
+    "timestamp": "2024-04-28T10:15:00Z",
+    "severity": "low",
+    "category": "Database"
+  },
+  {
+    "id": "5",
+    "title": "Bağlantı Havuzu Sınırı",
+    "description": "Redis bağlantı havuzu dolmak üzere. Maksimum bağlantı sayısını artırın veya timeout süresini düşürün.",
+    "timestamp": "2024-04-28T10:20:00Z",
+    "severity": "high",
+    "category": "Infrastructure"
+  }
+]

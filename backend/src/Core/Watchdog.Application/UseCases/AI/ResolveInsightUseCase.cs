@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Watchdog.Application.Interfaces.Common;
@@ -7,7 +7,7 @@ using Watchdog.Application.Interfaces.Repositories;
 namespace Watchdog.Application.UseCases.AI
 {
     // AI tarafından üretilen kriz veya tavsiye raporlarını "Okundu/Çözüldü" olarak işaretler.
-    public class ResolveInsightUseCase : IUseCaseAsync<Guid, bool>
+    public class ResolveInsightUseCase
     {
         private readonly IAiInsightRepository _repository;
 

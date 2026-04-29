@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
@@ -67,28 +67,6 @@ namespace Watchdog.Api.Controllers
             if (!isDeleted)
             {
                 return NotFound(new { message = "Silinecek uygulama bulunamadı." });
-            }
-            return NoContent();
-        }
-
-        [HttpPatch("{id:guid}/emails")]
-        [Authorize(Roles = RoleConstants.AllAdmins)]
-        public async Task<IActionResult> UpdateEmails(
-            Guid id,
-            [FromBody] UpdateAppEmailsRequest request,
-            [FromServices] IUseCaseAsync<UpdateAppEmailsRequest, (bool IsSuccess, string ErrorMessage)> useCase)
-        {
-            request.AppId = id;
-            var result = await useCase.ExecuteAsync(request);
-
-            if (!result.IsSuccess)
-            {
-                if (result.ErrorMessage != null && result.ErrorMessage.Contains("bulunamadı"))
-                {
-                    return NotFound(new { message = result.ErrorMessage });
-                }
-
-                return BadRequest(new { message = result.ErrorMessage });
             }
             return NoContent();
         }

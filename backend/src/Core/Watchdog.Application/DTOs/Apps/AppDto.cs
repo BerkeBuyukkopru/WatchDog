@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -13,7 +13,6 @@ namespace Watchdog.Application.DTOs.Apps
         // Tarama sıklığını saniye cinsinden belirten özellik.
         public int PollingIntervalSeconds { get; set; }
         public DateTime CreatedAt { get; set; }
-
-        
+        public Guid? ActiveAiProviderId { get; set; }
     }
 }

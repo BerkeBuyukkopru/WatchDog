@@ -3,6 +3,7 @@ import { AuthPage } from '../features/auth/AuthPage';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 import SuperAdminLayout from '../layouts/SuperAdminLayout';
 import AdminLayout from '../layouts/AdminLayout';
+import DashboardPage from '../pages/DashboardPage';
 
 const AppRouter = () => {
   return (
@@ -17,13 +18,7 @@ const AppRouter = () => {
       <Route element={<ProtectedRoute allowedRoles={['Admin', 'SuperAdmin']} />}>
         {/* Live Dashboard (Phase 2) */}
         <Route path="/dashboard" element={<AdminLayout />}>
-          <Route index element={
-          <div className="h-full flex items-center justify-center p-4 sm:p-6">
-            <div className="text-white p-8 sm:p-10 text-center text-lg sm:text-xl bg-background border border-slate-800 rounded-lg shadow-xl w-full max-w-2xl">
-              Admin İzleme Ekranı (Faz 2'de Yapılacak)
-            </div>
-          </div>
-        } />
+          <Route index element={<DashboardPage />} />
         </Route>
       </Route>
       

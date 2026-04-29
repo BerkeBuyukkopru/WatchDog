@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Threading;
@@ -19,7 +19,7 @@ namespace Watchdog.Infrastructure.Notifications
 
             // Worker'dan aldığımız köprü inşası burada
             _hubConnection = new HubConnectionBuilder()
-                .WithUrl("https://localhost:7054/statushub")
+                .WithUrl("http://localhost:5226/statushub")
                 .WithAutomaticReconnect()
                 .Build();
         }
@@ -52,7 +52,7 @@ namespace Watchdog.Infrastructure.Notifications
         }
 
         // Yapay zeka verisini API'ye fırlatıyoruz
-        public async Task BroadcastNewInsightAsync(AiInsight insight, CancellationToken cancellationToken = default)
+        public async Task BroadcastNewInsightAsync(Watchdog.Application.DTOs.AI.AiInsightDto insight, CancellationToken cancellationToken = default)
         {
             await EnsureConnectedAsync(cancellationToken);
 

@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -138,7 +138,7 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                 var prompt = promptBuilder.BuildRootCausePrompt(recentSnapshots, app.Name);
 
                 Console.WriteLine($">>>> [RCA-REQUEST] Yapay Zeka motoruna istek atılıyor...");
-                var aiClient = await aiClientFactory.CreateClientAsync();
+                var aiClient = await aiClientFactory.CreateClientAsync(app.ActiveAiProviderId);
                 var aiResponse = await aiClient.AnalyzeAsync(prompt);
 
                 Console.WriteLine($">>>> [RCA-REPORT] {app.Name} Kriz Analiz Raporu:\n{aiResponse}\n--------------------------------------------------");
@@ -155,7 +155,17 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                 await insightRepository.AddAsync(newInsight);
 
                 var statusBroadcaster = scope.ServiceProvider.GetRequiredService<IStatusBroadcaster>();
-                await statusBroadcaster.BroadcastNewInsightAsync(newInsight);
+                var newInsightDto = new Watchdog.Application.DTOs.AI.AiInsightDto
+                {
+                    Id = newInsight.Id,
+                    AppName = app.Name,
+                    Message = newInsight.Message,
+                    InsightType = newInsight.InsightType.ToString(),
+                    IsResolved = newInsight.IsResolved,
+                    CreatedAt = newInsight.CreatedAt
+                };
+
+                await statusBroadcaster.BroadcastNewInsightAsync(newInsightDto);
 
                 Console.WriteLine($">>>> [RCA-SUCCESS] Analiz tamamlandı ve veritabanına kaydedildi!");
             }

@@ -15,7 +15,6 @@ export const AuthPage: React.FC = () => {
 
   // If already authenticated, redirect based on role
   if (isAuthenticated && user) {
-    const isAdmin = user.role.toLowerCase() === 'admin';
     const isSuperAdmin = user.role.toLowerCase() === 'superadmin';
 
     if (isSuperAdmin) {
