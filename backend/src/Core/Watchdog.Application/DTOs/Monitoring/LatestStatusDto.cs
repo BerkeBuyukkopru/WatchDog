@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -19,6 +19,10 @@ namespace Watchdog.Application.DTOs.Monitoring
         public double AppRamUsage { get; set; }
         public double SystemRamUsage { get; set; }
         public double FreeDiskGb { get; set; }
-        // DependencyDetails (ham JSON) kısmını dışarıya basmıyoruz, arayüzü kirletmeye gerek yok.
+        public string? DependencyDetails { get; set; }
+        public double TotalRamMb { get; set; }
+        public double TotalCpuPercentage { get; set; }
+        public double TotalDiskGb { get; set; }
+        public int TotalCpuCores { get; set; }
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq; // Where/Any için şart
 using System.Text;
@@ -18,11 +18,42 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
             _context = context;
         }
 
-        public async Task<Incident?> GetActiveIncidentAsync(Guid appId)
+        public async Task<Incident?> GetActiveIncidentAsync(Guid appId, string componentName)
         {
-            // Sadece çözülmemiş (ResolvedAt == null) olanları değil, aynı zamanda SİLİNMEMİŞ (!IsDeleted) olanları aramalıyız.
             return await _context.Incidents
-                .FirstOrDefaultAsync(i => i.AppId == appId && i.ResolvedAt == null && !i.IsDeleted);
+                .FirstOrDefaultAsync(i => i.AppId == appId && 
+                                         i.FailedComponent == componentName && 
+                                         i.ResolvedAt == null && 
+                                         !i.IsDeleted);
+        }
+
+        public async Task<IEnumerable<Incident>> GetActiveIncidentsAsync(Guid appId)
+        {
+            return await _context.Incidents
+                .Where(i => i.AppId == appId && i.ResolvedAt == null && !i.IsDeleted)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Incident>> GetAllAsync(Guid? appId = null)
+        {
+            var query = _context.Incidents
+                .Include(i => i.App) // Uygulama bilgilerini de joinleyelim
+                .Where(i => !i.IsDeleted);
+
+            if (appId.HasValue)
+            {
+                query = query.Where(i => i.AppId == appId.Value);
+            }
+
+            return await query
+                .OrderByDescending(i => i.StartedAt)
+                .ToListAsync();
+        }
+
+        public async Task<Incident?> GetByIdAsync(Guid id)
+        {
+            return await _context.Incidents
+                .FirstOrDefaultAsync(i => i.Id == id && !i.IsDeleted);
         }
 
         public async Task AddAsync(Incident incident)

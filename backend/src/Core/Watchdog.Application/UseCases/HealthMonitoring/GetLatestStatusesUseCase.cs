@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Watchdog.Application.DTOs.Monitoring;
 using Watchdog.Application.Interfaces.Common;
 using Watchdog.Application.Interfaces.Repositories;
@@ -15,16 +16,19 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
         private readonly ISnapshotRepository _snapshotRepository;
         private readonly IAuthRepository _authRepository; // YENİ
         private readonly ICurrentUserService _currentUserService; // YENİ
+        private readonly IConfiguration _configuration; // YENİ
 
         // Bağımlılıklar içeri alınıyor
         public GetLatestStatusesUseCase(
             ISnapshotRepository snapshotRepository,
             IAuthRepository authRepository,
-            ICurrentUserService currentUserService)
+            ICurrentUserService currentUserService,
+            IConfiguration configuration)
         {
             _snapshotRepository = snapshotRepository;
             _authRepository = authRepository;
             _currentUserService = currentUserService;
+            _configuration = configuration;
         }
 
         public async Task<IEnumerable<LatestStatusDto>> ExecuteAsync(GetLatestStatusesRequest request)
@@ -70,6 +74,12 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                 }
             }
 
+            // Sistem donanım sınırlarını Config'den okuyalım (yoksa fallback)
+            double totalRamMb = Convert.ToDouble(_configuration["SystemMetrics:TotalRamMb"] ?? "16384");
+            double totalDiskGb = Convert.ToDouble(_configuration["SystemMetrics:TotalDiskGb"] ?? "500");
+            double totalCpuPercentage = Convert.ToDouble(_configuration["SystemMetrics:TotalCpuPercentage"] ?? "100");
+            int totalCpuCores = Convert.ToInt32(_configuration["SystemMetrics:TotalCpuCores"] ?? "16");
+
             // 3. Ham entity'leri, React için temiz DTO'lara dönüştür (Mapping)
             var dtoList = snapshots.Select(x => new LatestStatusDto
             {
@@ -83,7 +93,12 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                 SystemCpuUsage = x.SystemCpuUsage,
                 AppRamUsage = x.AppRamUsage,
                 SystemRamUsage = x.SystemRamUsage,
-                FreeDiskGb = x.FreeDiskGb
+                FreeDiskGb = x.FreeDiskGb,
+                DependencyDetails = x.DependencyDetails,
+                TotalRamMb = totalRamMb,
+                TotalCpuPercentage = totalCpuPercentage,
+                TotalDiskGb = totalDiskGb,
+                TotalCpuCores = totalCpuCores
             })
             .OrderBy(x => x.Timestamp)
             .ToList();
