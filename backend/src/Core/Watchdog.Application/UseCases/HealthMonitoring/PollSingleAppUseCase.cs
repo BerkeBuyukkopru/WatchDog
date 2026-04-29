@@ -86,6 +86,20 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                         if (root.TryGetProperty("checks", out var checksProp))
                         {
                             errorOrJson = checksProp.ToString();
+
+                            // BAĞIMLILIK KONTROLÜ (OVERRIDE): Eğer herhangi bir dependency "Unhealthy" ise genel durumu EZ.
+                            foreach (var prop in checksProp.EnumerateObject())
+                            {
+                                // Değer "Unhealthy" veya obje içinde { status: "Unhealthy" } olabilir.
+                                string propString = prop.Value.ToString();
+                                if (propString.Contains("Unhealthy", StringComparison.OrdinalIgnoreCase) || 
+                                    propString.Contains("\"status\":3", StringComparison.OrdinalIgnoreCase) ||
+                                    propString.Contains("\"status\":\"Unhealthy\"", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    finalStatus = HealthStatus.Unhealthy;
+                                    break;
+                                }
+                            }
                         }
                         else if (root.TryGetProperty("dependencyDetails", out var depProp))
                         {

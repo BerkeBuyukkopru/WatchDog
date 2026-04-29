@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Watchdog.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using Watchdog.Infrastructure.Persistence;
 namespace Watchdog.Infrastructure.Migrations
 {
     [DbContext(typeof(WatchdogDbContext))]
-    partial class WatchdogDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260429110945_AddFailedComponentToIncident")]
+    partial class AddFailedComponentToIncident
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -313,6 +316,10 @@ namespace Watchdog.Infrastructure.Migrations
                     b.Property<Guid?>("ActiveAiProviderId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("AdminEmail")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("ApiKey")
                         .HasColumnType("nvarchar(max)");
 
@@ -346,6 +353,9 @@ namespace Watchdog.Infrastructure.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NotificationEmails")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("PollingIntervalSeconds")

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Text.Json;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -52,46 +53,122 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
 
             Console.WriteLine($">>>> [MONITOR] {app.Name} Pinglendi. Durum: {latestSnapshot.Status}");
 
-            var activeIncident = await _incidentRepository.GetActiveIncidentAsync(app.Id);
-            bool hasActiveIncident = activeIncident != null;
-
-            if (!hasActiveIncident && latestSnapshot.Status == HealthStatus.Unhealthy)
+            // 1. Bileşen bazlı analiz için verileri hazırla
+            var componentsStatus = ParseComponentStatuses(latestSnapshot.DependencyDetails);
+            
+            // Eğer JSON parse edilemediyse veya boşsa (örn: Network Error), "System" olarak ele al
+            if (!componentsStatus.Any())
             {
-                var recentSnapshots = await _snapshotRepository.GetLatestSnapshotsAsync(app.Id, 3);
-
-                if (IncidentRules.ShouldOpenIncident(recentSnapshots, hasActiveIncident))
-                {
-                    Console.WriteLine($">>>> [INCIDENT-TRIGGER] [CRITICAL] {app.Name} ÜST ÜSTE 3 KEZ YANIT VERMEDİ! Olay başlatılıyor...");
-
-                    var newIncident = new Incident
-                    {
-                        AppId = app.Id,
-                        StartedAt = DateTime.UtcNow,
-                        ErrorMessage = string.IsNullOrEmpty(latestSnapshot.DependencyDetails)
-                        ? "Sistem yanıt vermiyor."
-                        : $"Hata Detayı: {latestSnapshot.DependencyDetails}"
-                    };
-
-                    await _incidentRepository.AddAsync(newIncident);
-
-                    // --- YENİ MAİL MANTIĞI: SADECE SORUMLU ADMİNLERİ BUL VE MAİL AT ---
-                    await SendAlertToResponsibleAdminsAsync(app, "🚨 KRİTİK KESİNTİ", $"{app.Name} uygulaması an itibarıyla çöktü. Hata: {newIncident.ErrorMessage}");
-
-                    _ = Task.Run(async () => await TriggerRootCauseAnalysisAsync(app, recentSnapshots));
-                }
+                componentsStatus["System"] = latestSnapshot.Status;
             }
-            else if (hasActiveIncident && latestSnapshot.Status == HealthStatus.Healthy)
+
+            // 2. Her bir bileşen için durumu kontrol et
+            foreach (var component in componentsStatus)
             {
-                if (IncidentRules.ShouldResolveIncident(latestSnapshot, hasActiveIncident))
+                string componentName = component.Key;
+                HealthStatus currentStatus = component.Value;
+
+                var activeIncident = await _incidentRepository.GetActiveIncidentAsync(app.Id, componentName);
+                bool hasActiveIncident = activeIncident != null;
+
+                if (!hasActiveIncident && currentStatus == HealthStatus.Unhealthy)
                 {
-                    Console.WriteLine($">>>> [RECOVERY] {app.Name} düzeldi. Olay kapatılıyor.");
+                    // 3-Strike Kontrolü: Bu bileşen son 3 snapshot'ta da mı Unhealthy?
+                    var recentSnapshots = await _snapshotRepository.GetLatestSnapshotsAsync(app.Id, 3);
+                    
+                    if (ShouldTriggerIncidentForComponent(recentSnapshots, componentName))
+                    {
+                        Console.WriteLine($">>>> [INCIDENT-TRIGGER] {app.Name} - {componentName} ÜST ÜSTE 3 KEZ HATA VERDİ!");
+
+                        var newIncident = new Incident
+                        {
+                            AppId = app.Id,
+                            FailedComponent = componentName,
+                            StartedAt = DateTime.UtcNow,
+                            ErrorMessage = latestSnapshot.DependencyDetails // Tüm JSON veya hata mesajını sakla
+                        };
+
+                        await _incidentRepository.AddAsync(newIncident);
+
+                        await SendAlertToResponsibleAdminsAsync(app, $"🚨 KESİNTİ: {componentName}", 
+                            $"{app.Name} uygulamasında {componentName} bileşeni çöktü.\nDetay: {latestSnapshot.DependencyDetails}");
+
+                        // Sadece ilk kritik hatada RCA tetikleyelim (Opsiyonel)
+                        if (componentName == "System" || componentsStatus.Count == 1)
+                        {
+                             _ = Task.Run(async () => await TriggerRootCauseAnalysisAsync(app, recentSnapshots));
+                        }
+                    }
+                }
+                else if (hasActiveIncident && currentStatus == HealthStatus.Healthy)
+                {
+                    // İyileşme Kontrolü
+                    Console.WriteLine($">>>> [RECOVERY] {app.Name} - {componentName} düzeldi.");
                     activeIncident.ResolvedAt = DateTime.UtcNow;
                     await _incidentRepository.UpdateAsync(activeIncident);
 
-                    // --- YENİ MAİL MANTIĞI: İYİLEŞMEYİ ADMİNLERE BİLDİR ---
-                    await SendAlertToResponsibleAdminsAsync(app, "✅ SİSTEM DÜZELDİ", $"{app.Name} uygulaması tekrar sağlıklı duruma döndü.");
+                    await SendAlertToResponsibleAdminsAsync(app, $"✅ DÜZELDİ: {componentName}", 
+                        $"{app.Name} uygulamasında {componentName} bileşeni tekrar sağlıklı.");
                 }
             }
+        }
+
+        private Dictionary<string, HealthStatus> ParseComponentStatuses(string dependencyDetails)
+        {
+            var results = new Dictionary<string, HealthStatus>();
+            if (string.IsNullOrEmpty(dependencyDetails)) return results;
+
+            try
+            {
+                using var doc = JsonDocument.Parse(dependencyDetails);
+                if (doc.RootElement.ValueKind == JsonValueKind.Object)
+                {
+                    foreach (var prop in doc.RootElement.EnumerateObject())
+                    {
+                        string statusStr = "";
+                        if (prop.Value.ValueKind == JsonValueKind.Object && prop.Value.TryGetProperty("status", out var statusProp))
+                        {
+                            statusStr = statusProp.ToString();
+                        }
+                        else
+                        {
+                            statusStr = prop.Value.ToString();
+                        }
+
+                        if (statusStr.Contains("Unhealthy", StringComparison.OrdinalIgnoreCase) || statusStr == "3")
+                            results[prop.Name] = HealthStatus.Unhealthy;
+                        else if (statusStr.Contains("Degraded", StringComparison.OrdinalIgnoreCase) || statusStr == "2")
+                            results[prop.Name] = HealthStatus.Degraded;
+                        else
+                            results[prop.Name] = HealthStatus.Healthy;
+                    }
+                }
+            }
+            catch { /* Not a JSON or invalid format */ }
+
+            return results;
+        }
+
+        private bool ShouldTriggerIncidentForComponent(List<HealthSnapshot> snapshots, string componentName)
+        {
+            if (snapshots == null || snapshots.Count < 3) return false;
+
+            // Son 3 kaydın tamamında bu bileşen Unhealthy mi?
+            foreach (var snapshot in snapshots.Take(3))
+            {
+                var statusMap = ParseComponentStatuses(snapshot.DependencyDetails);
+                
+                // Eğer bileşen JSON'da yoksa ve biz "System" arıyorsak, snapshot statüsüne bak
+                if (!statusMap.ContainsKey(componentName))
+                {
+                    if (componentName == "System" && snapshot.Status == HealthStatus.Unhealthy) continue;
+                    return false;
+                }
+
+                if (statusMap[componentName] != HealthStatus.Unhealthy) return false;
+            }
+
+            return true;
         }
 
         // Kodu kirletmemek için mail gönderme işini küçük bir metoda aldık:
