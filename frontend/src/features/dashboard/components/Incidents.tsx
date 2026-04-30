@@ -51,20 +51,17 @@ const Incidents: React.FC<IncidentsProps> = ({ selectedAppId }) => {
   const { connection, isConnected } = useSignalR();
 
   useEffect(() => {
-    if (selectedAppId) {
-      fetchIncidents();
-    }
+    // Sayfa açıldığında tüm yetkili hataları çek (selectedAppId değişimine bağımlı değil)
+    fetchIncidents();
 
     if (!connection || !isConnected) return;
 
     const handleNewIncident = (newIncident: IncidentDto) => {
-      // Sadece seçili uygulama için veya tümü seçiliyse ekle
-      if (!selectedAppId || newIncident.appId === selectedAppId) {
-        setIncidents(prev => {
-          if (prev.some(i => i.id === newIncident.id)) return prev;
-          return [newIncident, ...prev];
-        });
-      }
+      // "Ortak Görünüm" istediğimiz için seçili uygulamaya bakmaksızın tüm yetkili hataları ekle
+      setIncidents(prev => {
+        if (prev.some(i => i.id === newIncident.id)) return prev;
+        return [newIncident, ...prev];
+      });
     };
 
     const handleResolvedIncident = (resolvedIncident: IncidentDto) => {
@@ -83,7 +80,9 @@ const Incidents: React.FC<IncidentsProps> = ({ selectedAppId }) => {
   const fetchIncidents = async () => {
     try {
       setLoading(true);
-      const data = await dashboardService.getIncidents(selectedAppId);
+      // Ortak Görünüm: selectedAppId'yi parametre olarak GÖNDERMİYORUZ.
+      // Backend artık token'dan kim olduğumuzu anlayıp tüm yetkili uygulamaları dönecek.
+      const data = await dashboardService.getIncidents();
       // Sıralama: En yeniden eskiye
       const sorted = data.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
       setIncidents(sorted);

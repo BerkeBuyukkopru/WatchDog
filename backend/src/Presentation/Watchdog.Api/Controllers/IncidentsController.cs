@@ -16,17 +16,60 @@ namespace Watchdog.Api.Controllers
     {
         private readonly IIncidentRepository _incidentRepository;
         private readonly Watchdog.Application.Interfaces.ExternalClients.IStatusBroadcaster _statusBroadcaster;
+        private readonly Watchdog.Application.Interfaces.Common.ICurrentUserService _currentUserService;
+        private readonly IAuthRepository _authRepository;
+        private readonly IMonitoredAppRepository _appRepository;
 
-        public IncidentsController(IIncidentRepository incidentRepository, Watchdog.Application.Interfaces.ExternalClients.IStatusBroadcaster statusBroadcaster)
+        public IncidentsController(
+            IIncidentRepository incidentRepository, 
+            Watchdog.Application.Interfaces.ExternalClients.IStatusBroadcaster statusBroadcaster,
+            Watchdog.Application.Interfaces.Common.ICurrentUserService currentUserService,
+            IAuthRepository authRepository,
+            IMonitoredAppRepository appRepository)
         {
             _incidentRepository = incidentRepository;
             _statusBroadcaster = statusBroadcaster;
+            _currentUserService = currentUserService;
+            _authRepository = authRepository;
+            _appRepository = appRepository;
         }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<IncidentDto>>> GetAll([FromQuery] Guid? appId)
         {
-            var incidents = await _incidentRepository.GetAllAsync(appId);
+            IEnumerable<Watchdog.Domain.Entities.Incident> incidents;
+
+            // 1. Rol ve yetki kontrolü yapalım
+            var currentRole = _currentUserService.Role;
+            var userId = _currentUserService.UserId;
+
+            if (currentRole == Watchdog.Domain.Constants.RoleConstants.SuperAdmin)
+            {
+                // SuperAdmin her şeyi görebilir
+                incidents = await _incidentRepository.GetAllAsync(appId);
+            }
+            else
+            {
+                // Normal Admin sadece kendi uygulamalarını görebilir
+                var admin = await _authRepository.GetByIdAsync(userId);
+                var allowedAppIds = admin?.AllowedAppIds ?? new List<Guid>();
+
+                if (appId.HasValue)
+                {
+                    // Belirli bir uygulama istenmişse yetki kontrolü yap
+                    if (!allowedAppIds.Contains(appId.Value))
+                    {
+                        return Forbid();
+                    }
+                    incidents = await _incidentRepository.GetAllAsync(appId);
+                }
+                else
+                {
+                    // "Ortak" (Collective) görünüm: Tüm yetkili uygulamaların hataları
+                    incidents = await _incidentRepository.GetAllByAppIdsAsync(allowedAppIds);
+                }
+            }
+
             var dtos = incidents.Select(i => new IncidentDto
             {
                 Id = i.Id,

@@ -26,7 +26,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Initialize auth state from localStorage on first render
   useEffect(() => {
-    const storedToken = localStorage.getItem('watchdog_token');
+    const storedToken = sessionStorage.getItem('watchdog_token');
     if (storedToken) {
       try {
         const decodedToken = jwtDecode<any>(storedToken);
@@ -35,7 +35,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const currentTime = Date.now() / 1000;
         if (decodedToken.exp && decodedToken.exp < currentTime) {
           // Token expired
-          localStorage.removeItem('watchdog_token');
+          sessionStorage.removeItem('watchdog_token');
         } else {
           // Extract user info from token (adjust keys based on actual backend JWT claims)
           const rawRole = decodedToken.role || decodedToken.roles || decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || '';
@@ -54,7 +54,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       } catch (error) {
         console.error('Invalid token found in localStorage', error);
-        localStorage.removeItem('watchdog_token');
+        sessionStorage.removeItem('watchdog_token');
       }
     }
     setIsLoading(false);
@@ -74,7 +74,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         role: role,
       };
 
-      localStorage.setItem('watchdog_token', newToken);
+      sessionStorage.setItem('watchdog_token', newToken);
       setToken(newToken);
       setUser(userData);
       setIsAuthenticated(true);
@@ -84,7 +84,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('watchdog_token');
+    sessionStorage.removeItem('watchdog_token');
     setToken(null);
     setUser(null);
     setIsAuthenticated(false);

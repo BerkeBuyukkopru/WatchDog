@@ -9,7 +9,7 @@ namespace Watchdog.Api.Hubs
     public class StatusHub : Hub
     {
         // 1. Worker motoru, veritabanına kaydı bitirince BU metodu çağıracak.
-        public async Task BroadcastNewStatus(HealthSnapshot newSnapshot)
+        public async Task BroadcastNewStatus(LatestStatusDto newSnapshot)
         {
             // 2. Clients.All: "Şu an bu tünele bağlı olan tüm tarayıcılara (React) seslen" demektir.
             // 3. "ReceiveStatusUpdate": React'in JavaScript tarafında dinlediği radyo frekansının adıdır.

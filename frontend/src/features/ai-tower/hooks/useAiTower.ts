@@ -4,7 +4,7 @@ import { aiTowerService } from '../../../api/aiTowerService';
 import { useAuth } from '../../../context/AuthContext';
 import { useSignalR } from '../../../context/SignalRContext';
 
-export const useAiTower = () => {
+export const useAiTower = (appId?: string) => {
   const { token } = useAuth();
   const [insights, setInsights] = useState<AiInsight[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,8 +26,14 @@ export const useAiTower = () => {
 
       setProviders(providersData);
 
-      // Eğer adminse sadece ona ait olanları, superadminse listeyi alır
-      const app = appsData.length > 0 ? appsData[0] : null;
+      // Seçili uygulama varsa onu kullan, yoksa ilkini al
+      let app: MonitoredApp | null = null;
+      if (appId) {
+        app = appsData.find(a => a.id === appId) || null;
+      } else if (appsData.length > 0) {
+        app = appsData[0];
+      }
+        
       setMainApp(app);
 
       // Ana uygulama varsa veya adminse ve uygulamaları gelmişse analizleri çek
@@ -42,6 +48,9 @@ export const useAiTower = () => {
         } else {
           setActiveProvider(providersData.find(p => p.isActive) || null);
         }
+      } else {
+        setInsights([]);
+        setActiveProvider(providersData.find(p => p.isActive) || null);
       }
     } catch (error) {
       console.error('AI Tower başlangıç verisi çekme hatası:', error);
@@ -58,6 +67,9 @@ export const useAiTower = () => {
 
     // Yeni Öneri Geldiğinde Tetiklenecek Olay
     const handleNewInsight = (newInsight: AiInsight) => {
+      // SADECE SEÇİLİ UYGULAMA İÇİN GELENLERİ EKLE
+      if (appId && newInsight.appId !== appId) return;
+
       setInsights(prev => {
         if (prev.some(i => i.id === newInsight.id)) return prev;
         return [newInsight, ...prev];
@@ -65,7 +77,10 @@ export const useAiTower = () => {
     };
 
     const handleInsightsResolved = (resolvedAppId: string) => {
-      setInsights(prev => prev.filter(i => i.appId === resolvedAppId));
+      // Sadece seçili uygulama çözüldüyse listeyi temizle
+      if (appId && resolvedAppId === appId) {
+        setInsights([]);
+      }
     };
 
     connection.on('ReceiveNewInsight', handleNewInsight);
@@ -73,8 +88,9 @@ export const useAiTower = () => {
 
     // 🔄 FALLBACK POLLING: SignalR kaçarsa diye her 30sn'de bir sessizce tazele
     const pollInterval = setInterval(() => {
-      if (mainApp?.id) {
-        aiTowerService.getInsights(mainApp.id, 5).then(data => {
+      const targetAppId = appId || mainApp?.id;
+      if (targetAppId) {
+        aiTowerService.getInsights(targetAppId, 5).then(data => {
           setInsights(prev => {
             const newOnes = data.filter(d => !prev.some(p => p.id === d.id));
             if (newOnes.length === 0) return prev;
@@ -89,7 +105,7 @@ export const useAiTower = () => {
       connection.off('ReceiveAllInsightsResolved', handleInsightsResolved);
       clearInterval(pollInterval);
     };
-  }, [connection, isConnected, mainApp?.id, token]);
+  }, [connection, isConnected, appId, mainApp?.id, token]);
 
   const resolveInsight = async (id: string) => {
     try {

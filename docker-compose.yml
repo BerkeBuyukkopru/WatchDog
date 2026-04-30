@@ -13,6 +13,7 @@ services:
 
   # 2. API Servisi
   watchdog-api:
+    restart: always
     build:
       context: .
       dockerfile: backend/src/Presentation/Watchdog.Api/Dockerfile
@@ -20,7 +21,7 @@ services:
     ports:
       - "${API_PORT}:8080"
     environment:
-      - ConnectionStrings__DefaultConnection=Server=watchdog-db;Database=${DB_NAME};User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True
+      - ConnectionStrings__DefaultConnection=Server=watchdog-db;Database=${DB_NAME};User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;Encrypt=False
       - ASPNETCORE_ENVIRONMENT=Development
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -29,12 +30,13 @@ services:
 
   # 3. Worker Servisi
   watchdog-worker:
+    restart: always
     build:
       context: .
       dockerfile: backend/src/Presentation/Watchdog.Worker/Dockerfile
     container_name: watchdog-worker
     environment:
-      - ConnectionStrings__DefaultConnection=Server=watchdog-db;Database=${DB_NAME};User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True
+      - ConnectionStrings__DefaultConnection=Server=watchdog-db;Database=${DB_NAME};User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;Encrypt=False
       - ASPNETCORE_ENVIRONMENT=Development
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -43,6 +45,7 @@ services:
 
   # 4. Frontend Servisi (Yeni)
   watchdog-ui:
+    restart: always
     build:
       context: ./frontend
       dockerfile: Dockerfile
@@ -50,7 +53,7 @@ services:
     ports:
       - "5173:80"
     environment:
-      - VITE_API_URL=http://localhost:5226
+      - VITE_API_URL=http://localhost:${API_PORT}
     depends_on:
       - watchdog-api
 

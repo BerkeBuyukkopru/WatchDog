@@ -12,6 +12,7 @@ using Watchdog.Application.DTOs.Monitoring;
 using Watchdog.Domain.Entities;
 using Watchdog.Domain.Enums;
 using Watchdog.Domain.Rules;
+using Microsoft.Extensions.Configuration;
 
 namespace Watchdog.Application.UseCases.HealthMonitoring
 {
@@ -26,6 +27,7 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
 
         // YENİ EKLENEN: Sorumlu Adminleri bulmak için AuthRepository'i ekliyoruz.
         private readonly IAuthRepository _authRepository;
+        private readonly IConfiguration _configuration;
 
         public AnalyzeSystemHealthUseCase(
             ISnapshotRepository snapshotRepository,
@@ -34,7 +36,8 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
             IMonitoredAppRepository appRepository,
             IServiceScopeFactory scopeFactory,
             IStatusBroadcaster statusBroadcaster,
-            IAuthRepository authRepository) // Constructora Eklendi
+            IAuthRepository authRepository,
+            IConfiguration configuration) // Constructora Eklendi
         {
             _snapshotRepository = snapshotRepository;
             _incidentRepository = incidentRepository;
@@ -43,14 +46,36 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
             _scopeFactory = scopeFactory;
             _statusBroadcaster = statusBroadcaster;
             _authRepository = authRepository;
+            _configuration = configuration;
         }
 
         public async Task ExecuteAsync(HealthSnapshot latestSnapshot)
         {
-            await _statusBroadcaster.BroadcastNewStatusAsync(latestSnapshot);
-
             var app = await _appRepository.GetByIdAsync(latestSnapshot.AppId);
             if (app == null) return;
+
+            // 🚨 CANLI YAYIN: Veriyi DTO'ya çevirip fırlat (React'in beklediği format)
+            var dto = new LatestStatusDto
+            {
+                Id = latestSnapshot.Id,
+                AppId = latestSnapshot.AppId,
+                AppName = app.Name, // Uygulama ismini ekledik
+                Status = latestSnapshot.Status.ToString(),
+                TotalDuration = latestSnapshot.TotalDuration,
+                Timestamp = latestSnapshot.Timestamp,
+                AppCpuUsage = latestSnapshot.AppCpuUsage,
+                SystemCpuUsage = latestSnapshot.SystemCpuUsage,
+                AppRamUsage = latestSnapshot.AppRamUsage,
+                SystemRamUsage = latestSnapshot.SystemRamUsage,
+                FreeDiskGb = latestSnapshot.FreeDiskGb,
+                DependencyDetails = latestSnapshot.DependencyDetails,
+                TotalRamMb = Convert.ToDouble(_configuration["SystemMetrics:TotalRamMb"] ?? "16384"),
+                TotalCpuPercentage = Convert.ToDouble(_configuration["SystemMetrics:TotalCpuPercentage"] ?? "100"),
+                TotalDiskGb = Convert.ToDouble(_configuration["SystemMetrics:TotalDiskGb"] ?? "500"),
+                TotalCpuCores = Convert.ToInt32(_configuration["SystemMetrics:TotalCpuCores"] ?? "16")
+            };
+
+            await _statusBroadcaster.BroadcastNewStatusAsync(dto);
 
             Console.WriteLine($">>>> [MONITOR] {app.Name} Pinglendi. Durum: {latestSnapshot.Status}");
 
@@ -79,6 +104,15 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                     
                     if (ShouldTriggerIncidentForComponent(recentSnapshots, componentName))
                     {
+                        // EĞER AĞ HATASIYSA (Uygulama çalışmıyorsa), İNSİDENT OLUŞTURMA!
+                        // Sadece bileşen bazlı (DB, Redis vb.) gerçek hataları insident olarak kaydet.
+                        if (latestSnapshot.DependencyDetails != null && 
+                            latestSnapshot.DependencyDetails.StartsWith("Kritik Ağ Hatası"))
+                        {
+                            Console.WriteLine($">>>> [INFO] {app.Name} - Ağ Hatası tespit edildi. İnsident oluşturulmuyor (UI uyarısı verilecek).");
+                            continue;
+                        }
+
                         Console.WriteLine($">>>> [INCIDENT-TRIGGER] {app.Name} - {componentName} ÜST ÜSTE 3 KEZ HATA VERDİ! Analiz başlıyor...");
 
                         var newIncident = new Incident

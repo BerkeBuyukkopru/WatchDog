@@ -69,5 +69,14 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
             // DbContext, ModifiedAt ve ModifiedBy alanlarını otomatik güncelleyecektir.
             await _context.SaveChangesAsync();
         }
+
+        public async Task<IEnumerable<Incident>> GetAllByAppIdsAsync(List<Guid> appIds)
+        {
+            return await _context.Incidents
+                .Include(i => i.App)
+                .Where(i => appIds.Contains(i.AppId) && !i.IsDeleted)
+                .OrderByDescending(i => i.StartedAt)
+                .ToListAsync();
+        }
     }
 }
