@@ -508,6 +508,4 @@ frontend/.env.test.local
 frontend/.env.production.local
 
 # Exceptions
-!frontend/_designs/
-!frontend/_designs/**
 

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Threading.Tasks;
 using Watchdog.Domain.Constants;
@@ -56,16 +56,23 @@ namespace Watchdog.Infrastructure.Persistence
             // 3. AI PROVIDERS TOHUMLAMA (Dinamik ID ve Çift Kontrol)
 
             // OLLAMA
-            if (!await _context.AiProviders.AnyAsync(p => p.Name == "Ollama" && p.ModelName == "phi3:medium"))
+            var existingOllama = await _context.AiProviders.FirstOrDefaultAsync(p => p.Name == "Ollama");
+            if (existingOllama == null)
             {
                 await _context.AiProviders.AddAsync(new AiProvider
                 {
-                    Id = Guid.NewGuid(), // Tamamen rastgele!
+                    Id = Guid.NewGuid(),
                     Name = "Ollama",
-                    ModelName = "phi3:medium",
-                    ApiUrl = "http://localhost:11434",
+                    ModelName = "phi3:mini",
+                    ApiUrl = "http://host.docker.internal:11434",
                     IsActive = false
                 });
+            }
+            else if (existingOllama.ModelName != "phi3:mini")
+            {
+                // Mevcut kaydı "mini"ye güncelle (Eski "medium" kalmasın)
+                existingOllama.ModelName = "phi3:mini";
+                _context.AiProviders.Update(existingOllama);
             }
 
             // OPENAI
@@ -94,7 +101,30 @@ namespace Watchdog.Infrastructure.Persistence
                 });
             }
 
-            // Tüm tohumları tek seferde veritabanına mühürle
+            // 4. MEVCUT KAYITLARI GÜNCELLE (Akıllı Ortam Tespiti)
+            // Docker'da mıyız? Kontrol et.
+            bool isDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
+            string targetHost = isDocker ? "host.docker.internal" : "localhost";
+            string sourceHost = isDocker ? "localhost" : "host.docker.internal";
+
+            var allApps = await _context.MonitoredApps.ToListAsync();
+            foreach (var app in allApps)
+            {
+                if (app.HealthUrl.Contains(sourceHost))
+                {
+                    app.HealthUrl = app.HealthUrl.Replace(sourceHost, targetHost);
+                }
+            }
+
+            var allProviders = await _context.AiProviders.ToListAsync();
+            foreach (var provider in allProviders)
+            {
+                if (provider.ApiUrl != null && provider.ApiUrl.Contains(sourceHost))
+                {
+                    provider.ApiUrl = provider.ApiUrl.Replace(sourceHost, targetHost);
+                }
+            }
+
             await _context.SaveChangesAsync();
         }
     }

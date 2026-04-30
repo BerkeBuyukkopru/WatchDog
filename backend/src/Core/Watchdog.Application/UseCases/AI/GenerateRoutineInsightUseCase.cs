@@ -55,8 +55,8 @@ namespace Watchdog.Application.UseCases.AI
             double ramLimit = config?.CriticalRamThreshold ?? 90.0;
             double latencyLimit = config?.CriticalLatencyThreshold ?? 1000.0;
 
-            // 2. Aktif Yapay Zekayı Çek (UYGULAMAYA ÖZEL VEYA GLOBAL)
-            AiProvider targetProviderEntity = null;
+            // --- YENİ MANTIK: UYGULAMAYA ÖZEL AI SEÇİMİ ---
+            AiProvider? targetProviderEntity = null;
             if (app.ActiveAiProviderId.HasValue)
             {
                 targetProviderEntity = await _aiProviderRepository.GetByIdAsync(app.ActiveAiProviderId.Value);
@@ -154,7 +154,17 @@ namespace Watchdog.Application.UseCases.AI
             };
 
             await _insightRepository.AddAsync(insight);
-            var insightDto = new Watchdog.Application.DTOs.AI.AiInsightDto { Id = insight.Id, AppName = app.Name, Message = insight.Message, Evidence = insight.Evidence, InsightType = insight.InsightType.ToString(), IsResolved = insight.IsResolved, CreatedAt = insight.CreatedAt };
+            var insightDto = new Watchdog.Application.DTOs.AI.AiInsightDto 
+            { 
+                Id = insight.Id, 
+                AppId = insight.AppId,
+                AppName = app.Name, 
+                Message = insight.Message, 
+                Evidence = insight.Evidence, 
+                InsightType = insight.InsightType.ToString(), 
+                IsResolved = insight.IsResolved, 
+                CreatedAt = insight.CreatedAt 
+            };
             await _statusBroadcaster.BroadcastNewInsightAsync(insightDto);
 
             return insight;

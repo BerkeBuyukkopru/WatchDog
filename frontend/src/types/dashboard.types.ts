@@ -34,6 +34,7 @@ export interface HealthCheckLogDto {
 
 export interface IncidentDto {
   id: string;
+  appId: string;
   appName: string;
   failedComponent: string;
   errorMessage: string;

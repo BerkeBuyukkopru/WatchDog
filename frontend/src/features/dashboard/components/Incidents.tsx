@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
-import * as signalR from '@microsoft/signalr';
+import React, { useState, useEffect } from 'react';
 import { AlertTriangle, Loader2, CheckCircle2, Clock, ShieldAlert, X, Maximize2 } from 'lucide-react';
 import { dashboardService } from '../api/dashboardService';
 import { useAuth } from '../../../context/AuthContext';
+import { useSignalR } from '../../../context/SignalRContext';
 import type { IncidentDto } from '../../../types/dashboard.types';
 
 type TabType = 'active' | 'resolved';
@@ -17,8 +17,6 @@ const Incidents: React.FC<IncidentsProps> = ({ selectedAppId }) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<TabType>('active');
   const [selectedIncident, setSelectedIncident] = useState<IncidentDto | null>(null);
-  
-  const connectionRef = useRef<signalR.HubConnection | null>(null);
 
   // JSON Parser Helper: Sadece Unhealthy olanları ayıklar
   const parseUnhealthyComponents = (errorMessage: string) => {
@@ -50,55 +48,37 @@ const Incidents: React.FC<IncidentsProps> = ({ selectedAppId }) => {
     }
   };
 
+  const { connection, isConnected } = useSignalR();
+
   useEffect(() => {
     if (selectedAppId) {
       fetchIncidents();
     }
 
-    if (!token) return;
+    if (!connection || !isConnected) return;
 
-    // SignalR Hub Bağlantısı
-    const connection = new signalR.HubConnectionBuilder()
-      .withUrl(`${import.meta.env.VITE_API_URL || 'http://localhost:5226'}/statushub`, {
-        accessTokenFactory: () => token || ''
-      })
-      .withAutomaticReconnect()
-      .configureLogging(signalR.LogLevel.None)
-      .build();
-
-    connection.on('ReceiveNewIncident', (newIncident: IncidentDto) => {
-      setIncidents(prev => {
-        if (prev.some(i => i.id === newIncident.id)) return prev;
-        return [newIncident, ...prev];
-      });
-    });
-
-    connection.on('ReceiveResolvedIncident', (resolvedIncident: IncidentDto) => {
-      setIncidents(prev => prev.map(i => i.id === resolvedIncident.id ? resolvedIncident : i));
-    });
-
-    const startConnection = async () => {
-      if (connection.state === signalR.HubConnectionState.Disconnected) {
-        try {
-          await connection.start();
-          console.log('>>>> [SIGNALR] Incidents Bağlantısı Başarılı.');
-        } catch (err: any) {
-          const errorMsg = err.toString();
-          // Müzakere kesilme hatalarını (React Strict Mode) sustur
-          if (errorMsg.includes('AbortError') || errorMsg.includes('stopped')) return;
-          console.error('>>>> [SIGNALR] Incidents Bağlantı Hatası:', err);
-        }
+    const handleNewIncident = (newIncident: IncidentDto) => {
+      // Sadece seçili uygulama için veya tümü seçiliyse ekle
+      if (!selectedAppId || newIncident.appId === selectedAppId) {
+        setIncidents(prev => {
+          if (prev.some(i => i.id === newIncident.id)) return prev;
+          return [newIncident, ...prev];
+        });
       }
     };
 
-    startConnection();
+    const handleResolvedIncident = (resolvedIncident: IncidentDto) => {
+      setIncidents(prev => prev.map(i => i.id === resolvedIncident.id ? resolvedIncident : i));
+    };
+
+    connection.on('ReceiveNewIncident', handleNewIncident);
+    connection.on('ReceiveResolvedIncident', handleResolvedIncident);
 
     return () => {
-      if (connection) {
-        connection.stop().catch(() => {});
-      }
+      connection.off('ReceiveNewIncident', handleNewIncident);
+      connection.off('ReceiveResolvedIncident', handleResolvedIncident);
     };
-  }, [selectedAppId, token]);
+  }, [selectedAppId, connection, isConnected]);
 
   const fetchIncidents = async () => {
     try {

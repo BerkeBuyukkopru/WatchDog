@@ -46,7 +46,7 @@ namespace Watchdog.Application.UseCases.AI
             if (app == null) return null;
 
             // --- YENİ MANTIK: UYGULAMAYA ÖZEL AI SEÇİMİ ---
-            AiProvider targetProviderEntity = null;
+            AiProvider? targetProviderEntity = null;
             if (app.ActiveAiProviderId.HasValue)
             {
                 targetProviderEntity = await _aiProviderRepository.GetByIdAsync(app.ActiveAiProviderId.Value);
@@ -65,6 +65,7 @@ namespace Watchdog.Application.UseCases.AI
             var targetDay = sortedStats.FirstOrDefault();
 
             // --- ESNEK MANTIK: 7 gün öncesini ara, bulamazsan eldeki en eski veriyi al ---
+            if (targetDay == null) return null;
             var targetBaselineDate = targetDay.Date.AddDays(-7).Date;
             var baselineDay = sortedStats
                 .Where(d => d.Date.Date <= targetBaselineDate.AddDays(1) && d.Date != targetDay.Date)
@@ -113,6 +114,7 @@ namespace Watchdog.Application.UseCases.AI
             var newInsightDto = new Watchdog.Application.DTOs.AI.AiInsightDto
             {
                 Id = insight.Id,
+                AppId = insight.AppId,
                 AppName = app.Name,
                 Message = insight.Message,
                 Evidence = insight.Evidence,

@@ -26,7 +26,7 @@ namespace Watchdog.Infrastructure.AiServices
             };
 
             // Eğer veritabanından gelen modelName boşsa, güvende kalmak adına varsayılan olarak "phi3" kullanıyoruz.
-            string activeModel = string.IsNullOrWhiteSpace(modelName) ? "phi3:medium" : modelName;
+            string activeModel = string.IsNullOrWhiteSpace(modelName) ? "phi3:mini" : modelName;
             _chatClient = new OllamaApiClient(customHttpClient, activeModel);
         }
 

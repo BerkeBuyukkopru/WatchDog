@@ -7,6 +7,7 @@ import { dashboardService } from './api/dashboardService';
 import type { HealthCheckLogDto, AppDto } from '../../types/dashboard.types';
 import { AlertCircle, Loader2, AlertTriangle } from 'lucide-react';
 import { useOutletContext } from 'react-router-dom';
+import { useSignalR } from '../../context/SignalRContext';
 
 const DashboardView: React.FC = () => {
   const [logs, setLogs] = useState<HealthCheckLogDto[]>([]);
@@ -22,6 +23,8 @@ const DashboardView: React.FC = () => {
 
   const context = useOutletContext<{ setApiError: (val: boolean) => void } | null>();
   const setApiError = context?.setApiError || (() => {});
+
+  const { connection, isConnected } = useSignalR();
 
   const fetchData = async (count: number = logCount, appId: string = selectedAppId) => {
     try {
@@ -42,6 +45,7 @@ const DashboardView: React.FC = () => {
       // Seçili uygulama varsa verilerini çek
       if (appId) {
         const data = await dashboardService.getLatestLogs(count, appId);
+        // Backend'den gelen verinin kronolojik olduğundan emin olalım (Grafikler için)
         setLogs(data);
       } else {
         setLogs([]);
@@ -58,7 +62,37 @@ const DashboardView: React.FC = () => {
 
   useEffect(() => {
     fetchData(logCount, selectedAppId);
-  }, []); // Sadece ilk yüklemede çalışır. (logCount ve selectedAppId state değişiklikleri props veya callback üzerinden tetiklenecek)
+  }, []);
+
+  // === SIGNALR CANLI VERİ DİNLEYİCİSİ ===
+  useEffect(() => {
+    if (!connection || !isConnected || !selectedAppId) return;
+
+    const handleNewStatus = (newSnapshot: HealthCheckLogDto) => {
+      // Sadece seçili uygulama için gelen veriyi işle
+      if (newSnapshot.appId === selectedAppId) {
+        setLogs(prev => {
+          // Eğer bu log zaten varsa ekleme (Duplikasyon kontrolü)
+          if (prev.some(l => l.id === newSnapshot.id)) return prev;
+          
+          // Yeni logu sona ekle (Kronolojik akış)
+          const newLogs = [...prev, newSnapshot];
+          
+          // RAM şişmesini önlemek için belirlenen sayıdan fazlasını (en eskileri) sil
+          if (newLogs.length > logCount) {
+            return newLogs.slice(newLogs.length - logCount);
+          }
+          return newLogs;
+        });
+      }
+    };
+
+    connection.on('ReceiveStatusUpdate', handleNewStatus);
+
+    return () => {
+      connection.off('ReceiveStatusUpdate', handleNewStatus);
+    };
+  }, [connection, isConnected, selectedAppId, logCount]);
 
   const handleAppChange = (appId: string) => {
     setSelectedAppId(appId);

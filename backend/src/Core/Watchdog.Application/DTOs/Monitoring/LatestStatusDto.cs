@@ -10,8 +10,8 @@ namespace Watchdog.Application.DTOs.Monitoring
     {
         public Guid Id { get; set; }
         public Guid AppId { get; set; }
-        public string AppName { get; set; }
-        public string Status { get; set; } // "1" veya "3" yerine "Healthy" veya "Unhealthy" yazacak
+        public string AppName { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty; // "1" veya "3" yerine "Healthy" veya "Unhealthy" yazacak
         public long TotalDuration { get; set; }
         public DateTime Timestamp { get; set; }
         public double AppCpuUsage { get; set; }

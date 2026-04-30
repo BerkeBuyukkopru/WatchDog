@@ -1,4 +1,4 @@
-﻿using HealthChecks.System;
+using HealthChecks.System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -39,7 +39,11 @@ namespace Watchdog.Infrastructure
             // === 3. Bildirim (Mail) Servisleri ===
             services.Configure<MailSettings>(configuration.GetSection("MailSettings"));
             services.AddScoped<INotificationSender, MailSender>();
-            services.AddHttpClient<IHealthProbeClient, HealthProbeHttpClient>();
+            services.AddHttpClient<IHealthProbeClient, HealthProbeHttpClient>()
+                .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+                {
+                    ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
+                });
 
             // Canlı yayın servisini tekilleştirilmiş (Singleton) olarak ekliyoruz
             services.AddSingleton<IStatusBroadcaster, SignalRStatusBroadcaster>();

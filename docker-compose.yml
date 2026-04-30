@@ -5,7 +5,6 @@ services:
     container_name: watchdog-sql
     environment:
       - ACCEPT_EULA=Y
-      # .env dosyasındaki SQL_SA_PASSWORD değerini buraya çeker
       - MSSQL_SA_PASSWORD=${SQL_SA_PASSWORD}
     ports:
       - "1433:1433"
@@ -19,11 +18,12 @@ services:
       dockerfile: backend/src/Presentation/Watchdog.Api/Dockerfile
     container_name: watchdog-api
     ports:
-      # .env dosyasındaki API_PORT değerini (5000) dış port olarak kullanır
       - "${API_PORT}:8080"
     environment:
-      # Veritabanı adını ve şifresini .env'den alıp bağlantı metnine ekler
       - ConnectionStrings__DefaultConnection=Server=watchdog-db;Database=${DB_NAME};User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True
+      - ASPNETCORE_ENVIRONMENT=Development
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - watchdog-db
 
@@ -35,8 +35,24 @@ services:
     container_name: watchdog-worker
     environment:
       - ConnectionStrings__DefaultConnection=Server=watchdog-db;Database=${DB_NAME};User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True
+      - ASPNETCORE_ENVIRONMENT=Development
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - watchdog-db
+
+  # 4. Frontend Servisi (Yeni)
+  watchdog-ui:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: watchdog-ui
+    ports:
+      - "5173:80"
+    environment:
+      - VITE_API_URL=http://localhost:5226
+    depends_on:
+      - watchdog-api
 
 volumes:
   sql_data:

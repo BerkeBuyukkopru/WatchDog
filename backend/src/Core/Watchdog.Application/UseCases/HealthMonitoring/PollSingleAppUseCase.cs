@@ -36,7 +36,6 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
             var app = await _appRepository.GetByIdAsync(request.AppId);
             if (app == null) return null;
 
-            // --- DEĞİŞİKLİK BURADA: Değişkenleri dışarıda tanımlıyoruz ---
             HealthStatus finalStatus = HealthStatus.Unhealthy;
             long finalDuration = 0;
             string errorOrJson = "";
@@ -49,7 +48,7 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
 
                 finalStatus = probeResult.Status;
                 finalDuration = probeResult.DurationMilliseconds;
-                errorOrJson = probeResult.JsonContent;
+                errorOrJson = probeResult.JsonContent ?? "";
 
                 // 3. Başarılıysa veya JSON verisi geldiyse ayrıştır (Parse)
                 if (!string.IsNullOrEmpty(errorOrJson) && errorOrJson.TrimStart().StartsWith("{"))

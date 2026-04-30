@@ -41,7 +41,7 @@ namespace Watchdog.Infrastructure.AiServices
             var ollamaProvider = allProviders.FirstOrDefault(p => p.Name.Contains("Ollama", StringComparison.OrdinalIgnoreCase));
             
             string fallbackUrl = ollamaProvider?.ApiUrl ?? "http://localhost:11434";
-            string fallbackModel = ollamaProvider?.ModelName ?? "phi3:medium";
+            string fallbackModel = ollamaProvider?.ModelName ?? "phi3:mini";
             var localFallback = new LocalOllamaClient(fallbackUrl, fallbackModel);
 
             // 3. KRİTİK KONTROL: Veritabanında hiçbir sağlayıcı yoksa veya seçilen sağlayıcı AKTİF değilse Ollama'ya dön.

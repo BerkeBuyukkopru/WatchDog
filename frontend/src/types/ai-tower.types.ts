@@ -2,6 +2,7 @@ export type InsightSeverity = 'low' | 'medium' | 'high' | 'critical';
 
 export interface AiInsight {
   id: string;
+  appId: string;
   appName: string;
   message: string;
   evidence: string;

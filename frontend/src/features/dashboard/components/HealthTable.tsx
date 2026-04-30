@@ -14,24 +14,24 @@ interface HealthTableProps {
   onRefresh: () => void;
 }
 
-const getStatusColor = (status: string) => {
-  const s = status?.toLowerCase() || '';
+const getStatusColor = (status: any) => {
+  const s = String(status || '').toLowerCase();
   if (s.includes('unhealthy') || s === '3') return 'text-rose-400 border-rose-500/30';
   if (s.includes('degraded') || s === '2') return 'text-amber-400 border-amber-500/30';
   if (s.includes('healthy') || s === '1') return 'text-emerald-400 border-emerald-500/30';
   return 'text-slate-400 border-slate-500/30';
 };
 
-const getStatusBg = (status: string) => {
-  const s = status?.toLowerCase() || '';
+const getStatusBg = (status: any) => {
+  const s = String(status || '').toLowerCase();
   if (s.includes('unhealthy') || s === '3') return 'bg-rose-500 text-white border-transparent';
   if (s.includes('degraded') || s === '2') return 'bg-amber-500 text-white border-transparent';
   if (s.includes('healthy') || s === '1') return 'bg-emerald-500 text-white border-transparent';
   return 'bg-slate-500 text-white border-transparent';
 };
 
-const getRowBg = (status: string) => {
-  const s = status?.toLowerCase() || '';
+const getRowBg = (status: any) => {
+  const s = String(status || '').toLowerCase();
   if (s.includes('unhealthy') || s === '3') return 'bg-rose-500/10 hover:bg-rose-500/15';
   if (s.includes('degraded') || s === '2') return 'bg-amber-500/5 hover:bg-amber-500/10';
   return 'hover:bg-slate-800/30';
@@ -70,11 +70,28 @@ const HealthTable: React.FC<HealthTableProps> = ({
   // JSON string olarak gelen dependencyDetails alanını parse etme fonksiyonu
   const parseDependencies = (jsonString: string): { [key: string]: DependencyDetail } => {
     if (!jsonString) return {};
+    
+    const trimmed = jsonString.trim();
+    if (!trimmed.startsWith('{')) {
+      // Eğer JSON değilse (düz metinse), bunu tek bir hata detayı olarak dön
+      return {
+        "System": { 
+          status: "Unhealthy", 
+          description: jsonString 
+        }
+      };
+    }
+
     try {
-      return JSON.parse(jsonString);
+      return JSON.parse(trimmed);
     } catch (err) {
       console.error('Failed to parse dependencies', err);
-      return {};
+      return {
+        "Error": { 
+          status: "Unhealthy", 
+          description: "Veri okuma hatası: " + jsonString 
+        }
+      };
     }
   };
 

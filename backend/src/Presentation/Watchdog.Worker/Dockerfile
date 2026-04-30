@@ -13,6 +13,14 @@ COPY ["backend/src/Infrastructure/Watchdog.Infrastructure/Watchdog.Infrastructur
 # BAĞIMLILIK ÇÖZÜMÜ: modules katmanlarını kopyala
 COPY ["backend/modules/HealthChecks.Abstractions/HealthChecks.Abstractions.csproj", "backend/modules/HealthChecks.Abstractions/"]
 COPY ["backend/modules/HealthChecks.System/HealthChecks.System.csproj", "backend/modules/HealthChecks.System/"]
+COPY ["backend/modules/HealthChecks.Heartbeat/HealthChecks.Heartbeat.csproj", "backend/modules/HealthChecks.Heartbeat/"]
+COPY ["backend/modules/HealthChecks.Http/HealthChecks.Http.csproj", "backend/modules/HealthChecks.Http/"]
+COPY ["backend/modules/HealthChecks.MongoDb/HealthChecks.MongoDb.csproj", "backend/modules/HealthChecks.MongoDb/"]
+COPY ["backend/modules/HealthChecks.RabbitMQ/HealthChecks.RabbitMQ.csproj", "backend/modules/HealthChecks.RabbitMQ/"]
+COPY ["backend/modules/HealthChecks.Redis/HealthChecks.Redis.csproj", "backend/modules/HealthChecks.Redis/"]
+COPY ["backend/modules/HealthChecks.SqlServer/HealthChecks.SqlServer.csproj", "backend/modules/HealthChecks.SqlServer/"]
+COPY ["backend/modules/HealthChecks.Ssl/HealthChecks.Ssl.csproj", "backend/modules/HealthChecks.Ssl/"]
+COPY ["backend/modules/HealthChecks.Tcp/HealthChecks.Tcp.csproj", "backend/modules/HealthChecks.Tcp/"]
 
 RUN dotnet restore "backend/src/Presentation/Watchdog.Worker/Watchdog.Worker.csproj"
 

@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.AI;
+using Microsoft.Extensions.AI;
 using OpenAI;
 using OpenAI.Chat;
 using System;
@@ -9,56 +9,63 @@ using Watchdog.Application.Interfaces.ExternalClients;
 
 namespace Watchdog.Infrastructure.AiServices
 {
-    // Bu sınıf, Strategy deseninin bulut tarafındaki temsilcisidir.
-    // Yapılan son güncelleme ile "Universal Cloud Connector" haline getirilmiştir.
-    // Artık sadece api.openai.com değil, OpenAI protokolünü destekleyen (Groq, Azure, Mistral vb.)
-    // tüm servislerle dinamik URL üzerinden konuşabilir.
     public class OpenAiClient : IAiAdvisorClient
     {
         private readonly Microsoft.Extensions.AI.IChatClient _chatClient;
+        private static readonly SemaphoreSlim _globalSemaphore = new SemaphoreSlim(2, 2);
 
-        // EKİP NOTU: 'apiUrl' parametresi eklendi. Bu değer Dashboard'daki AiApiUrl alanından gelir.
-        // Eğer boş gelirse, kütüphane varsayılan olarak orijinal OpenAI adresine gider.
-        public OpenAiClient(string apiKey, string modelName, string? apiUrl = null)
+        public OpenAiClient(string apiKey, string modelName, string? apiUrl = null)
         {
             var options = new OpenAIClientOptions();
 
-            // Eğer veritabanından özel bir Proxy veya alternatif servis (Groq vb.) URL'i gelmişse
-            // OpenAI istemcisini o adrese yönlendiriyoruz.
-            if (!string.IsNullOrWhiteSpace(apiUrl) && Uri.TryCreate(apiUrl, UriKind.Absolute, out var endpoint))
+            if (!string.IsNullOrWhiteSpace(apiUrl) && Uri.TryCreate(apiUrl, UriKind.Absolute, out var endpoint))
             {
                 options.Endpoint = endpoint;
             }
 
-            // HATA ÇÖZÜMÜ: Ana OpenAIClient yerine, doğrudan OpenAI.Chat.ChatClient kullanıyoruz
-            // ve ayarları (options) içerisine enjekte ediyoruz.
-            var openAiChatClient = new ChatClient(modelName, new ApiKeyCredential(apiKey), options);
-
-            // Microsoft.Extensions.AI standardına uygun hale getiriliyor
-            _chatClient = openAiChatClient.AsIChatClient();
+            var openAiChatClient = new ChatClient(modelName, new ApiKeyCredential(apiKey), options);
+            _chatClient = openAiChatClient.AsIChatClient();
         }
 
         public async Task<string> AnalyzeAsync(string prompt, CancellationToken cancellationToken = default)
         {
-            // Builder'dan dilsiz (ham) olarak gelen metnin başına Bulut AI için profesyonel Türkçe konuşma emrini ekliyoruz.
-            string cloudPrompt = "You MUST output your final diagnostic report strictly in professional Turkish. Do not use English.\n\n" + prompt;
+            int jitter = new Random().Next(1000, 3000);
+            await Task.Delay(jitter, cancellationToken);
 
-            try
+            await _globalSemaphore.WaitAsync(cancellationToken);
+            var startTime = DateTime.Now;
+            
+            try 
             {
-                // Ham prompt yerine, kurallı 'cloudPrompt'u gönderiyoruz
-                var response = await _chatClient.GetResponseAsync(cloudPrompt, cancellationToken: cancellationToken);
+                Console.WriteLine($">>>> [AI-REQUEST-START] Bulut AI İsteği Gönderildi: {startTime:HH:mm:ss}");
+                
+                string cloudPrompt = "You MUST output your final diagnostic report strictly in professional Turkish. Do not use English.\n\n" + prompt;
 
-                // Eğer bulut boş dönerse bunu bir hata sayalım
-                if (string.IsNullOrWhiteSpace(response.Text))
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                cts.CancelAfter(TimeSpan.FromSeconds(150));
+
+                var response = await _chatClient.GetResponseAsync(cloudPrompt, cancellationToken: cts.Token);
+
+                if (string.IsNullOrWhiteSpace(response.Text))
                     throw new Exception("Bulut AI boş bir yanıt döndü.");
+
+                var duration = DateTime.Now - startTime;
+                Console.WriteLine($">>>> [AI-REQUEST-SUCCESS] Bulut AI Cevap Verdi! Süre: {duration.TotalSeconds:N1}sn");
 
                 return response.Text;
             }
+            catch (OperationCanceledException)
+            {
+                var duration = DateTime.Now - startTime;
+                throw new Exception($"Bulut AI isteği {duration.TotalSeconds:N1} saniye sonra zaman aşımına uğradı (Timeout 150s).");
+            }
             catch (Exception ex)
             {
-                // KRİTİK: Burada artık 'return string' yapmıyoruz. 
-                // Hatayı yukarıya (Factory/Fallback katmanına) fırlatıyoruz.
-                throw new Exception($"Bulut AI Erişim Hatası: {ex.Message}", ex);
+                throw new Exception($"Bulut AI Erişim Hatası: {ex.Message}", ex);
+            }
+            finally
+            {
+                _globalSemaphore.Release();
             }
         }
     }

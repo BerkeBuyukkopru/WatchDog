@@ -157,7 +157,7 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
             }
         }
 
-        private Dictionary<string, HealthStatus> ParseComponentStatuses(string dependencyDetails)
+        private Dictionary<string, HealthStatus> ParseComponentStatuses(string? dependencyDetails)
         {
             if (string.IsNullOrEmpty(dependencyDetails)) return new Dictionary<string, HealthStatus>();
             
@@ -283,6 +283,7 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                 var newInsightDto = new Watchdog.Application.DTOs.AI.AiInsightDto
                 {
                     Id = newInsight.Id,
+                    AppId = newInsight.AppId,
                     AppName = app.Name,
                     Message = newInsight.Message,
                     InsightType = newInsight.InsightType.ToString(),

@@ -117,6 +117,7 @@ builder.Services.AddSignalR(options =>
 .AddJsonProtocol(options =>
 {
     options.PayloadSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    options.PayloadSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
 });
 
 var app = builder.Build();
@@ -132,7 +133,7 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 
 // Routing'den sonra, Auth'tan önce CORS çalışmalı
 app.UseRouting();

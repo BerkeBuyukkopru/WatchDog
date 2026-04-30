@@ -17,9 +17,17 @@ namespace Watchdog.Infrastructure.Notifications
         {
             _logger = logger;
 
-            // Worker'dan aldığımız köprü inşası burada
+            // Ortama göre API adresini belirle
+            bool isDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
+            
+            // Docker'da konteyner ismi (watchdog-api) ve iç port (8080) kullanılır.
+            // Yerelde localhost ve dış port (5226) kullanılır.
+            string hubUrl = isDocker 
+                ? "http://watchdog-api:8080/statushub" 
+                : "http://localhost:5226/statushub";
+
             _hubConnection = new HubConnectionBuilder()
-                .WithUrl("http://localhost:5226/statushub")
+                .WithUrl(hubUrl)
                 .WithAutomaticReconnect()
                 .Build();
         }

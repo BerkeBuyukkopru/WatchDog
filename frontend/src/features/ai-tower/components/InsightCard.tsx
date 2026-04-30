@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Check, AlertCircle, AlertTriangle, Info, Zap, Maximize2, BrainCircuit } from 'lucide-react';
-import type { AiInsight, InsightSeverity } from '../../../types/ai-tower.types';
+import { Check, Info, Zap, Maximize2, BrainCircuit } from 'lucide-react';
+import type { AiInsight } from '../../../types/ai-tower.types';
 
 interface InsightCardProps {
   insight: AiInsight;

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Sparkles, Loader2, BrainCircuit, ChevronUp, AlertCircle } from 'lucide-react';
 import { useAiTower } from '../hooks/useAiTower';
 import { InsightCard } from './InsightCard';
+import type { AiInsight } from '../../../types/ai-tower.types';
 
 export const AiTower: React.FC = () => {
   const { 
