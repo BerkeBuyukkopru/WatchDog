@@ -18,9 +18,15 @@ namespace Watchdog.Infrastructure.AiServices
         {
             var options = new OpenAIClientOptions();
 
-            if (!string.IsNullOrWhiteSpace(apiUrl) && Uri.TryCreate(apiUrl, UriKind.Absolute, out var endpoint))
+            if (!string.IsNullOrWhiteSpace(apiUrl))
             {
-                options.Endpoint = endpoint;
+                // Groq ve diğerleri için URL sonundaki slash'ı temizle ama /v1'e dokunma.
+                var cleanUrl = apiUrl.TrimEnd('/');
+                
+                if (Uri.TryCreate(cleanUrl, UriKind.Absolute, out var endpoint))
+                {
+                    options.Endpoint = endpoint;
+                }
             }
 
             var openAiChatClient = new ChatClient(modelName, new ApiKeyCredential(apiKey), options);

@@ -26,14 +26,14 @@ const DashboardView: React.FC = () => {
 
   const { connection, isConnected } = useSignalR();
 
-  const fetchData = async (count: number = logCount, appId: string = selectedAppId) => {
+  const fetchData = async (count: number = logCount, appId: string = selectedAppId, silent: boolean = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError(null);
       setApiError(false);
       
-      // İlk yüklemede uygulamaları da çek
-      if (apps.length === 0) {
+      // İlk yüklemede veya sessiz olmayan yenilemede uygulamaları çek
+      if (apps.length === 0 || !silent) {
         const appsData = await dashboardService.getApps();
         setApps(appsData);
         if (appsData.length > 0 && !appId) {
@@ -45,7 +45,6 @@ const DashboardView: React.FC = () => {
       // Seçili uygulama varsa verilerini çek
       if (appId) {
         const data = await dashboardService.getLatestLogs(count, appId);
-        // Backend'den gelen verinin kronolojik olduğundan emin olalım (Grafikler için)
         setLogs(data);
       } else {
         setLogs([]);
@@ -53,10 +52,10 @@ const DashboardView: React.FC = () => {
       
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
-      setError('Veri alınamadı. Lütfen tekrar deneyiniz. Watchdog API Projenizi kontrol ediniz.');
+      if (!silent) setError('Veri alınamadı. Lütfen tekrar deneyiniz. Watchdog API Projenizi kontrol ediniz.');
       setApiError(true);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -72,13 +71,8 @@ const DashboardView: React.FC = () => {
       // Sadece seçili uygulama için gelen veriyi işle
       if (newSnapshot.appId === selectedAppId) {
         setLogs(prev => {
-          // Eğer bu log zaten varsa ekleme (Duplikasyon kontrolü)
           if (prev.some(l => l.id === newSnapshot.id)) return prev;
-          
-          // Yeni logu sona ekle (Kronolojik akış)
           const newLogs = [...prev, newSnapshot];
-          
-          // RAM şişmesini önlemek için belirlenen sayıdan fazlasını (en eskileri) sil
           if (newLogs.length > logCount) {
             return newLogs.slice(newLogs.length - logCount);
           }
@@ -87,10 +81,26 @@ const DashboardView: React.FC = () => {
       }
     };
 
+    const handleRefresh = () => {
+      console.log('SignalR: Global sistem yenileme sinyali alındı.');
+      fetchData(logCount, selectedAppId, true);
+    };
+
+    const handleIncidentUpdate = () => {
+      // Herhangi bir olay değişikliğinde verileri sessizce tazele
+      fetchData(logCount, selectedAppId, true);
+    };
+
     connection.on('ReceiveStatusUpdate', handleNewStatus);
+    connection.on('ReceiveSystemRefresh', handleRefresh);
+    connection.on('ReceiveNewIncident', handleIncidentUpdate);
+    connection.on('ReceiveResolvedIncident', handleIncidentUpdate);
 
     return () => {
       connection.off('ReceiveStatusUpdate', handleNewStatus);
+      connection.off('ReceiveSystemRefresh', handleRefresh);
+      connection.off('ReceiveNewIncident', handleIncidentUpdate);
+      connection.off('ReceiveResolvedIncident', handleIncidentUpdate);
     };
   }, [connection, isConnected, selectedAppId, logCount]);
 

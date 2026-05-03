@@ -68,6 +68,8 @@ namespace Watchdog.Application.UseCases.AI
                 Evidence = i.Evidence,
                 InsightType = i.InsightType.ToString(),
                 IsResolved = i.IsResolved,
+                ProviderName = i.ProviderName,
+                ModelName = i.ModelName,
                 CreatedAt = i.CreatedAt
             }).OrderByDescending(i => i.CreatedAt).Take(limit).ToList(); // Sadece son 5 kaydı dön
         }

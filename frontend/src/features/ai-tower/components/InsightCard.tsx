@@ -78,9 +78,17 @@ export const InsightCard: React.FC<InsightCardProps> = ({ insight, onResolve, on
               <span className={`text-[10px] font-bold uppercase tracking-wider ${config.color}`}>
                 {config.title}
               </span>
-              <span className="text-[10px] text-slate-500 font-medium">
-                {new Date(insight.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
+              <div className="flex items-center gap-2">
+                {insight.providerName && (
+                  <span className="flex items-center gap-1 text-[10px] bg-white/5 px-2 py-0.5 rounded-full text-slate-400 font-medium border border-white/5">
+                    <BrainCircuit size={10} className="text-indigo-400" />
+                    {insight.providerName}: {insight.modelName}
+                  </span>
+                )}
+                <span className="text-[10px] text-slate-500 font-medium">
+                  {new Date(insight.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
             </div>
             
             <h3 className="text-sm font-semibold text-white mb-1 leading-tight truncate">
@@ -105,10 +113,11 @@ export const InsightCard: React.FC<InsightCardProps> = ({ insight, onResolve, on
           
           <button 
             onClick={handleResolve}
-            className="px-3 py-2 text-slate-400 hover:text-emerald-400 bg-white/5 hover:bg-emerald-500/10 rounded-xl border border-white/5 hover:border-emerald-500/20 transition-all"
-            title="Çözüldü olarak işaretle"
+            className="flex items-center gap-2 px-4 py-2 text-slate-400 hover:text-emerald-400 bg-white/5 hover:bg-emerald-500/10 rounded-xl border border-white/5 hover:border-emerald-500/20 transition-all duration-300 group/btn"
+            title="Okundu ve çözüldü olarak işaretle"
           >
-            <Check size={14} />
+            <Check size={14} className="group-hover/btn:scale-125 transition-transform" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">Anladım</span>
           </button>
         </div>
       </div>

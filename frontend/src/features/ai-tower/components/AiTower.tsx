@@ -95,6 +95,14 @@ export const AiTower: React.FC = () => {
                   <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
                     {new Date(selectedInsight.createdAt).toLocaleString('tr-TR')} tarihinde oluşturuldu
                   </p>
+                  {selectedInsight.providerName && (
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <BrainCircuit size={12} className="text-indigo-400" />
+                      <span className="text-[10px] text-indigo-300 font-black uppercase tracking-wider">
+                        Analiz Motoru: {selectedInsight.providerName} ({selectedInsight.modelName})
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
               <button 
@@ -166,7 +174,7 @@ export const AiTower: React.FC = () => {
               <span className="text-xs text-slate-200 font-black tracking-wide uppercase">
                 {loading 
                   ? '...' 
-                  : (showFallbackLabel ? 'Ollama (Fallback)' : (activeProvider?.name || 'Seçilmedi'))}
+                  : (showFallbackLabel ? 'Ollama (Fallback)' : (activeProvider ? `${activeProvider.name}: ${activeProvider.modelName}` : 'Seçilmedi'))}
               </span>
               <ChevronUp size={14} className={`text-slate-500 transition-transform duration-300 ${isProviderMenuOpen ? 'rotate-180' : ''}`} />
             </button>
@@ -178,7 +186,7 @@ export const AiTower: React.FC = () => {
                   <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Motoru Değiştir</span>
                 </div>
                 <div className="p-1.5">
-                  {providers.map((p) => {
+                  {providers.filter(p => p.isActive).map((p) => {
                     const isSelected = activeProvider?.id === p.id;
                     const hasNoKey = !p.hasApiKey && !p.name.includes('Ollama');
 
@@ -196,7 +204,7 @@ export const AiTower: React.FC = () => {
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <span className="tracking-wide">{p.name}</span>
+                          <span className="tracking-wide">{p.name}: {p.modelName}</span>
                           {hasNoKey && <AlertCircle size={14} className="text-amber-500" />}
                         </div>
                         {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.5)]"></div>}

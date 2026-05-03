@@ -13,6 +13,8 @@ namespace Watchdog.Application.DTOs.AI
         public string Evidence { get; set; } = string.Empty;
         public string InsightType { get; set; } = string.Empty; // Enum'ı string'e çeviriyoruz
         public bool IsResolved { get; set; }
+        public string? ProviderName { get; set; }
+        public string? ModelName { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 }

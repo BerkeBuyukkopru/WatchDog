@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
@@ -89,12 +89,8 @@ namespace Watchdog.Worker.BackgroundServices
                 }
 
                 // UYKU MODU: İşlem bittikten sonra belirlediğimiz süre kadar uyu. Test aşamasında hızlı görmek için 1 Dakika, Canlıda (Production) 1 Saat idealdir.
-                //Test:
-                //_logger.LogInformation("[ROUTINE-AI] WatchDog: TEST MODU - Bir sonraki RUTİN AI analizi 1 DAKİKA sonra çalışacak.");
-                //await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
-
+                _logger.LogInformation("[ROUTINE-AI] WatchDog: Bir sonraki RUTİN AI analizi 1 saat sonra çalışacak.");
                 await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
-
             }
         }
     }

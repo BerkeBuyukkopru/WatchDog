@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Watchdog.Domain.Common;
 using Watchdog.Domain.Enums;
 
@@ -13,6 +13,8 @@ namespace Watchdog.Domain.Entities
         public InsightType InsightType { get; set; }
         public string Message { get; set; } = string.Empty;
         public string Evidence { get; set; } = string.Empty;
+        public string? ProviderName { get; set; }
+        public string? ModelName { get; set; }
         public bool IsResolved { get; set; } = false;
     }
 }

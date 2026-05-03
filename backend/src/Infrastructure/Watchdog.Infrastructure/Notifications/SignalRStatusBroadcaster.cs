@@ -80,6 +80,15 @@ namespace Watchdog.Infrastructure.Notifications
             }
         }
 
+        public async Task BroadcastInsightResolvedAsync(Guid insightId)
+        {
+            await EnsureConnectedAsync(default);
+            if (_hubConnection.State == HubConnectionState.Connected)
+            {
+                await _hubConnection.InvokeAsync("BroadcastInsightResolved", insightId);
+            }
+        }
+
         public async Task BroadcastNewIncidentAsync(Watchdog.Application.DTOs.Monitoring.IncidentDto incident, CancellationToken cancellationToken = default)
         {
             await EnsureConnectedAsync(cancellationToken);
@@ -95,6 +104,15 @@ namespace Watchdog.Infrastructure.Notifications
             if (_hubConnection.State == HubConnectionState.Connected)
             {
                 await _hubConnection.InvokeAsync("BroadcastResolvedIncident", incident, cancellationToken);
+            }
+        }
+
+        public async Task BroadcastSystemRefreshAsync()
+        {
+            await EnsureConnectedAsync(default);
+            if (_hubConnection.State == HubConnectionState.Connected)
+            {
+                await _hubConnection.InvokeAsync("BroadcastSystemRefresh");
             }
         }
 

@@ -60,7 +60,7 @@ namespace Watchdog.Infrastructure.AiServices
                 return localFallback;
             }
 
-            _logger.LogInformation("WatchDog: '{ProviderName}' sağlayıcısı üzerinden bağlantı kuruluyor...", targetProvider.Name);
+            _logger.LogInformation("WatchDog: '{ProviderName}' ({ModelName}) sağlayıcısı üzerinden bağlantı kuruluyor...", targetProvider.Name, targetProvider.ModelName);
 
             if (isOllama)
             {
@@ -68,7 +68,7 @@ namespace Watchdog.Infrastructure.AiServices
             }
             else
             {
-                _logger.LogInformation("WatchDog: Bulut AI motoru ({ProviderName}) için Fallback destekli istemci oluşturuluyor.", targetProvider.Name);
+                _logger.LogInformation("WatchDog: Bulut AI motoru ({ProviderName} - {ModelName}) için Fallback destekli istemci oluşturuluyor.", targetProvider.Name, targetProvider.ModelName);
 
                 var cloudClient = new OpenAiClient(targetProvider.ApiKey!, targetProvider.ModelName, targetProvider.ApiUrl);
                 

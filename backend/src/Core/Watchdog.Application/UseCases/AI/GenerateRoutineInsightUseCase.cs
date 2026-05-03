@@ -118,11 +118,13 @@ namespace Watchdog.Application.UseCases.AI
                     AiProviderId = targetProviderEntity?.Id, // Hangi AI'nın aktif olduğu bilgisi mühürlendi
                     InsightType = InsightType.SystemStable,
                     Message = $"STATUS: STABLE. Sistem metrikleri Dashboard üzerinde belirlenen ({cpuLimit}% CPU, {ramLimit}% RAM, {latencyLimit}ms Latency) sınırlarının altındadır. Önemli bir anlık patlama (spike) gözlenmedi.",
+                    ProviderName = targetProviderEntity?.Name,
+                    ModelName = targetProviderEntity?.ModelName,
                     Evidence = $"CPU Avg/Max: {avgCpu2h}%/{maxCpu2h}% | RAM Avg/Max: {avgRam2h}%/{maxRam2h}% | Latency Peak: {maxLatency2h}ms | Bağımlılıklar: Temiz"
                 };
 
                 await _insightRepository.AddAsync(stableInsight);
-                var stableDto = new Watchdog.Application.DTOs.AI.AiInsightDto { Id = stableInsight.Id, AppName = app.Name, Message = stableInsight.Message, Evidence = stableInsight.Evidence, InsightType = stableInsight.InsightType.ToString(), IsResolved = stableInsight.IsResolved, CreatedAt = stableInsight.CreatedAt };
+                var stableDto = new Watchdog.Application.DTOs.AI.AiInsightDto { Id = stableInsight.Id, AppName = app.Name, Message = stableInsight.Message, Evidence = stableInsight.Evidence, InsightType = stableInsight.InsightType.ToString(), IsResolved = stableInsight.IsResolved, ProviderName = stableInsight.ProviderName, ModelName = stableInsight.ModelName, CreatedAt = stableInsight.CreatedAt };
                 await _statusBroadcaster.BroadcastNewInsightAsync(stableDto);
 
                 return stableInsight;
@@ -150,6 +152,8 @@ namespace Watchdog.Application.UseCases.AI
                 AiProviderId = targetProviderEntity?.Id, // Analizi yapan sağlayıcı kimliği kaydedildi
                 InsightType = InsightType.ScalingAdvice,
                 Message = aiResponseText,
+                ProviderName = targetProviderEntity?.Name,
+                ModelName = targetProviderEntity?.ModelName,
                 Evidence = $"CPU Peak: {maxCpu2h}% at {peakCpuTime} | Kesinti Sayısı: {outageCount} | Bağımlılıklar: {(dependencyIssues.Any() ? "Sorunlu" : "Temiz")}"
             };
 
@@ -163,6 +167,8 @@ namespace Watchdog.Application.UseCases.AI
                 Evidence = insight.Evidence, 
                 InsightType = insight.InsightType.ToString(), 
                 IsResolved = insight.IsResolved, 
+                ProviderName = insight.ProviderName,
+                ModelName = insight.ModelName,
                 CreatedAt = insight.CreatedAt 
             };
             await _statusBroadcaster.BroadcastNewInsightAsync(insightDto);

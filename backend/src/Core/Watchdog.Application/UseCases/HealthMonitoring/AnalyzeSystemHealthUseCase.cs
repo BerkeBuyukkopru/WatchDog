@@ -140,15 +140,14 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                             ResolvedAt = incidentToResolve.ResolvedAt
                         });
 
-                        // 🧠 AI AUTO-RESOLVE: Hata düzeldiğine göre bu hataya dair AI önerilerini de kapat
-                        using var scope = _scopeFactory.CreateScope();
-                        var insightRepository = scope.ServiceProvider.GetRequiredService<IAiInsightRepository>();
-                        await insightRepository.ResolveAllActiveInsightsForAppAsync(app.Id);
+                        // 🧠 AI AUTO-RESOLVE: (İptal Edildi)
+                        // Artık analizler sistem düzelince otomatik kapanmıyor. 
+                        // Kullanıcı manuel "Anladım" diyene kadar Dashboard'da kalacak.
                         
-                        // 🚨 CANLI BİLDİRİM: AI önerilerinin kapandığını frontend'e bildir
-                        await _statusBroadcaster.BroadcastAllInsightsResolvedAsync(app.Id);
+                        // await insightRepository.ResolveAllActiveInsightsForAppAsync(app.Id);
+                        // await _statusBroadcaster.BroadcastAllInsightsResolvedAsync(app.Id);
 
-                        Console.WriteLine($">>>> [AI-AUTO-RESOLVE] {app.Name} için tüm aktif yapay zeka önerileri kapatıldı ve bildirildi.");
+                        Console.WriteLine($">>>> [RECOVERY] {app.Name} için AI önerileri artık manuel kapatılmak üzere korundu.");
 
                         await SendAlertToResponsibleAdminsAsync(app, $"✅ DÜZELDİ: {componentName}", 
                             $"{app.Name} uygulamasında {componentName} bileşeni tekrar sağlıklı.");
@@ -233,33 +232,77 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                 var promptBuilder = scope.ServiceProvider.GetRequiredService<IPromptBuilder>();
                 var aiClientFactory = scope.ServiceProvider.GetRequiredService<IAiClientFactory>();
                 var statusBroadcaster = scope.ServiceProvider.GetRequiredService<IStatusBroadcaster>();
+                var appRepository = scope.ServiceProvider.GetRequiredService<IMonitoredAppRepository>();
 
                 Console.WriteLine($">>>> [RCA-START] {app.Name} için Kök Neden Analizi süreci başladı...");
 
-                var lastInsight = await insightRepository.GetLatestInsightAsync(app.Id);
-                // ⏱ COOLDOWN: 10 dakika (Aynı hata için sürekli analiz yapıp motoru yormayalım)
-                if (lastInsight != null && lastInsight.CreatedAt > DateTime.UtcNow.AddMinutes(-10))
+                // ⏱ AKILLI COOLDOWN: Sadece önceki 'Hata Analizleri' (CrashWarning) için 10 dakika bekler.
+                // Rutin kapasite raporları veya stratejik tahminler RCA'yı ENGELLEMEZ.
+                var lastRcaInsight = await insightRepository.GetLatestInsightByTypeAsync(app.Id, InsightType.CrashWarning);
+
+                if (lastRcaInsight != null && (DateTime.UtcNow - lastRcaInsight.CreatedAt).TotalMinutes < 10)
                 {
-                    Console.WriteLine($">>>> [RCA-SKIP] Cooldown aktif. Son 10 dakika içinde analiz yapılmış.");
+                    Console.WriteLine($">>>> [RCA-SKIP] Cooldown aktif. Son 10 dakika içinde zaten bir Hata Analizi (RCA) yapılmış.");
                     return;
                 }
 
-                var activeProviderEntity = await aiProviderRepository.GetActiveProviderAsync();
+                // 🧠 AKILLI MOTOR SEÇİMİ VE FALLBACK MEKANİZMASI
+                AiProvider? providerToUse = null;
                 
-                // 🔍 KRİTİK DÜZELTME: Eğer uygulamaya özel bir motor seçilmediyse, sistemin aktif motorunu kullan
-                var providerIdToUse = app.ActiveAiProviderId ?? activeProviderEntity?.Id;
+                // Arka plan görevinde güvenli çalışmak için uygulamayı bu scope içinde tekrar çekiyoruz
+                var localApp = await appRepository.GetByIdAsync(app.Id);
+                if (localApp == null) return;
 
-                if (providerIdToUse == null)
+                // 1. Uygulama için özel bir motor seçilmiş mi?
+                if (localApp.ActiveAiProviderId.HasValue)
                 {
-                    Console.WriteLine($">>>> [RCA-ERROR] Hata: Hiçbir AI sağlayıcısı aktif değil!");
+                    providerToUse = await aiProviderRepository.GetByIdAsync(localApp.ActiveAiProviderId.Value);
+
+                    // Seçili motor silinmiş veya pasifse
+                    if (providerToUse == null || !providerToUse.IsActive)
+                    {
+                        Console.WriteLine($">>>> [RCA-FALLBACK] {localApp.Name} için seçili motor ({localApp.ActiveAiProviderId}) pasif veya silinmiş! Kurtarma moduna geçiliyor...");
+                        providerToUse = null; // Aşağıdaki fallback mantığını tetikle
+                    }
+                }
+
+                // 2. Eğer özel seçim yoksa veya geçersizse Fallback motoru bul
+                if (providerToUse == null)
+                {
+                    providerToUse = await aiProviderRepository.GetBestFallbackProviderAsync();
+
+                    if (providerToUse != null)
+                    {
+                        // 🛡️ RACE-CONDITION KONTROLÜ: Güncellemeden önce son bir kez daha DB'ye bakıyoruz.
+                        // Eğer kullanıcı biz analiz yaparken Dashboard'dan manuel bir seçim yaptıysa, onun seçimini EZMİYORUZ.
+                        var latestAppState = await appRepository.GetByIdAsync(localApp.Id);
+                        if (latestAppState != null && latestAppState.ActiveAiProviderId == localApp.ActiveAiProviderId)
+                        {
+                            latestAppState.ActiveAiProviderId = providerToUse.Id;
+                            await appRepository.UpdateAsync(latestAppState);
+                            Console.WriteLine($">>>> [RCA-AUTO-UPDATE] {localApp.Name} motoru otomatik olarak {providerToUse.Name} ile güncellendi.");
+                            
+                            // Analizin geri kalanında güncel nesneyi kullanalım
+                            localApp = latestAppState;
+                        }
+                        else
+                        {
+                            Console.WriteLine($">>>> [RCA-AUTO-UPDATE-SKIP] Kullanıcı manuel AI değişikliği yaptığı için otomatik güncelleme atlandı.");
+                        }
+                    }
+                }
+
+                if (providerToUse == null)
+                {
+                    Console.WriteLine($">>>> [RCA-ERROR] Hata: Sistemde hiçbir aktif AI sağlayıcısı bulunamadı!");
                     return;
                 }
 
-                var prompt = promptBuilder.BuildRootCausePrompt(recentSnapshots, app.Name);
+                var prompt = promptBuilder.BuildRootCausePrompt(recentSnapshots, localApp.Name);
 
-                Console.WriteLine($">>>> [RCA-REQUEST] {activeProviderEntity?.Name ?? "Yapay Zeka"} motoruna istek atılıyor...");
-                var aiClient = await aiClientFactory.CreateClientAsync(providerIdToUse.Value);
-                var aiResponse = await aiClient.AnalyzeAsync(prompt); 
+                Console.WriteLine($">>>> [RCA-REQUEST] {providerToUse.Name} motoruna istek atılıyor...");
+                var aiClient = await aiClientFactory.CreateClientAsync(providerToUse.Id);
+                var aiResponse = await aiClient.AnalyzeAsync(prompt);
 
                 if (string.IsNullOrEmpty(aiResponse))
                 {
@@ -267,14 +310,16 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                     return;
                 }
 
-                Console.WriteLine($">>>> [RCA-REPORT] {app.Name} Kriz Analiz Raporu Tamamlandı.");
+                Console.WriteLine($">>>> [RCA-REPORT] {localApp.Name} Kriz Analiz Raporu Tamamlandı.");
 
                 var newInsight = new AiInsight
                 {
-                    AppId = app.Id,
-                    AiProviderId = providerIdToUse,
+                    AppId = localApp.Id,
+                    AiProviderId = providerToUse.Id,
                     InsightType = InsightType.CrashWarning,
                     Message = aiResponse,
+                    ProviderName = providerToUse.Name,
+                    ModelName = providerToUse.ModelName,
                     IsResolved = false
                 };
 
@@ -284,10 +329,12 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                 {
                     Id = newInsight.Id,
                     AppId = newInsight.AppId,
-                    AppName = app.Name,
+                    AppName = localApp.Name,
                     Message = newInsight.Message,
                     InsightType = newInsight.InsightType.ToString(),
                     IsResolved = newInsight.IsResolved,
+                    ProviderName = newInsight.ProviderName,
+                    ModelName = newInsight.ModelName,
                     CreatedAt = newInsight.CreatedAt
                 };
 

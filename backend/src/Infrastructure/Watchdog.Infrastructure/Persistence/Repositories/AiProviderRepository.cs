@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq; // Where için gerekli
@@ -82,6 +82,21 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
             // Remove çağrısı otomatik olarak IsDeleted = true yapacaktır.
             _context.AiProviders.Remove(provider);
             return await _context.SaveChangesAsync() > 0;
+        }
+
+        public async Task<AiProvider?> GetBestFallbackProviderAsync()
+        {
+            // Öncelik 1: Aktif olan Ollama
+            var ollama = await _context.AiProviders
+                .Where(p => !p.IsDeleted && p.IsActive && p.Name.Contains("Ollama"))
+                .FirstOrDefaultAsync();
+
+            if (ollama != null) return ollama;
+
+            // Öncelik 2: Herhangi bir Aktif motor
+            return await _context.AiProviders
+                .Where(p => !p.IsDeleted && p.IsActive)
+                .FirstOrDefaultAsync();
         }
     }
 }

@@ -106,6 +106,8 @@ namespace Watchdog.Application.UseCases.AI
                 AiProviderId = targetProviderEntity?.Id, // Analizi yapan gerçek AI kaydedildi
                 InsightType = InsightType.StrategicForecast,
                 Message = aiResponseText,
+                ProviderName = targetProviderEntity?.Name,
+                ModelName = targetProviderEntity?.ModelName,
                 Evidence = $"[Karşılaştırma] {baselineDay.Date:dd/MM} vs {targetDay.Date:dd/MM} | Haftalık Trend CPU: {weeklyAvgCpu}%"
             };
 
@@ -120,6 +122,8 @@ namespace Watchdog.Application.UseCases.AI
                 Evidence = insight.Evidence,
                 InsightType = insight.InsightType.ToString(),
                 IsResolved = insight.IsResolved,
+                ProviderName = insight.ProviderName,
+                ModelName = insight.ModelName,
                 CreatedAt = insight.CreatedAt
             };
 

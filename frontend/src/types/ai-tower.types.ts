@@ -8,6 +8,8 @@ export interface AiInsight {
   evidence: string;
   insightType: string;
   isResolved: boolean;
+  providerName?: string;
+  modelName?: string;
   createdAt: string;
 }
 

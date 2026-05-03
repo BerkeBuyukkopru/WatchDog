@@ -21,6 +21,11 @@ namespace Watchdog.Infrastructure.Persistence
 
         public async Task SeedAsync()
         {
+            // 0. OTOMATİK MİGRASYON
+            // Uygulama ayağa kalkarken veritabanı şemasını en güncel hale getirir.
+            // Docker ortamında manuel 'update-database' komutu ihtiyacını ortadan kaldırır.
+            await _context.Database.MigrateAsync();
+
             // 1. ADMİN TOHUMLAMA
             if (!await _context.AdminUsers.AnyAsync())
             {
@@ -53,52 +58,24 @@ namespace Watchdog.Infrastructure.Persistence
                 await _context.SaveChangesAsync();
             }
 
-            // 3. AI PROVIDERS TOHUMLAMA (Dinamik ID ve Çift Kontrol)
-
-            // OLLAMA
-            var existingOllama = await _context.AiProviders.FirstOrDefaultAsync(p => p.Name == "Ollama");
-            if (existingOllama == null)
+            // 3. AI PROVIDERS TOHUMLAMA (Minimalist ve Pasif Yapı)
+            // Eğer sistemde en az bir tane (silinmemiş) sağlayıcı varsa, seeder hiçbir şey yapmaz.
+            // Bu sayede kullanıcı kendi yapılandırmasını (örn: Mixtral) yaptığında sistem varsayılanları dayatmaz.
+            if (!await _context.AiProviders.AnyAsync(p => !p.IsDeleted))
             {
+                var ollamaId = Guid.Parse("89ac6b3d-6efa-4a33-8916-5f8a3ebf020a");
                 await _context.AiProviders.AddAsync(new AiProvider
                 {
-                    Id = Guid.NewGuid(),
+                    Id = ollamaId,
                     Name = "Ollama",
-                    ModelName = "phi3:mini",
+                    ModelName = "phi3",
                     ApiUrl = "http://host.docker.internal:11434",
-                    IsActive = false
+                    IsActive = true, // İlk kurulumda tek motor olduğu için varsayılan aktif
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "System Seeder"
                 });
-            }
-            else if (existingOllama.ModelName != "phi3:mini")
-            {
-                // Mevcut kaydı "mini"ye güncelle (Eski "medium" kalmasın)
-                existingOllama.ModelName = "phi3:mini";
-                _context.AiProviders.Update(existingOllama);
-            }
 
-            // OPENAI
-            if (!await _context.AiProviders.AnyAsync(p => p.Name == "OpenAI" && p.ModelName == "gpt-4o-mini"))
-            {
-                await _context.AiProviders.AddAsync(new AiProvider
-                {
-                    Id = Guid.NewGuid(), // Tamamen rastgele!
-                    Name = "OpenAI",
-                    ModelName = "gpt-4o-mini",
-                    ApiUrl = "https://api.openai.com/v1",
-                    IsActive = false
-                });
-            }
-
-            // GROQ
-            if (!await _context.AiProviders.AnyAsync(p => p.Name == "Groq" && p.ModelName == "llama-3.3-70b-versatile"))
-            {
-                await _context.AiProviders.AddAsync(new AiProvider
-                {
-                    Id = Guid.NewGuid(), // Tamamen rastgele!
-                    Name = "Groq",
-                    ModelName = "llama-3.3-70b-versatile",
-                    ApiUrl = "https://api.groq.com/openai/v1",
-                    IsActive = true // Varsayılan Aktif
-                });
+                await _context.SaveChangesAsync();
             }
 
             // 4. MEVCUT KAYITLARI GÜNCELLE (Akıllı Ortam Tespiti)

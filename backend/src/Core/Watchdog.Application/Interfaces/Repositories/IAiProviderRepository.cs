@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Watchdog.Domain.Entities;
@@ -23,5 +23,8 @@ namespace Watchdog.Application.Interfaces.Repositories
         Task<bool> UpdateAsync(AiProvider provider);
         Task<bool> AddAsync(AiProvider provider); // Yeni sağlayıcı ekle
         Task<bool> DeleteAsync(Guid id); // Sağlayıcıyı sil (Soft Delete)
+
+        // 🛡 FALLBACK: Eğer seçili motor çalışmıyorsa en iyi alternatifi (öncelik Ollama) getirir.
+        Task<AiProvider?> GetBestFallbackProviderAsync();
     }
 }

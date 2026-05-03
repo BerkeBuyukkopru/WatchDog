@@ -40,10 +40,19 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
         public async Task<AiInsight?> GetLatestInsightAsync(Guid appId)
         {
             return await _context.AiInsights
-                .AsNoTracking() // Sadece okuma yapacağımız için belleği yormuyoruz (Performans)
-                .Where(i => i.AppId == appId) // Sadece kriz yaşayan uygulamaya ait analizler
-                .OrderByDescending(i => i.CreatedAt) // En yenisi en üstte
-                .FirstOrDefaultAsync(); // İlkini (en tazesini) al veya yoksa null dön
+                .AsNoTracking()
+                .Where(i => i.AppId == appId && !i.IsDeleted)
+                .OrderByDescending(i => i.CreatedAt)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<AiInsight?> GetLatestInsightByTypeAsync(Guid appId, Watchdog.Domain.Enums.InsightType type)
+        {
+            return await _context.AiInsights
+                .AsNoTracking()
+                .Where(i => i.AppId == appId && i.InsightType == type && !i.IsDeleted)
+                .OrderByDescending(i => i.CreatedAt)
+                .FirstOrDefaultAsync();
         }
 
         public async Task<AiInsight?> GetByIdAsync(Guid id)

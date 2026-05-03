@@ -29,6 +29,11 @@ namespace Watchdog.Api.Hubs
             await Clients.All.SendAsync("ReceiveAllInsightsResolved", appId);
         }
 
+        public async Task BroadcastInsightResolved(Guid insightId)
+        {
+            await Clients.All.SendAsync("ReceiveInsightResolved", insightId);
+        }
+
         public async Task BroadcastNewIncident(IncidentDto newIncident)
         {
             await Clients.All.SendAsync("ReceiveNewIncident", newIncident);
@@ -37,6 +42,11 @@ namespace Watchdog.Api.Hubs
         public async Task BroadcastResolvedIncident(IncidentDto resolvedIncident)
         {
             await Clients.All.SendAsync("ReceiveResolvedIncident", resolvedIncident);
+        }
+
+        public async Task BroadcastSystemRefresh()
+        {
+            await Clients.All.SendAsync("ReceiveSystemRefresh");
         }
     }
 }

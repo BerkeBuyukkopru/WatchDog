@@ -60,23 +60,32 @@ export const useAiTower = () => {
     const handleNewInsight = (newInsight: AiInsight) => {
       setInsights(prev => {
         if (prev.some(i => i.id === newInsight.id)) return prev;
-        return [newInsight, ...prev];
+        return [newInsight, ...prev].slice(0, 15);
       });
     };
 
-    const handleInsightsResolved = (resolvedAppId: string) => {
-      setInsights(prev => prev.filter(i => i.appId === resolvedAppId));
+    const handleAllInsightsResolved = (resolvedAppId: string) => {
+      // Belirtilen uygulamaya ait TÜM analizleri listeden temizle
+      setInsights(prev => prev.filter(i => i.appId !== resolvedAppId));
+    };
+
+    const handleSingleInsightResolved = (insightId: string) => {
+      // Sadece belirtilen analizi listeden temizle
+      setInsights(prev => prev.filter(i => i.id !== insightId));
     };
 
     connection.on('ReceiveNewInsight', handleNewInsight);
-    connection.on('ReceiveAllInsightsResolved', handleInsightsResolved);
+    connection.on('ReceiveAllInsightsResolved', handleAllInsightsResolved);
+    connection.on('ReceiveInsightResolved', handleSingleInsightResolved);
 
     // 🔄 FALLBACK POLLING: SignalR kaçarsa diye her 30sn'de bir sessizce tazele
     const pollInterval = setInterval(() => {
       if (mainApp?.id) {
         aiTowerService.getInsights(mainApp.id, 5).then(data => {
           setInsights(prev => {
-            const newOnes = data.filter(d => !prev.some(p => p.id === d.id));
+            // Sadece yeni olanları ekle, eskileri koru
+            const existingIds = new Set(prev.map(p => p.id));
+            const newOnes = data.filter(d => !existingIds.has(d.id));
             if (newOnes.length === 0) return prev;
             return [...newOnes, ...prev].slice(0, 15);
           });
@@ -86,7 +95,8 @@ export const useAiTower = () => {
 
     return () => {
       connection.off('ReceiveNewInsight', handleNewInsight);
-      connection.off('ReceiveAllInsightsResolved', handleInsightsResolved);
+      connection.off('ReceiveAllInsightsResolved', handleAllInsightsResolved);
+      connection.off('ReceiveInsightResolved', handleSingleInsightResolved);
       clearInterval(pollInterval);
     };
   }, [connection, isConnected, mainApp?.id, token]);
