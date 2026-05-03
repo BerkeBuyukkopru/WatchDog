@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq; // Where, OrderBy vb. LINQ metotları için gereklidir.
 using System.Text;
@@ -128,25 +128,32 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
 
         // --- MAIN: UC-9 ARŞİVLEME VE TEMİZLİK METOTLARI ---
 
-        // (YENİ) Aylık Arşivleme Motoru: Belirli tarih aralığındaki verileri RAM'i şişirmeden belirlenen paket limiti (batchSize) kadar getirir.
+        // (YENİ) Aylık Arşivleme Motoru: Belirli tarih aralığındaki verileri getirir.
         public async Task<List<HealthSnapshot>> GetSnapshotsByDateRangeAsync(DateTime startDate, DateTime endDate, int batchSize)
         {
+            // DİKKAT: IsDeleted olanları getirme ki sonsuz döngüye girmeyelim!
             return await _context.HealthSnapshots
-                .AsNoTracking() // RAM dostu
-                .Where(s => s.Timestamp >= startDate && s.Timestamp <= endDate)
-                .OrderBy(s => s.Timestamp) // Arşivin zaman tüneline göre sırayla işlenmesi için önemli
-                .Take(batchSize) // RAM'i patlatmamak için 10.000 limitini uygular
+                .Where(s => s.Timestamp >= startDate && s.Timestamp <= endDate && !s.IsDeleted)
+                .OrderBy(s => s.Timestamp)
+                .Take(batchSize)
                 .ToListAsync();
         }
 
-        // Diske başarıyla sıkıştırılıp kaydedilen bu eski verileri, veritabanından kalıcı olarak siler (Hard Delete).
+        // Arşivlenen verileri HARD DELETE (Kalıcı Silme) ile temizler.
         public async Task RemoveRangeAsync(IEnumerable<HealthSnapshot> snapshots)
         {
             if (snapshots == null || !snapshots.Any()) return;
 
-            // Toplu silme işlemi
-            _context.HealthSnapshots.RemoveRange(snapshots);
-            await _context.SaveChangesAsync();
+            var ids = snapshots.Select(s => s.Id).ToList();
+            
+            // EF Core 7+ ExecuteDelete: SaveChangesAsync'teki Soft Delete mantığını bypass eder 
+            // ve veriyi fiziksel olarak SQL'den kazır. Arşivleme için gereken budur.
+            await _context.HealthSnapshots
+                .Where(s => ids.Contains(s.Id))
+                .ExecuteDeleteAsync();
+
+            // Hafızayı temizle
+            _context.ChangeTracker.Clear();
         }
     }
 }

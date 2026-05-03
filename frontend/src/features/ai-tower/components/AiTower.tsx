@@ -40,17 +40,12 @@ export const AiTower: React.FC<AiTowerProps> = ({ selectedAppId }) => {
 
   return (
     <div className="h-full flex flex-col bg-black/20 backdrop-blur-sm border-l border-white/5 w-full relative">
-      {/* Header */}
-      <div className="p-6 border-b border-white/5 bg-white/5 shrink-0">
-        <div className="flex items-center gap-3 mb-1">
-          <div className="p-2 bg-indigo-500/20 rounded-xl text-indigo-400">
-            <BrainCircuit size={20} />
-          </div>
+      {/* Standardized Header (Matches Incidents) */}
+      <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-800/20 shrink-0">
+        <div className="flex items-center gap-3">
+          <BrainCircuit size={20} className="text-indigo-400" />
           <h2 className="text-lg font-bold text-white tracking-tight">AI Insights</h2>
         </div>
-        <p className="text-xs text-slate-500 font-medium ml-1">
-          Gerçek zamanlı sistem analizi ve çözüm önerileri
-        </p>
       </div>
 
       {/* Content Area */}

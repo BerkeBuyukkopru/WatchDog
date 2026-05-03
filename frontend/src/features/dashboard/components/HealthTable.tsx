@@ -98,7 +98,7 @@ const HealthTable: React.FC<HealthTableProps> = ({
   };
 
   return (
-    <div className="bg-background-light border border-slate-800 rounded-xl shadow-lg flex flex-col flex-1 overflow-hidden min-h-[400px]">
+    <div className="flex flex-col flex-1 overflow-hidden min-h-[400px]">
       {/* Table Header Controls */}
       <div className="p-4 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-4">
@@ -201,21 +201,18 @@ const HealthTable: React.FC<HealthTableProps> = ({
                     <td className={`px-6 py-4 whitespace-nowrap font-medium ${getDurationColor(duration)}`}>
                       {duration}ms
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-wrap gap-2 max-w-3xl">
+                    <td className="px-6 py-3">
+                      <div className="flex flex-wrap gap-1.5 max-w-full">
                         {depKeys.length === 0 ? (
                           <span className="text-xs text-slate-500">Bağımlılık Yok</span>
                         ) : (
                           depKeys.map((key) => {
                             const dep = depsMap[key];
-                            // Status'ü obje formatından string formatına çevirme (örn: status: { value: "Healthy" } vs status: "Healthy")
-                            // Bazı JSON serializer'lar enum'ları obje veya sayı dönebilir.
                             let statusText = dep.status || 'Unknown';
                             if (typeof dep.status === 'object' && dep.status !== null) {
                               statusText = (dep.status as any).name || (dep.status as any).value || 'Unknown';
                             }
                             
-                            // Key temizleme: "Monitor", "_Check", "_Pulse" gibi teknik ekleri arayüzden siliyoruz.
                             const displayKey = key
                               .replace(/\s*Monitor/gi, '')
                               .replace(/_Check/gi, '')
@@ -223,14 +220,22 @@ const HealthTable: React.FC<HealthTableProps> = ({
                               .replace(/\s*Check/gi, '')
                               .replace(/_/g, ' ');
 
+                            const isUnhealthy = String(statusText).toLowerCase().includes('unhealthy') || statusText === '3';
+                            const isDegraded = String(statusText).toLowerCase().includes('degraded') || statusText === '2';
+
                             return (
-                              <span 
+                              <div 
                                 key={key} 
-                                className={`px-2.5 py-1 text-[11px] font-bold border rounded-md whitespace-nowrap min-w-[120px] text-center shadow-sm transition-all hover:scale-105 ${getStatusColor(statusText)}`}
-                                title={dep.description || ''}
+                                className={`flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-bold border rounded-full shadow-sm transition-all hover:bg-white/5 ${getStatusColor(statusText)} bg-slate-900/40`}
+                                title={`${displayKey}: ${statusText}${dep.description ? ` (${dep.description})` : ''}`}
                               >
-                                {displayKey}: {statusText}
-                              </span>
+                                <div className={`w-1.5 h-1.5 rounded-full ${
+                                  isUnhealthy ? 'bg-rose-500 animate-pulse' : 
+                                  isDegraded ? 'bg-amber-500' : 
+                                  'bg-emerald-500'
+                                }`} />
+                                <span className="tracking-tight">{displayKey}</span>
+                              </div>
                             );
                           })
                         )}

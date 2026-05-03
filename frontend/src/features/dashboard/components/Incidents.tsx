@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, Loader2, CheckCircle2, Clock, ShieldAlert, X, Maximize2 } from 'lucide-react';
+import { Loader2, CheckCircle2, Clock, ShieldAlert, X, Maximize2 } from 'lucide-react';
 import { dashboardService } from '../api/dashboardService';
 import { useAuth } from '../../../context/AuthContext';
 import { useSignalR } from '../../../context/SignalRContext';
@@ -117,14 +117,14 @@ const Incidents: React.FC<IncidentsProps> = ({ selectedAppId }) => {
   };
 
   return (
-    <div className="bg-background-light border border-slate-800 rounded-xl shadow-lg flex flex-col overflow-hidden min-h-[300px]">
-      {/* ... (Header & Tabs aynı kalıyor) */}
+    <div className="bg-background-light border border-slate-800 rounded-xl shadow-lg flex flex-col overflow-hidden h-full">
       <div className="flex flex-col border-b border-slate-800 bg-slate-800/20">
-        <div className="h-14 px-5 flex items-center justify-between border-b border-slate-800/50">
-          <div className="flex items-center gap-2">
-            <AlertTriangle size={18} className="text-rose-500" />
-            <h3 className="text-slate-100 font-semibold">Sistem Uyarıları</h3>
-          </div>
+      {/* Header (Aligned with Metrics and AI Tower) */}
+      <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-800/20 shrink-0">
+        <div className="flex items-center gap-3">
+          <ShieldAlert size={20} className="text-rose-500" />
+          <h2 className="text-lg font-bold text-slate-100">Sistem Uyarıları</h2>
+        </div>
           <div className="px-3 py-1 bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs font-medium rounded-full">
             {activeIncidents.length} Açık Uyarı
           </div>
@@ -146,7 +146,7 @@ const Incidents: React.FC<IncidentsProps> = ({ selectedAppId }) => {
       </div>
 
       {/* Incident List */}
-      <div className="flex flex-col flex-1 overflow-y-auto p-4 gap-4 max-h-[550px] custom-scrollbar">
+      <div className="flex flex-col flex-1 overflow-y-auto p-4 gap-4 h-full custom-scrollbar">
         {loading ? (
           <div className="flex items-center justify-center py-10 text-slate-500">
             <Loader2 className="w-6 h-6 animate-spin mr-2" />
