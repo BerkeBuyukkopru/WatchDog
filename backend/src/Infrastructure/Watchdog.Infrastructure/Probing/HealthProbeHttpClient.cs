@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Net.Http;
 using System.Threading;
@@ -22,8 +22,8 @@ namespace Watchdog.Infrastructure.Probing
         {
             _httpClient = httpClient;
 
-            // POLLY KURALI: Bir siteye ping attığımızda 10 saniye içinde cevap gelmezse bekleme, fişini çek!
-            _timeoutPolicy = Policy.TimeoutAsync(10, TimeoutStrategy.Pessimistic);
+            // POLLY KURALI: Bekleme süresini 20 saniyeye çıkarıyoruz ki kümülatif hatalarda (Redis+RabbitMQ) timeouta düşmeyelim.
+            _timeoutPolicy = Policy.TimeoutAsync(20, TimeoutStrategy.Pessimistic);
         }
 
         public async Task<ProbeResult> CheckHealthAsync(string healthUrl, CancellationToken cancellationToken = default)

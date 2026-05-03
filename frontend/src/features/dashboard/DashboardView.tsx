@@ -155,7 +155,11 @@ const DashboardView: React.FC = () => {
     (latestLog.dependencyDetails?.includes('Network is unreachable') || 
      latestLog.dependencyDetails?.includes('Kritik Ağ Hatası') ||
      latestLog.dependencyDetails?.includes('Connection Error') ||
-     !latestLog.dependencyDetails?.trim().startsWith('{'));
+     latestLog.dependencyDetails?.includes('Timeout:'));
+
+  const isInvalidJson = latestLog?.status === 'Unhealthy' && 
+    !isAppDown && 
+    !latestLog.dependencyDetails?.trim().startsWith('{');
 
   return (
     <div className="h-full w-full flex flex-col">
@@ -170,22 +174,28 @@ const DashboardView: React.FC = () => {
         </div>
       )}
 
-      {/* Uygulama Çalışmıyor Uyarısı */}
-      {!isWorkerDead && isAppDown && (
-        <div className="mb-6 p-6 rounded-xl bg-gradient-to-r from-rose-600/20 to-rose-900/20 border border-rose-500/30 flex items-center gap-4 shadow-2xl animate-pulse">
-          <div className="p-3 bg-rose-500 rounded-full text-white shadow-lg shadow-rose-500/50">
-            <AlertCircle size={28} />
+      {/* Uygulama Çalışmıyor veya Geçersiz Veri Uyarısı */}
+      {!isWorkerDead && (isAppDown || isInvalidJson) && (
+        <div className={`mb-6 p-6 rounded-xl border flex items-center gap-4 shadow-2xl animate-pulse ${isAppDown ? 'bg-gradient-to-r from-rose-600/20 to-rose-900/20 border-rose-500/30' : 'bg-gradient-to-r from-amber-600/20 to-amber-900/20 border-amber-500/30'}`}>
+          <div className={`p-3 rounded-full text-white shadow-lg ${isAppDown ? 'bg-rose-500 shadow-rose-500/50' : 'bg-amber-500 shadow-amber-500/50'}`}>
+            <AlertCircle size={24} />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-rose-100">Uygulama çalışmamaktadır!</h3>
-            <p className="text-rose-300 text-sm font-medium">Seçili uygulamanın sağlık kontrolü (Health Check) adresine ulaşılamıyor. Lütfen uygulama durumunu kontrol edin.</p>
+            <h3 className={`text-xl font-bold ${isAppDown ? 'text-rose-100' : 'text-amber-100'}`}>
+              {isAppDown ? 'Uygulama çalışmamaktadır!' : 'Sağlık verisi okunamıyor!'}
+            </h3>
+            <p className={`${isAppDown ? 'text-rose-300' : 'text-amber-300'} text-sm font-medium`}>
+              {isAppDown 
+                ? 'Seçili uygulamanın sağlık kontrolü (Health Check) adresine ulaşılamıyor. Lütfen uygulama durumunu kontrol edin.' 
+                : 'Uygulamadan gelen yanıt beklenen JSON formatında değil. Uygulama bir iç hata (500) veriyor olabilir.'}
+            </p>
           </div>
         </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 h-full flex-1 min-h-0">
         {/* Sol Taraf: Metrikler, Hatalar, Tablo (70%) */}
-        <div className="lg:col-span-7 flex flex-col gap-6 h-full">
+        <div className="lg:col-span-7 flex flex-col gap-6 h-auto lg:h-full overflow-visible lg:overflow-hidden">
           
           {loading ? (
             <div className="flex-1 flex flex-col items-center justify-center min-h-[400px] border border-slate-800 rounded-xl bg-background-light">
@@ -212,14 +222,13 @@ const DashboardView: React.FC = () => {
               <Incidents selectedAppId={selectedAppId} />
               
               {/* 3. Health Table */}
-              {/* 3. Health Table */}
               <HealthTable 
                 logs={logs} 
                 apps={apps}
                 selectedAppId={selectedAppId}
                 logCount={logCount}
                 isWorkerDead={isWorkerDead}
-                isAppDown={isAppDown} // Prop eklendi
+                isAppDown={isAppDown}
                 lastUpdateText={lastUpdateText}
                 onAppChange={handleAppChange}
                 onCountChange={handleCountChange}
@@ -231,7 +240,7 @@ const DashboardView: React.FC = () => {
         </div>
 
         {/* Sağ Taraf: AI Kulesi (30%) - Geliştirici B (Senin) Tarafın */}
-        <div className="lg:col-span-3 border border-slate-800 rounded-xl bg-background-light overflow-hidden shadow-2xl">
+        <div className="lg:col-span-3 border border-slate-800 rounded-xl bg-background-light overflow-hidden shadow-2xl min-h-[500px] lg:min-h-0">
           {!isAppDown ? (
             <AiTower selectedAppId={selectedAppId} />
           ) : (

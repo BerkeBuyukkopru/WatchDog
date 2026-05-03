@@ -192,18 +192,53 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
 
         private Dictionary<string, HealthStatus> ParseComponentStatuses(string? dependencyDetails)
         {
-            if (string.IsNullOrEmpty(dependencyDetails)) return new Dictionary<string, HealthStatus>();
+            var result = new Dictionary<string, HealthStatus>();
+            if (string.IsNullOrEmpty(dependencyDetails)) return result;
             
             try 
             {
-                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                return JsonSerializer.Deserialize<Dictionary<string, HealthStatus>>(dependencyDetails, options) 
-                       ?? new Dictionary<string, HealthStatus>();
+                using var doc = JsonDocument.Parse(dependencyDetails);
+                var root = doc.RootElement;
+
+                if (root.ValueKind == JsonValueKind.Object)
+                {
+                    foreach (var property in root.EnumerateObject())
+                    {
+                        var value = property.Value;
+                        HealthStatus status = HealthStatus.Healthy;
+
+                        if (value.ValueKind == JsonValueKind.Number)
+                        {
+                            // Basit format: {"Redis": 3}
+                            status = (HealthStatus)value.GetInt32();
+                        }
+                        else if (value.ValueKind == JsonValueKind.String)
+                        {
+                            // Metin formatı: {"Redis": "Unhealthy"}
+                            Enum.TryParse<HealthStatus>(value.GetString(), true, out status);
+                        }
+                        else if (value.ValueKind == JsonValueKind.Object)
+                        {
+                            // Karmaşık format: {"Redis": {"status": "Unhealthy", ...}}
+                            if (value.TryGetProperty("status", out var statusProp))
+                            {
+                                if (statusProp.ValueKind == JsonValueKind.Number)
+                                    status = (HealthStatus)statusProp.GetInt32();
+                                else
+                                    Enum.TryParse<HealthStatus>(statusProp.GetString(), true, out status);
+                            }
+                        }
+                        
+                        result[property.Name] = status;
+                    }
+                }
             }
-            catch 
+            catch (Exception ex)
             {
-                return new Dictionary<string, HealthStatus>();
+                Console.WriteLine($">>>> [PARSE-ERROR] Dependency details parse edilemedi: {ex.Message}");
             }
+
+            return result;
         }
 
         private bool ShouldTriggerIncidentForComponent(List<HealthSnapshot> snapshots, string componentName)
@@ -244,15 +279,22 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
             var responsibleAdmins = await _authRepository.GetAdminsByAppIdAsync(app.Id);
 
             var adminEmails = responsibleAdmins
-                .Where(a => !string.IsNullOrEmpty(a.Email))
-                .Select(a => a.Email)
+                .Where(a => !string.IsNullOrWhiteSpace(a.Email) && a.Email.Contains("@"))
+                .Select(a => a.Email.Trim())
                 .ToList();
 
             if (adminEmails.Any())
             {
-                string toEmails = string.Join(",", adminEmails);
-                await _notificationSender.SendEmailAsync(toEmails, subject, message);
-                Console.WriteLine($">>>> [MAIL] Uyarı {adminEmails.Count} sorumlu admine gönderildi.");
+                // Bazı mail servisleri virgül yerine noktalı virgül bekler veya liste ister. 
+                // Bizim sistem virgülle ayrılmış string bekliyor gibi görünüyor.
+                foreach (var email in adminEmails)
+                {
+                    try {
+                        await _notificationSender.SendEmailAsync(email, subject, message);
+                    } catch (Exception ex) {
+                        Console.WriteLine($">>>> [MAIL-ERROR] {email} adresine mail gönderilemedi: {ex.Message}");
+                    }
+                }
             }
         }
 
@@ -262,6 +304,7 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
             {
                 using var scope = _scopeFactory.CreateScope();
                 var insightRepository = scope.ServiceProvider.GetRequiredService<IAiInsightRepository>();
+                var incidentRepository = scope.ServiceProvider.GetRequiredService<IIncidentRepository>(); // Local repo
                 var aiProviderRepository = scope.ServiceProvider.GetRequiredService<IAiProviderRepository>();
                 var promptBuilder = scope.ServiceProvider.GetRequiredService<IPromptBuilder>();
                 var aiClientFactory = scope.ServiceProvider.GetRequiredService<IAiClientFactory>();
@@ -270,14 +313,22 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
 
                 Console.WriteLine($">>>> [RCA-START] {app.Name} için Kök Neden Analizi süreci başladı...");
 
-                // ⏱ AKILLI COOLDOWN: Sadece önceki 'Hata Analizleri' (CrashWarning) için 10 dakika bekler.
-                // Rutin kapasite raporları veya stratejik tahminler RCA'yı ENGELLEMEZ.
+                // ⏱ AKILLI COOLDOWN: 
+                // Eğer son 10 dakika içinde bir analiz yapılmışsa VE yeni bir bileşen hatası eklenmemişse bekle.
                 var lastRcaInsight = await insightRepository.GetLatestInsightByTypeAsync(app.Id, InsightType.CrashWarning);
+                var activeIncidents = await incidentRepository.GetActiveIncidentsAsync(app.Id); // Local repo kullanımı
 
                 if (lastRcaInsight != null && (DateTime.UtcNow - lastRcaInsight.CreatedAt).TotalMinutes < 10)
                 {
-                    Console.WriteLine($">>>> [RCA-SKIP] Cooldown aktif. Son 10 dakika içinde zaten bir Hata Analizi (RCA) yapılmış.");
-                    return;
+                    // Son analizden sonra yeni bir bileşen eklenmiş mi kontrol et
+                    bool hasNewFailure = activeIncidents.Any(i => i.StartedAt > lastRcaInsight.CreatedAt);
+                    
+                    if (!hasNewFailure)
+                    {
+                        Console.WriteLine($">>>> [RCA-SKIP] Cooldown aktif ve yeni bir hata bileşeni tespit edilmedi.");
+                        return;
+                    }
+                    Console.WriteLine($">>>> [RCA-BYPASS] Yeni bir hata bileşeni eklendiği için cooldown deliniyor!");
                 }
 
                 // 🧠 AKILLI MOTOR SEÇİMİ VE FALLBACK MEKANİZMASI
