@@ -12,6 +12,7 @@ interface HealthTableProps {
   onAppChange: (appId: string) => void;
   onCountChange: (count: number) => void;
   onRefresh: () => void;
+  isAppDown?: boolean; // Yeni prop
 }
 
 const getStatusColor = (status: any) => {
@@ -52,7 +53,8 @@ const HealthTable: React.FC<HealthTableProps> = ({
   lastUpdateText,
   onAppChange, 
   onCountChange, 
-  onRefresh 
+  onRefresh,
+  isAppDown = false // Varsayılan değer
 }) => {
   const handleRefresh = () => {
     onRefresh();
@@ -171,7 +173,17 @@ const HealthTable: React.FC<HealthTableProps> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/50">
-            {logs.length === 0 ? (
+            {isAppDown ? (
+              <tr>
+                <td colSpan={4} className="px-6 py-20 text-center">
+                  <div className="flex flex-col items-center justify-center text-slate-500">
+                    <RefreshCw className="w-8 h-8 mb-3 animate-spin text-slate-700" />
+                    <p className="text-lg font-medium text-slate-400">Uygulama Yanıt Vermiyor</p>
+                    <p className="text-sm">Log verileri şu an alınamamaktadır. Lütfen üstteki menüden başka bir uygulama seçin.</p>
+                  </div>
+                </td>
+              </tr>
+            ) : logs.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-6 py-10 text-center text-slate-500">Kayıt bulunamadı.</td>
               </tr>

@@ -4,7 +4,11 @@ import { useAiTower } from '../hooks/useAiTower';
 import { InsightCard } from './InsightCard';
 import type { AiInsight } from '../../../types/ai-tower.types';
 
-export const AiTower: React.FC = () => {
+interface AiTowerProps {
+  selectedAppId?: string;
+}
+
+export const AiTower: React.FC<AiTowerProps> = ({ selectedAppId }) => {
   const { 
     insights, 
     loading, 
@@ -12,7 +16,7 @@ export const AiTower: React.FC = () => {
     providers, 
     activeProvider, 
     changeActiveProvider 
-  } = useAiTower();
+  } = useAiTower(selectedAppId);
   
   const [isProviderMenuOpen, setIsProviderMenuOpen] = useState(false);
   const [showFallbackLabel, setShowFallbackLabel] = useState(false);

@@ -151,6 +151,12 @@ const DashboardView: React.FC = () => {
     return () => clearInterval(interval);
   }, [latestLog]);
 
+  const isAppDown = latestLog?.status === 'Unhealthy' && 
+    (latestLog.dependencyDetails?.includes('Network is unreachable') || 
+     latestLog.dependencyDetails?.includes('Kritik Ağ Hatası') ||
+     latestLog.dependencyDetails?.includes('Connection Error') ||
+     !latestLog.dependencyDetails?.trim().startsWith('{'));
+
   return (
     <div className="h-full w-full flex flex-col">
       {/* Kritik Uyarı Bandı (Worker çöktüyse) */}
@@ -160,6 +166,19 @@ const DashboardView: React.FC = () => {
           <div>
             <h4 className="text-rose-400 font-semibold mb-1">⚠️ Sistem Uyarısı: Arka plan izleme servisi (Worker) durmuş veya veritabanı bağlantısı kopmuş olabilir!</h4>
             <p className="text-rose-500/80 text-sm">Son veriler güncel değildir. {lastUpdateText}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Uygulama Çalışmıyor Uyarısı */}
+      {!isWorkerDead && isAppDown && (
+        <div className="mb-6 p-6 rounded-xl bg-gradient-to-r from-rose-600/20 to-rose-900/20 border border-rose-500/30 flex items-center gap-4 shadow-2xl animate-pulse">
+          <div className="p-3 bg-rose-500 rounded-full text-white shadow-lg shadow-rose-500/50">
+            <AlertCircle size={28} />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-rose-100">Uygulama çalışmamaktadır!</h3>
+            <p className="text-rose-300 text-sm font-medium">Seçili uygulamanın sağlık kontrolü (Health Check) adresine ulaşılamıyor. Lütfen uygulama durumunu kontrol edin.</p>
           </div>
         </div>
       )}
@@ -193,12 +212,14 @@ const DashboardView: React.FC = () => {
               <Incidents selectedAppId={selectedAppId} />
               
               {/* 3. Health Table */}
+              {/* 3. Health Table */}
               <HealthTable 
                 logs={logs} 
                 apps={apps}
                 selectedAppId={selectedAppId}
                 logCount={logCount}
                 isWorkerDead={isWorkerDead}
+                isAppDown={isAppDown} // Prop eklendi
                 lastUpdateText={lastUpdateText}
                 onAppChange={handleAppChange}
                 onCountChange={handleCountChange}
@@ -211,7 +232,17 @@ const DashboardView: React.FC = () => {
 
         {/* Sağ Taraf: AI Kulesi (30%) - Geliştirici B (Senin) Tarafın */}
         <div className="lg:col-span-3 border border-slate-800 rounded-xl bg-background-light overflow-hidden shadow-2xl">
-          <AiTower />
+          {!isAppDown ? (
+            <AiTower selectedAppId={selectedAppId} />
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center p-8 text-center text-slate-500">
+              <div className="w-16 h-16 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500 mb-4">
+                <AlertCircle size={32} />
+              </div>
+              <h3 className="text-lg font-bold text-slate-300 mb-2">AI Analizi Devre Dışı</h3>
+              <p className="text-sm">Uygulama çalışmadığı için yapay zeka analizi yapılamamaktadır.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

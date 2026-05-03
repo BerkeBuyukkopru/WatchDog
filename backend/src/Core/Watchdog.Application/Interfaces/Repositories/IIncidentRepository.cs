@@ -25,5 +25,8 @@ namespace Watchdog.Application.Interfaces.Repositories
 
         // Sistem düzeldiğinde veya AI (Ollama) bir analiz ürettiğinde, mevcut olayı bu metotla güncelleriz.
         Task UpdateAsync(Incident incident);
+
+        // Belirtilen uygulama ID listesine ait tüm olayları getirir.
+        Task<IEnumerable<Incident>> GetAllByAppIdsAsync(List<Guid> appIds);
     }
 }

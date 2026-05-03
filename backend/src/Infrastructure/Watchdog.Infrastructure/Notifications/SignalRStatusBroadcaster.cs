@@ -48,7 +48,7 @@ namespace Watchdog.Infrastructure.Notifications
             }
         }
 
-        public async Task BroadcastNewStatusAsync(HealthSnapshot snapshot, CancellationToken cancellationToken = default)
+        public async Task BroadcastNewStatusAsync(Watchdog.Application.DTOs.Monitoring.LatestStatusDto snapshot, CancellationToken cancellationToken = default)
         {
             await EnsureConnectedAsync(cancellationToken);
 

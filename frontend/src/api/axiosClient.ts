@@ -11,7 +11,7 @@ const axiosClient = axios.create({
 axiosClient.interceptors.request.use(
   (config) => {
     // Check if token exists in localStorage
-    const token = localStorage.getItem('watchdog_token');
+    const token = sessionStorage.getItem('watchdog_token');
     
     // If token exists, append it to the Authorization header
     if (token) {
@@ -35,8 +35,8 @@ axiosClient.interceptors.response.use(
     // Check for 401 Unauthorized error
     if (error.response && error.response.status === 401) {
       // Clear token from localStorage
-      localStorage.removeItem('watchdog_token');
-      localStorage.removeItem('user'); // Also clear user data if any
+      sessionStorage.removeItem('watchdog_token');
+      sessionStorage.removeItem('user'); // Also clear user data if any
       
       // Redirect to login page immediately
       if (window.location.pathname !== '/login') {
