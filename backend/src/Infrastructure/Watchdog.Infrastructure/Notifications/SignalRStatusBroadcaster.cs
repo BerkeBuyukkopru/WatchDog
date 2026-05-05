@@ -32,19 +32,31 @@ namespace Watchdog.Infrastructure.Notifications
                 .Build();
         }
 
+        private readonly SemaphoreSlim _connectionLock = new SemaphoreSlim(1, 1);
+
         private async Task EnsureConnectedAsync(CancellationToken cancellationToken)
         {
-            if (_hubConnection.State == HubConnectionState.Disconnected)
+            if (_hubConnection.State != HubConnectionState.Disconnected)
             {
-                try
+                return;
+            }
+
+            await _connectionLock.WaitAsync(cancellationToken);
+            try
+            {
+                if (_hubConnection.State == HubConnectionState.Disconnected)
                 {
                     await _hubConnection.StartAsync(cancellationToken);
                     _logger.LogInformation("SignalR tüneline başarıyla bağlanıldı.");
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning("SignalR bağlantısı kurulamadı. API kapalı olabilir: {Message}", ex.Message);
-                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("SignalR bağlantısı kurulamadı. API kapalı olabilir: {Message}", ex.Message);
+            }
+            finally
+            {
+                _connectionLock.Release();
             }
         }
 
@@ -123,6 +135,7 @@ namespace Watchdog.Infrastructure.Notifications
             {
                 await _hubConnection.DisposeAsync();
             }
+            _connectionLock.Dispose();
         }
     }
 }

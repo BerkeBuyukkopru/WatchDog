@@ -78,6 +78,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setToken(newToken);
       setUser(userData);
       setIsAuthenticated(true);
+      
+      // Refresh logic: Hard redirect to clear any residual state from previous sessions
+      const isSuperAdmin = role.toLowerCase() === 'superadmin';
+      window.location.href = isSuperAdmin ? '/management' : '/dashboard';
     } catch (error) {
       console.error('Failed to decode token on login', error);
     }

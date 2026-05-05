@@ -30,6 +30,7 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
         {
             // Hem aktif (IsActive) hem de silinmemiş olmalı.
             return await _context.AiProviders
+                .OrderBy(p => p.Name)
                 .FirstOrDefaultAsync(p => p.IsActive && !p.IsDeleted);
         }
 
@@ -96,6 +97,7 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
             // Öncelik 1: Aktif olan Ollama
             var ollama = await _context.AiProviders
                 .Where(p => !p.IsDeleted && p.IsActive && p.Name.Contains("Ollama"))
+                .OrderBy(p => p.Name)
                 .FirstOrDefaultAsync();
 
             if (ollama != null) return ollama;
@@ -103,6 +105,7 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
             // Öncelik 2: Herhangi bir Aktif motor
             return await _context.AiProviders
                 .Where(p => !p.IsDeleted && p.IsActive)
+                .OrderBy(p => p.Name)
                 .FirstOrDefaultAsync();
         }
     }
