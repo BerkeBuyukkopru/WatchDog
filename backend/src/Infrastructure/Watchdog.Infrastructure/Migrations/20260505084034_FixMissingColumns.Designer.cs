@@ -9,11 +9,11 @@ using Watchdog.Infrastructure.Persistence;
 
 #nullable disable
 
-namespace Watchdog.Infrastructure.Persistence.Migrations
+namespace Watchdog.Infrastructure.Migrations
 {
     [DbContext(typeof(WatchdogDbContext))]
-    [Migration("20260430141314_AddProviderTrackingToInsights")]
-    partial class AddProviderTrackingToInsights
+    [Migration("20260505084034_FixMissingColumns")]
+    partial class FixMissingColumns
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

@@ -1,11 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace Watchdog.Infrastructure.Persistence.Migrations
+namespace Watchdog.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class AddProviderTrackingToInsights : Migration
+    public partial class FixMissingColumns : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
