@@ -34,5 +34,10 @@ export const aiTowerService = {
 
   setAppProvider: async (appId: string, providerId: string): Promise<void> => {
     await axiosClient.put(`/api/Apps/${appId}/ai-provider/${providerId}`);
+  },
+
+  manualAnalyze: async (appId: string): Promise<AiInsight> => {
+    const response = await axiosClient.post<AiInsight>(`/api/Insights/analyze/${appId}`);
+    return response.data;
   }
 };

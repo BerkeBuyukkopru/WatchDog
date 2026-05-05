@@ -162,7 +162,7 @@ const DashboardView: React.FC = () => {
     !latestLog.dependencyDetails?.trim().startsWith('{');
 
   return (
-    <div className="h-full w-full flex flex-col gap-6 p-6 overflow-y-auto custom-scrollbar">
+    <div className="h-full w-full flex flex-col gap-4 px-4 pb-4 pt-2 overflow-y-auto custom-scrollbar">
       {/* Kritik Uyarı Bantları (En Üstte) */}
       <div className="flex flex-col gap-4">
         {isWorkerDead && (
@@ -195,12 +195,15 @@ const DashboardView: React.FC = () => {
       </div>
 
       {/* 1. Metrics (Full Width) */}
-      <Metrics latestLog={latestLog} />
+      <Metrics 
+        latestLog={latestLog} 
+        appName={apps.find(a => a.id === selectedAppId)?.name} 
+      />
 
       {/* 2. Middle Row: Incidents & AI Tower (Responsive Split) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:h-[550px] shrink-0">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:h-[550px] shrink-0">
         <div className="lg:col-span-8 h-[550px] lg:h-full flex flex-col overflow-hidden">
-          <Incidents selectedAppId={selectedAppId} />
+          <Incidents />
         </div>
         <div className="lg:col-span-4 border border-slate-800 rounded-xl bg-background-light overflow-hidden shadow-2xl h-[550px] lg:h-full">
           {!isAppDown ? (

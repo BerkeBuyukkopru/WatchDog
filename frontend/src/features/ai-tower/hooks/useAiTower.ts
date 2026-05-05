@@ -3,6 +3,7 @@ import type { AiInsight, AiProvider, MonitoredApp } from '../../../types/ai-towe
 import { aiTowerService } from '../../../api/aiTowerService';
 import { useAuth } from '../../../context/AuthContext';
 import { useSignalR } from '../../../context/SignalRContext';
+import { toast } from 'sonner';
 
 export const useAiTower = (appId?: string) => {
   const { token } = useAuth();
@@ -36,22 +37,15 @@ export const useAiTower = (appId?: string) => {
         
       setMainApp(app);
 
-      // Ana uygulama varsa veya adminse ve uygulamaları gelmişse analizleri çek
-      if (app && app.id) {
-        const insightsData = await aiTowerService.getInsights(app.id, 5);
-        setInsights(insightsData);
+      // 2. ANALİZLERİ ÇEK (Global - appId filtresi kaldırıldı)
+      const insightsData = await aiTowerService.getInsights(undefined, 15);
+      setInsights(insightsData);
 
-        // Aktif sağlayıcıyı belirle
-        if (app.activeAiProviderId) {
-          const appSpecific = providersData.find(p => p.id === app.activeAiProviderId);
-          setActiveProvider(appSpecific || providersData.find(p => p.isActive) || null);
-        } else {
-          setActiveProvider(providersData.find(p => p.isActive) || null);
-        }
-      } else {
-        setInsights([]);
-        setActiveProvider(providersData.find(p => p.isActive) || null);
-      }
+      // 3. AKTİF SAĞLAYICIYI BELİRLE (Uygulamaların o an kullandığı ID'ye bak)
+      const currentProviderId = appsData[0]?.activeAiProviderId;
+      const active = providersData.find(p => p.id === currentProviderId) || providersData.find(p => p.isActive);
+      setActiveProvider(active || providersData[0] || null);
+
     } catch (error) {
       console.error('AI Tower başlangıç verisi çekme hatası:', error);
     } finally {
@@ -67,9 +61,7 @@ export const useAiTower = (appId?: string) => {
 
     // Yeni Öneri Geldiğinde Tetiklenecek Olay
     const handleNewInsight = (newInsight: AiInsight) => {
-      // SADECE SEÇİLİ UYGULAMA İÇİN GELENLERİ EKLE
-      if (appId && newInsight.appId !== appId) return;
-
+      // GLOBAL GÖRÜNÜM: appId filtresi kaldırıldı
       setInsights(prev => {
         if (prev.some(i => i.id === newInsight.id)) return prev;
         return [newInsight, ...prev].slice(0, 15);
@@ -92,18 +84,16 @@ export const useAiTower = (appId?: string) => {
 
     // 🔄 FALLBACK POLLING: SignalR kaçarsa diye her 30sn'de bir sessizce tazele
     const pollInterval = setInterval(() => {
-      const targetAppId = appId || mainApp?.id;
-      if (targetAppId) {
-        aiTowerService.getInsights(targetAppId, 5).then(data => {
-          setInsights(prev => {
-            // Sadece yeni olanları ekle, eskileri koru
-            const existingIds = new Set(prev.map(p => p.id));
-            const newOnes = data.filter(d => !existingIds.has(d.id));
-            if (newOnes.length === 0) return prev;
-            return [...newOnes, ...prev].slice(0, 15);
-          });
-        }).catch(() => { });
-      }
+      // GLOBAL GÖRÜNÜM: Polling de artık uygulama bağımsız tüm verileri (son 15) çekmeli
+      aiTowerService.getInsights(undefined, 15).then(data => {
+        setInsights(prev => {
+          // Sadece yeni olanları ekle, eskileri koru
+          const existingIds = new Set(prev.map(p => p.id));
+          const newOnes = data.filter(d => !existingIds.has(d.id));
+          if (newOnes.length === 0) return prev;
+          return [...newOnes, ...prev].slice(0, 15);
+        });
+      }).catch(() => { });
     }, 30000);
 
     return () => {
@@ -125,20 +115,23 @@ export const useAiTower = (appId?: string) => {
 
   const changeActiveProvider = async (providerId: string) => {
     try {
-      if (mainApp) {
-        await aiTowerService.setAppProvider(mainApp.id, providerId);
-        // Değişiklik sonrası state'i tazele
-        const providersData = await aiTowerService.getProviders();
-        setProviders(providersData);
-        const updatedApp = (await aiTowerService.getApps())[0];
-        setMainApp(updatedApp);
+      // GLOBAL DEĞİŞİM: Sadece bir uygulama için değil, tüm sistem için aktif sağlayıcıyı değiştiriyoruz.
+      // Backend tarafında toggleProvider (set-active) artık tüm uygulamaları güncelliyor.
+      await aiTowerService.toggleProvider(providerId);
+      
+      // Değişiklik sonrası listeyi tazele
+      const providersData = await aiTowerService.getProviders();
+      setProviders(providersData);
+      
+      const active = providersData.find(p => p.id === providerId);
+      setActiveProvider(active || null);
 
-        if (updatedApp.activeAiProviderId) {
-          setActiveProvider(providersData.find(p => p.id === updatedApp.activeAiProviderId) || null);
-        }
-      }
+      toast.success('AI Motoru Güncellendi', {
+        description: `Tüm uygulamalar artık ${active?.name}: ${active?.modelName} ile analiz edilecek.`
+      });
     } catch (error) {
       console.error('Sağlayıcı değiştirme hatası:', error);
+      toast.error('AI Motoru değiştirilemedi.');
     }
   };
 

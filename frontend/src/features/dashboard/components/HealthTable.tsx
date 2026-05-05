@@ -12,7 +12,7 @@ interface HealthTableProps {
   onAppChange: (appId: string) => void;
   onCountChange: (count: number) => void;
   onRefresh: () => void;
-  isAppDown?: boolean; // Yeni prop
+  isAppDown?: boolean;
 }
 
 const getStatusColor = (status: any) => {

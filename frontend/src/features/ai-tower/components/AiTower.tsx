@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Sparkles, Loader2, BrainCircuit, ChevronUp, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
+import { aiTowerService } from '../../../api/aiTowerService';
 import { useAiTower } from '../hooks/useAiTower';
 import { InsightCard } from './InsightCard';
 import type { AiInsight } from '../../../types/ai-tower.types';
@@ -21,6 +24,31 @@ export const AiTower: React.FC<AiTowerProps> = ({ selectedAppId }) => {
   const [isProviderMenuOpen, setIsProviderMenuOpen] = useState(false);
   const [showFallbackLabel, setShowFallbackLabel] = useState(false);
   const [selectedInsight, setSelectedInsight] = useState<AiInsight | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  const handleManualAnalyze = async () => {
+    if (!selectedAppId || isAnalyzing) return;
+    
+    try {
+      setIsAnalyzing(true);
+      toast.info('AI Analizi başlatılıyor...', {
+        description: 'Veriler işlenip kuleye yansıtılacak.'
+      });
+      
+      await aiTowerService.manualAnalyze(selectedAppId);
+      
+      toast.success('Analiz başarılı!', {
+        description: 'Kule verileri güncellendi.'
+      });
+    } catch (error) {
+      console.error('Manual analyze error:', error);
+      toast.error('Analiz başarısız!', {
+        description: 'Bağlantı veya API hatası oluştu.'
+      });
+    } finally {
+      setTimeout(() => setIsAnalyzing(false), 2000);
+    }
+  };
 
   // KRİTİK: Seçili motorun Key'i yoksa fallback durumu
   const isFallbackActive = activeProvider && !activeProvider.hasApiKey && !activeProvider.name.includes('Ollama');
@@ -38,18 +66,94 @@ export const AiTower: React.FC<AiTowerProps> = ({ selectedAppId }) => {
     }
   }, [activeProvider?.id, isFallbackActive]);
 
+  // Modal Render Fonksiyonu (Portal ile)
+  const renderModal = () => {
+    if (!selectedInsight) return null;
+
+    return createPortal(
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+        <div 
+          className="bg-[#1A1A1E] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-[0_0_50px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-300 relative z-[10000]"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/5">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400">
+                <BrainCircuit size={20} />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">{selectedInsight.appName} - Analiz Raporu</h3>
+                <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
+                  {new Date(selectedInsight.createdAt).toLocaleString('tr-TR')} tarihinde oluşturuldu
+                </p>
+                {selectedInsight.providerName && (
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <BrainCircuit size={12} className="text-indigo-400" />
+                    <span className="text-[10px] text-indigo-300 font-black uppercase tracking-wider">
+                      Analiz Motoru: {selectedInsight.providerName} ({selectedInsight.modelName})
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+            <button 
+              onClick={() => setSelectedInsight(null)}
+              className="p-2 hover:bg-white/10 rounded-full text-slate-400 transition-colors"
+            >
+              <ChevronUp className="rotate-180" size={20} />
+            </button>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto p-6 custom-scrollbar text-slate-300 text-sm leading-relaxed whitespace-pre-wrap">
+            <div className="p-4 bg-indigo-500/5 border border-indigo-500/10 rounded-xl mb-4 italic text-indigo-300">
+              "Sistem hatalarını analiz ettim. İşte kök neden ve çözüm önerilerim:"
+            </div>
+            {selectedInsight.message}
+          </div>
+
+          <div className="p-4 border-t border-white/5 bg-white/5 flex justify-end gap-3">
+            <button 
+              onClick={() => setSelectedInsight(null)}
+              className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20"
+            >
+              Anladım
+            </button>
+          </div>
+        </div>
+        <div className="absolute inset-0 -z-10" onClick={() => setSelectedInsight(null)}></div>
+      </div>,
+      document.body
+    );
+  };
+
   return (
     <div className="h-full flex flex-col bg-black/20 backdrop-blur-sm border-l border-white/5 w-full relative">
       {/* Standardized Header (Matches Incidents) */}
-      <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-800/20 shrink-0">
+      <div className="h-[52px] px-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-800/20 shrink-0">
         <div className="flex items-center gap-3">
-          <BrainCircuit size={20} className="text-indigo-400" />
-          <h2 className="text-lg font-bold text-white tracking-tight">AI Insights</h2>
+          <BrainCircuit size={18} className="text-indigo-400" />
+          <h2 className="text-base font-bold text-white uppercase tracking-wide">AI Insights</h2>
         </div>
+        <button
+          onClick={handleManualAnalyze}
+          disabled={isAnalyzing || !selectedAppId}
+          className={`p-2 rounded-lg transition-all border ${
+            isAnalyzing 
+            ? 'bg-indigo-500/20 border-indigo-500/30 text-indigo-400' 
+            : 'bg-white/5 border-white/10 text-slate-400 hover:bg-indigo-500/10 hover:border-indigo-500/30 hover:text-indigo-400'
+          } disabled:opacity-50`}
+          title="Manuel Analiz Tetikle"
+        >
+          {isAnalyzing ? (
+            <Loader2 size={18} className="animate-spin" />
+          ) : (
+            <Sparkles size={18} />
+          )}
+        </button>
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 space-y-3">
         {loading ? (
           <div className="h-40 flex flex-col items-center justify-center gap-3 text-slate-500">
             <Loader2 size={24} className="animate-spin text-indigo-500" />
@@ -78,59 +182,7 @@ export const AiTower: React.FC<AiTowerProps> = ({ selectedAppId }) => {
       </div>
 
       {/* Modal / Pop-up */}
-      {selectedInsight && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div 
-            className="bg-[#1A1A1E] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl animate-in zoom-in-95 duration-300"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/5">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400">
-                  <BrainCircuit size={20} />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-white">{selectedInsight.appName} - Analiz Raporu</h3>
-                  <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
-                    {new Date(selectedInsight.createdAt).toLocaleString('tr-TR')} tarihinde oluşturuldu
-                  </p>
-                  {selectedInsight.providerName && (
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <BrainCircuit size={12} className="text-indigo-400" />
-                      <span className="text-[10px] text-indigo-300 font-black uppercase tracking-wider">
-                        Analiz Motoru: {selectedInsight.providerName} ({selectedInsight.modelName})
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <button 
-                onClick={() => setSelectedInsight(null)}
-                className="p-2 hover:bg-white/10 rounded-full text-slate-400 transition-colors"
-              >
-                <ChevronUp className="rotate-180" size={20} />
-              </button>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto p-6 custom-scrollbar text-slate-300 text-sm leading-relaxed whitespace-pre-wrap">
-              <div className="p-4 bg-indigo-500/5 border border-indigo-500/10 rounded-xl mb-4 italic text-indigo-300">
-                "Sistem hatalarını analiz ettim. İşte kök neden ve çözüm önerilerim:"
-              </div>
-              {selectedInsight.message}
-            </div>
-
-            <div className="p-4 border-t border-white/5 bg-white/5 flex justify-end gap-3">
-              <button 
-                onClick={() => setSelectedInsight(null)}
-                className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20"
-              >
-                Anladım
-              </button>
-            </div>
-          </div>
-          <div className="absolute inset-0 -z-10" onClick={() => setSelectedInsight(null)}></div>
-        </div>
-      )}
+      {renderModal()}
 
       {/* Fallback Warning (Her zaman görünür ama küçük) */}
       {isFallbackActive && (
@@ -143,7 +195,7 @@ export const AiTower: React.FC<AiTowerProps> = ({ selectedAppId }) => {
       )}
 
       {/* Footer / Selector */}
-      <div className="p-4 bg-white/5 border-t border-white/5 shrink-0 relative z-20">
+      <div className="p-3.5 bg-white/5 border-t border-white/5 shrink-0 relative z-20">
         <div className="flex items-center justify-between px-2">
           <div className="flex flex-col gap-1">
             <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">

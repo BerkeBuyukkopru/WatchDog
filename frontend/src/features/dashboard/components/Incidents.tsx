@@ -8,10 +8,9 @@ import type { IncidentDto } from '../../../types/dashboard.types';
 type TabType = 'active' | 'resolved';
 
 interface IncidentsProps {
-  selectedAppId?: string;
 }
 
-const Incidents: React.FC<IncidentsProps> = ({ selectedAppId }) => {
+const Incidents: React.FC<IncidentsProps> = () => {
   const { token } = useAuth();
   const [incidents, setIncidents] = useState<IncidentDto[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -75,7 +74,7 @@ const Incidents: React.FC<IncidentsProps> = ({ selectedAppId }) => {
       connection.off('ReceiveNewIncident', handleNewIncident);
       connection.off('ReceiveResolvedIncident', handleResolvedIncident);
     };
-  }, [selectedAppId, connection, isConnected]);
+  }, [connection, isConnected]);
 
   const fetchIncidents = async () => {
     try {
@@ -118,18 +117,18 @@ const Incidents: React.FC<IncidentsProps> = ({ selectedAppId }) => {
 
   return (
     <div className="bg-background-light border border-slate-800 rounded-xl shadow-lg flex flex-col overflow-hidden h-full">
-      <div className="flex flex-col border-b border-slate-800 bg-slate-800/20">
+      <div className="flex flex-col bg-slate-800/20">
       {/* Header (Aligned with Metrics and AI Tower) */}
-      <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-800/20 shrink-0">
+      <div className="h-[52px] px-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-800/20 shrink-0">
         <div className="flex items-center gap-3">
-          <ShieldAlert size={20} className="text-rose-500" />
-          <h2 className="text-lg font-bold text-slate-100">Sistem Uyarıları</h2>
+          <ShieldAlert size={18} className="text-rose-500" />
+          <h2 className="text-base font-bold text-slate-100 uppercase tracking-wide">Sistem Uyarıları</h2>
         </div>
           <div className="px-3 py-1 bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs font-medium rounded-full">
             {activeIncidents.length} Açık Uyarı
           </div>
         </div>
-        <div className="flex px-5 pt-2">
+        <div className="flex px-3.5 pt-1">
           <button 
             onClick={() => setActiveTab('active')}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'active' ? 'border-rose-500 text-rose-400' : 'border-transparent text-slate-400 hover:text-slate-300'}`}
@@ -146,7 +145,7 @@ const Incidents: React.FC<IncidentsProps> = ({ selectedAppId }) => {
       </div>
 
       {/* Incident List */}
-      <div className="flex flex-col flex-1 overflow-y-auto p-4 gap-4 h-full custom-scrollbar">
+      <div className="flex flex-col flex-1 overflow-y-auto p-3.5 gap-3 h-full custom-scrollbar">
         {loading ? (
           <div className="flex items-center justify-center py-10 text-slate-500">
             <Loader2 className="w-6 h-6 animate-spin mr-2" />

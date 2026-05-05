@@ -66,7 +66,7 @@ namespace Watchdog.Api.Controllers
         // PATCH: api/AiProviders/{id}/set-active
         // Belirli bir sağlayıcıyı sistemin aktif beyni olarak işaretler.
         [HttpPatch("{id}/set-active")]
-        [Authorize(Roles = RoleConstants.SuperAdmin)]
+        [Authorize(Roles = RoleConstants.Admin + "," + RoleConstants.SuperAdmin)]
         public async Task<IActionResult> SetActive(Guid id, [FromServices] SetActiveAiProviderUseCase useCase)
         {
             var result = await useCase.ExecuteAsync(id);

@@ -51,12 +51,19 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
 
             if (targetProvider == null) return false;
 
-            foreach (var provider in providers)
+            // Hedef sağlayıcıyı aktif (kullanılabilir) yap (Zaten aktifse bir şey değişmez)
+            targetProvider.IsActive = true;
+
+            // --- YENİ MANTIK: Tüm uygulamaları bu yeni sağlayıcıya bağla ---
+            var apps = await _context.MonitoredApps
+                .Where(a => !a.IsDeleted)
+                .ToListAsync();
+
+            foreach (var app in apps)
             {
-                provider.IsActive = false;
+                app.ActiveAiProviderId = id;
             }
 
-            targetProvider.IsActive = true;
             return await _context.SaveChangesAsync() > 0;
         }
 
