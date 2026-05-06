@@ -48,12 +48,27 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
 
             if (targetProvider == null) return false;
 
-            // Motoru sistemde 'kullanılabilir' (Enabled) olarak işaretle.
-            // Diğer motorların durumuna DOKUNULMAZ.
-            targetProvider.IsActive = true;
+            // Kullanıcının istediğini bağımsız olarak açıp kapatabilmesi için durumu tersine çevir (Toggle)
+            targetProvider.IsActive = !targetProvider.IsActive;
 
-            await _context.SaveChangesAsync();
-            return true;
+            // --- YENİ MANTIK: Eğer sağlayıcı "Aktif" hale getirildiyse, uygulamaları ona bağla ---
+            // Eğer "İnaktif" ediliyorsa diğer aktif sağlayıcılar kullanılmaya devam edebilir
+            if (targetProvider.IsActive)
+            {
+                var apps = await _context.MonitoredApps
+                    .Where(a => !a.IsDeleted)
+                    .ToListAsync();
+
+                foreach (var app in apps)
+                {
+                    if (app.ActiveAiProviderId != id)
+                    {
+                        app.ActiveAiProviderId = id;
+                    }
+                }
+            }
+
+            return await _context.SaveChangesAsync() > 0;
         }
 
         public async Task<bool> UpdateAsync(AiProvider provider)
@@ -95,6 +110,29 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
                 .Where(p => !p.IsDeleted && p.IsActive)
                 .OrderBy(p => p.Name)
                 .FirstOrDefaultAsync();
+        }
+
+        public async Task<IEnumerable<AiProvider>> GetDeletedProvidersAsync()
+        {
+            return await _context.AiProviders
+                .Where(p => p.IsDeleted)
+                .OrderByDescending(p => p.DeletedAt)
+                .ToListAsync();
+        }
+
+        public async Task<bool> RestoreAsync(Guid id)
+        {
+            var provider = await _context.AiProviders
+                .IgnoreQueryFilters() // Silinmişleri de bulabilmek için
+                .FirstOrDefaultAsync(p => p.Id == id && p.IsDeleted);
+
+            if (provider == null) return false;
+
+            provider.IsDeleted = false;
+            provider.DeletedAt = null;
+            provider.DeletedBy = null;
+
+            return await _context.SaveChangesAsync() > 0;
         }
     }
 }

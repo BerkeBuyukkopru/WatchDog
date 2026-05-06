@@ -20,13 +20,14 @@ namespace Watchdog.Application.UseCases.AI
         {
             var providers = await _repository.GetAllAsync();
 
-            // Hassas verileri Backend'de saklayıp sadece gerekli alanları UI'a dönüyoruz.
+            // UI'da "Göz" ikonuna tıklandığında şifrenin görünebilmesi için ApiKey'i de dahil ediyoruz.
             return providers.Select(p => new AiProviderDto
             {
                 Id = p.Id,
                 Name = p.Name,
                 ModelName = p.ModelName,
                 ApiUrl = p.ApiUrl,
+                ApiKey = p.ApiKey, // Eklendi
                 IsActive = p.IsActive,
                 HasApiKey = !string.IsNullOrWhiteSpace(p.ApiKey) || p.Name.Contains("Ollama", StringComparison.OrdinalIgnoreCase)
             });

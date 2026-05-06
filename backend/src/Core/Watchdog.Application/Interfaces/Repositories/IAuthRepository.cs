@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Watchdog.Domain.Entities;
@@ -24,5 +24,8 @@ namespace Watchdog.Application.Interfaces.Repositories
 
         // === Uygulamadan sorumlu adminleri bulma metodu ===
         Task<List<AdminUser>> GetAdminsByAppIdAsync(Guid appId);
+
+        // === Son SuperAdmin Koruması İçin ===
+        Task<int> GetActiveSuperAdminCountAsync();
     }
 }

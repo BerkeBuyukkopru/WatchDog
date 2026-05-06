@@ -48,4 +48,5 @@ axiosClient.interceptors.response.use(
   }
 );
 
+export { axiosClient };
 export default axiosClient;

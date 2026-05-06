@@ -1,9 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Watchdog.Application.Interfaces.Repositories;
+using Watchdog.Application.Interfaces.Common;
 using Watchdog.Domain.Entities;
 
 namespace Watchdog.Infrastructure.Persistence.Repositories
@@ -11,10 +12,12 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
     public class AuthRepository : IAuthRepository
     {
         private readonly WatchdogDbContext _context;
+        private readonly ICurrentUserService _currentUserService;
 
-        public AuthRepository(WatchdogDbContext context)
+        public AuthRepository(WatchdogDbContext context, ICurrentUserService currentUserService)
         {
             _context = context;
+            _currentUserService = currentUserService;
         }
 
         public async Task<AdminUser?> GetUserByUsernameAsync(string username)
@@ -74,12 +77,39 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
 
         public async Task<bool> DeleteUserAsync(Guid id)
         {
-            var user = await _context.AdminUsers.FindAsync(id);
-            if (user == null || user.IsDeleted) return false;
+            Console.WriteLine($"[WATCHDOG-DEBUG] DeleteUserAsync tetiklendi. Aranan ID: {id}");
+            
+            var user = await _context.AdminUsers.FirstOrDefaultAsync(u => u.Id == id);
+            
+            if (user == null) 
+            {
+                Console.WriteLine($"[WATCHDOG-DEBUG] HATA: {id} numaralı kullanıcı veritabanında BULUNAMADI!");
+                return false;
+            }
 
-            _context.AdminUsers.Remove(user);
-            return await _context.SaveChangesAsync() > 0;
+            if (user.IsDeleted) 
+            {
+                Console.WriteLine($"[WATCHDOG-DEBUG] HATA: {id} numaralı kullanıcı ZATEN SİLİNMİŞ (IsDeleted=true).");
+                return false;
+            }
+
+            Console.WriteLine($"[WATCHDOG-DEBUG] Kullanıcı ({user.Username}) bulundu. Soft Delete işlemi başlatılıyor...");
+
+            user.IsDeleted = true;
+            user.DeletedAt = DateTime.UtcNow;
+            user.DeletedBy = _currentUserService.Username ?? "System";
+
+            _context.AdminUsers.Update(user);
+            var affectedRows = await _context.SaveChangesAsync();
+            
+            Console.WriteLine($"[WATCHDOG-DEBUG] SaveChangesAsync sonucu etkilenen satır sayısı: {affectedRows}");
+            
+            return affectedRows > 0;
         }
+
+        // DbContext içinden servis çekebilmek için küçük bir yardımcı (Eğer gerekirse)
+        // Ama Repository'de zaten context var.
+
 
         public async Task<IEnumerable<AdminUser>> GetDeletedAdminsAsync()
         {
@@ -106,6 +136,12 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
             return await _context.AdminUsers
                 .Where(a => a.AllowedAppIds.Contains(appId) && !a.IsDeleted)
                 .ToListAsync();
+        }
+
+        public async Task<int> GetActiveSuperAdminCountAsync()
+        {
+            return await _context.AdminUsers
+                .CountAsync(u => !u.IsDeleted && u.Role == Watchdog.Domain.Constants.RoleConstants.SuperAdmin);
         }
     }
 }

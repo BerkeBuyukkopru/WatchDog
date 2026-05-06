@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
@@ -35,7 +35,20 @@ namespace Watchdog.Infrastructure.Persistence
 
             foreach (var entry in ChangeTracker.Entries())
             {
-                if (entry.Entity is BaseEntity<Guid> or BaseEntity<int>)
+                var isBaseEntity = false;
+                var currentType = entry.Entity.GetType();
+
+                while (currentType != null && currentType != typeof(object))
+                {
+                    if (currentType.IsGenericType && currentType.GetGenericTypeDefinition() == typeof(BaseEntity<>))
+                    {
+                        isBaseEntity = true;
+                        break;
+                    }
+                    currentType = currentType.BaseType;
+                }
+
+                if (isBaseEntity)
                 {
                     dynamic entity = entry.Entity;
 

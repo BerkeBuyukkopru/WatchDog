@@ -1,9 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Watchdog.Domain.Constants;
 using Watchdog.Application.DTOs.Auth;
 using Watchdog.Application.Interfaces.Common;
 using Watchdog.Application.Interfaces.Repositories;
+using Watchdog.Application.UseCases.Auth;
 
 namespace Watchdog.Api.Controllers
 {
@@ -14,16 +15,16 @@ namespace Watchdog.Api.Controllers
     public class AdminsController : ControllerBase
     {
         private readonly IAuthRepository _authRepository;
-        private readonly IUseCaseAsync<Guid, bool> _deleteAdminUseCase;
+        private readonly DeleteAdminUseCase _deleteAdminUseCase;
         private readonly IUseCaseAsync<UpdateAdminRequest, bool> _updateUseCase;
-        private readonly IUseCaseAsync<Guid, bool> _restoreAdminUseCase;
+        private readonly RestoreAdminUseCase _restoreAdminUseCase;
 
         // Dependency Injection: Tüm gerekli servisleri kurumsal yapıda içeri alıyoruz.
         public AdminsController(
             IAuthRepository authRepository,
-            IUseCaseAsync<Guid, bool> deleteAdminUseCase,
+            DeleteAdminUseCase deleteAdminUseCase,
             IUseCaseAsync<UpdateAdminRequest, bool> updateUseCase,
-            IUseCaseAsync<Guid, bool> restoreAdminUseCase)
+            RestoreAdminUseCase restoreAdminUseCase)
         {
             _authRepository = authRepository;
             _deleteAdminUseCase = deleteAdminUseCase;
@@ -43,8 +44,10 @@ namespace Watchdog.Api.Controllers
             {
                 a.Id,
                 a.Username,
+                a.Email,
                 a.Role,
-                a.CreatedAt
+                a.CreatedAt,
+                a.AllowedAppIds
             });
 
             return Ok(response);
@@ -75,13 +78,19 @@ namespace Watchdog.Api.Controllers
                 return BadRequest(new { Message = "Güvenlik İhlali: Kendi hesabınızı silemezsiniz." });
             }
 
-            // DeleteAdminUseCase senaryosunu tetikliyoruz.
-            var result = await _deleteAdminUseCase.ExecuteAsync(id);
+            try
+            {
+                var result = await _deleteAdminUseCase.ExecuteAsync(id);
 
-            if (result)
-                return Ok(new { Message = "Yönetici hesabı başarıyla donduruldu (Soft Delete)." });
+                if (result)
+                    return Ok(new { Message = "Yönetici hesabı başarıyla donduruldu (Soft Delete)." });
 
-            return BadRequest(new { Message = "Yönetici bulunamadı veya işlem sırasında bir hata oluştu." });
+                return BadRequest(new { Message = $"İşlem başarısız: ID'si {id} olan yönetici bulunamadı veya zaten dondurulmuş." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = $"Sunucu Hatası: {ex.Message}", Detail = ex.InnerException?.Message });
+            }
         }
 
         [HttpPut("profile")]
@@ -124,9 +133,11 @@ namespace Watchdog.Api.Controllers
             {
                 a.Id,
                 a.Username,
+                a.Email,
                 a.Role,
                 a.DeletedAt,
-                a.DeletedBy
+                a.DeletedBy,
+                a.AllowedAppIds
             });
 
             return Ok(response);

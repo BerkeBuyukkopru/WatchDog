@@ -53,9 +53,9 @@ public static class DependencyInjection
         // === Auth Use Case'leri ===
         services.AddScoped<IUseCaseAsync<LoginRequest, LoginResponse>, LoginUseCase>();
         services.AddScoped<IUseCaseAsync<RegisterRequest, RegisterResponse>, RegisterUseCase>();
-        services.AddScoped<IUseCaseAsync<Guid, bool>, DeleteAdminUseCase>();
+        services.AddScoped<DeleteAdminUseCase>();
         services.AddScoped<IUseCaseAsync<UpdateAdminRequest, bool>, UpdateAdminUseCase>();
-        services.AddScoped<IUseCaseAsync<Guid, bool>, RestoreAdminUseCase>();
+        services.AddScoped<RestoreAdminUseCase>();
 
         // ŞİFRE SIFIRLAMA İÇİN EKLENEN YENİ İŞÇİLER:
         services.AddScoped<IUseCaseAsync<string, bool>, SendResetCodeUseCase>();

@@ -51,7 +51,7 @@ services:
       dockerfile: Dockerfile
     container_name: watchdog-ui
     ports:
-      - "5173:80"
+      - "5174:80"
     environment:
       - VITE_API_URL=http://localhost:${API_PORT}
     depends_on:

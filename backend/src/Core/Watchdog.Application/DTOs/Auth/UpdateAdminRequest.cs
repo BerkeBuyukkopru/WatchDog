@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -16,7 +16,9 @@ namespace Watchdog.Application.DTOs.Auth
         // Eğer şifre değiştirilmek isteniyorsa doldurulur.
         public string? NewPassword { get; set; }
 
-        // Sadece bu yeni listeyi ekledik, Role yok.
+        // Sadece bu yeni listeyi ekledik, Role yok. (Artık var!)
+        public string? Role { get; set; }
+
         public List<Guid>? AllowedAppIds { get; set; }
     }
 }
