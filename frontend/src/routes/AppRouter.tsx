@@ -4,6 +4,8 @@ import { ProtectedRoute } from '../components/ProtectedRoute';
 import SuperAdminLayout from '../layouts/SuperAdminLayout';
 import AdminLayout from '../layouts/AdminLayout';
 import DashboardView from '../features/dashboard/DashboardView';
+import { AdminListView } from '../features/admin-management/AdminListView';
+import { AiProviderListView } from '../features/ai-providers/AiProviderListView';
 
 const AppRouter = () => {
   return (
@@ -28,31 +30,19 @@ const AppRouter = () => {
           <Route index element={
             <div className="h-full flex items-center justify-center min-h-[400px]">
               <div className="text-white p-8 sm:p-10 text-center text-lg sm:text-xl bg-background border border-slate-800 rounded-lg w-full max-w-2xl mx-auto shadow-xl">
-                Global Durum (Geliştirici B Yapacak)
+                Global Durum Paneli
               </div>
             </div>
           } />
 
-          <Route path="admins" element={
-            <div className="h-full flex items-center justify-center min-h-[400px]">
-              <div className="text-white p-8 sm:p-10 text-center text-lg sm:text-xl bg-background border border-slate-800 rounded-lg w-full max-w-2xl mx-auto shadow-xl">
-                Admin Yönetimi (Geliştirici B Yapacak)
-              </div>
-            </div>
-          } />
+          <Route path="admins" element={<AdminListView />} />
 
-          <Route path="ai-providers" element={
-            <div className="h-full flex items-center justify-center min-h-[400px]">
-              <div className="text-white p-8 sm:p-10 text-center text-lg sm:text-xl bg-background border border-slate-800 rounded-lg w-full max-w-2xl mx-auto shadow-xl">
-                AI Sağlayıcıları (Geliştirici B Yapacak)
-              </div>
-            </div>
-          } />
+          <Route path="ai-providers" element={<AiProviderListView />} />
 
           <Route path="apps" element={
             <div className="h-full flex items-center justify-center min-h-[400px]">
               <div className="text-white p-8 sm:p-10 text-center text-lg sm:text-xl bg-background border border-slate-800 rounded-lg w-full max-w-2xl mx-auto shadow-xl">
-                İzlenen Uygulamalar (Geliştirici B Yapacak)
+                İzlenen Uygulamalar (Berke Yapacak)
               </div>
             </div>
           } />
@@ -60,7 +50,7 @@ const AppRouter = () => {
           <Route path="settings" element={
             <div className="h-full flex items-center justify-center min-h-[400px]">
               <div className="text-white p-8 sm:p-10 text-center text-lg sm:text-xl bg-background border border-slate-800 rounded-lg w-full max-w-2xl mx-auto shadow-xl">
-                Sistem Ayarları (Geliştirici B Yapacak)
+                Sistem Ayarları (Berke Yapacak)
               </div>
             </div>
           } />

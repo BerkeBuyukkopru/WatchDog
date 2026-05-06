@@ -81,9 +81,31 @@ namespace Watchdog.Api.Controllers
         public async Task<IActionResult> Delete(Guid id, [FromServices] IAiProviderRepository repository)
         {
             var result = await repository.DeleteAsync(id);
-            if (result) return Ok(new { message = "AI sağlayıcısı sistemden kaldırıldı." });
+            if (result) return Ok(new { message = "AI sağlayıcısı sistemden donduruldu (Soft Delete)." });
 
             return BadRequest(new { message = "Silme işlemi başarısız. Sağlayıcı bulunamadı." });
+        }
+
+        // GET: api/AiProviders/deleted
+        // Silinmiş sağlayıcıları listeler (Sadece SuperAdmin)
+        [HttpGet("deleted")]
+        [Authorize(Roles = RoleConstants.SuperAdmin)]
+        public async Task<IActionResult> GetDeleted([FromServices] IAiProviderRepository repository)
+        {
+            var deletedProviders = await repository.GetDeletedProvidersAsync();
+            return Ok(deletedProviders);
+        }
+
+        // POST: api/AiProviders/{id}/restore
+        // Silinmiş sağlayıcıyı geri yükler (Sadece SuperAdmin)
+        [HttpPost("{id}/restore")]
+        [Authorize(Roles = RoleConstants.SuperAdmin)]
+        public async Task<IActionResult> Restore(Guid id, [FromServices] IAiProviderRepository repository)
+        {
+            var result = await repository.RestoreAsync(id);
+            if (result) return Ok(new { message = "AI sağlayıcısı başarıyla geri yüklendi." });
+
+            return BadRequest(new { message = "Geri yükleme işlemi başarısız." });
         }
     }
 }

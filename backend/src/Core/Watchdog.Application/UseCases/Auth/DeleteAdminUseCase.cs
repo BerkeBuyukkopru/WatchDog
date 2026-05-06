@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Watchdog.Application.Interfaces.Common;
@@ -18,8 +18,21 @@ namespace Watchdog.Application.UseCases.Auth
 
         public async Task<bool> ExecuteAsync(Guid adminId)
         {
-            // İŞ KURALI: Eğer projen tek bir admin ile kalacaksa burada bir kontrol eklenebilir.
-            // Şimdilik repository'ye silme emrini gönderiyoruz.
+            // 1. Silinecek kullanıcıyı bul
+            var admin = await _authRepository.GetByIdAsync(adminId);
+            if (admin == null || admin.IsDeleted) return false;
+
+            // 2. 🛡️ SON SUPERADMIN KORUMASI
+            if (admin.Role == Watchdog.Domain.Constants.RoleConstants.SuperAdmin)
+            {
+                var superAdminCount = await _authRepository.GetActiveSuperAdminCountAsync();
+                if (superAdminCount <= 1)
+                {
+                    throw new InvalidOperationException("İşlem reddedildi: Sistemde en az bir adet SuperAdmin kalmak zorundadır.");
+                }
+            }
+
+            // 3. Güvenlik testleri geçildiyse silme (dondurma) işlemini uygula
             return await _authRepository.DeleteUserAsync(adminId);
         }
     }

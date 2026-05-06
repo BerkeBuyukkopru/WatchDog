@@ -24,7 +24,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("ReactAppPolicy", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:5173") // React/Vite portları
+        policy.WithOrigins("http://localhost:3000", "http://localhost:5173", "http://localhost:5174") // React/Vite portları
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials(); // SignalR için şart

@@ -26,5 +26,9 @@ namespace Watchdog.Application.Interfaces.Repositories
 
         // 🛡 FALLBACK: Eğer seçili motor çalışmıyorsa en iyi alternatifi (öncelik Ollama) getirir.
         Task<AiProvider?> GetBestFallbackProviderAsync();
+
+        // --- SOFT DELETE DESTEĞİ ---
+        Task<IEnumerable<AiProvider>> GetDeletedProvidersAsync();
+        Task<bool> RestoreAsync(Guid id);
     }
 }

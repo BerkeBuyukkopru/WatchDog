@@ -110,9 +110,13 @@ namespace Watchdog.Infrastructure.Notifications
                 }
                 else if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
                 {
-                    _logger.LogWarning("⚠️ MAILTRAP KOTA DOLDU: Günlük mail gönderim limitine ulaştınız. Mailler şu an gerçek adrese gitmiyor ancak terminale loglanıyor.");
-                    // Opsiyonel: Mail içeriğini terminale basarak kullanıcının görmesini sağlayabiliriz.
-                    Console.WriteLine($">>>> [MOCK-MAIL] {appName} için gönderilmek istenen mail kotalar nedeniyle gönderilemedi.");
+                    _logger.LogWarning("⚠️ MAILTRAP KOTA DOLDU: Günlük/Aylık mail gönderim limitine ulaştınız.");
+                    // Kota dolduğunda en azından loglarda mailin ne olduğunu görelim:
+                    Console.WriteLine("\n" + new string('=', 50));
+                    Console.WriteLine($"[KOTA DOLU - GÖNDERİLEMEYEN MAİL]");
+                    Console.WriteLine($"Uygulama: {appName}");
+                    Console.WriteLine($"Payload: {json}");
+                    Console.WriteLine(new string('=', 50) + "\n");
                 }
                 else
                 {
