@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Watchdog.Application.DTOs.SystemConfig;
@@ -27,7 +27,9 @@ namespace Watchdog.Application.UseCases.SystemConfig
                 // Sadece eşik değerleri (Thresholds) taşınıyor.
                 CriticalCpuThreshold = config.CriticalCpuThreshold,
                 CriticalRamThreshold = config.CriticalRamThreshold,
-                CriticalLatencyThreshold = config.CriticalLatencyThreshold
+                CriticalLatencyThreshold = config.CriticalLatencyThreshold,
+                ScanTimeoutSeconds = config.TimeoutSeconds,
+                RetryCount = config.RetryCount
             };
         }
     }

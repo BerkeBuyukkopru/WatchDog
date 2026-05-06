@@ -1,14 +1,24 @@
 import { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Activity, Users, Bot, AppWindow, Settings, LogOut, Menu, X } from 'lucide-react';
+import { Activity, Users, Bot, AppWindow, Settings, LogOut, Menu, X, User, Globe } from 'lucide-react';
 
 const SuperAdminLayout = () => {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
+
+  // URL'ye göre sayfa başlığını belirleyen yardımcı fonksiyon
+  const getPageTitle = () => {
+    const path = location.pathname;
+    if (path.includes('/admins')) return 'Admin Yönetimi';
+    if (path.includes('/ai-providers')) return 'AI Sağlayıcıları';
+    if (path.includes('/apps')) return 'İzlenen Uygulamalar';
+    if (path.includes('/settings')) return 'Sistem Ayarları';
+    return 'Global Durum';
+  };
 
   const NavLinks = () => (
     <>
@@ -80,13 +90,28 @@ const SuperAdminLayout = () => {
             >
               <Menu size={20} />
             </button>
-            <div className="flex items-center gap-2 text-status-healthy">
-              <div className="w-2 h-2 rounded-full bg-status-healthy animate-pulse"></div>
-              <span className="text-sm font-medium hidden sm:inline">System Online</span>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400 border border-indigo-500/20">
+                <Globe size={18} />
+              </div>
+              <h1 className="text-sm font-black text-slate-200 uppercase tracking-widest hidden sm:block">
+                {getPageTitle()}
+              </h1>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <button onClick={logout} className="flex items-center gap-2 text-sm text-rose-400 hover:text-rose-300 transition-colors">
+          <div className="flex items-center gap-6">
+            {/* Kullanıcı Bilgisi */}
+            <div className="flex items-center gap-3 border-r border-slate-800 pr-6">
+              <div className="flex flex-col items-end">
+                <span className="text-xs font-black text-slate-100 leading-none">{user?.username || 'SuperAdmin'}</span>
+                <span className="text-[9px] font-bold text-slate-500 lowercase tracking-tight mt-1">{user?.email || 'admin@watchdog.com'}</span>
+              </div>
+              <div className="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400 border border-slate-700">
+                <User size={18} />
+              </div>
+            </div>
+
+            <button onClick={logout} className="flex items-center gap-2 text-sm text-rose-400 hover:text-rose-300 transition-colors font-bold uppercase tracking-wider">
               <LogOut size={16} />
               <span className="hidden sm:inline">Çıkış</span>
             </button>

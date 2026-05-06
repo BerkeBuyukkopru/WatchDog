@@ -42,29 +42,17 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
 
         public async Task<bool> SetActiveProviderAsync(Guid id)
         {
-            // Sadece silinmemiş sağlayıcılar arasında işlem yap.
-            var providers = await _context.AiProviders
-                .Where(p => !p.IsDeleted)
-                .ToListAsync();
-
-            var targetProvider = providers.FirstOrDefault(p => p.Id == id);
+            var targetProvider = await _context.AiProviders
+                .FirstOrDefaultAsync(p => p.Id == id && !p.IsDeleted);
 
             if (targetProvider == null) return false;
 
-            // Hedef sağlayıcıyı aktif (kullanılabilir) yap (Zaten aktifse bir şey değişmez)
+            // Motoru sistemde 'kullanılabilir' (Enabled) olarak işaretle.
+            // Diğer motorların durumuna DOKUNULMAZ.
             targetProvider.IsActive = true;
 
-            // --- YENİ MANTIK: Tüm uygulamaları bu yeni sağlayıcıya bağla ---
-            var apps = await _context.MonitoredApps
-                .Where(a => !a.IsDeleted)
-                .ToListAsync();
-
-            foreach (var app in apps)
-            {
-                app.ActiveAiProviderId = id;
-            }
-
-            return await _context.SaveChangesAsync() > 0;
+            await _context.SaveChangesAsync();
+            return true;
         }
 
         public async Task<bool> UpdateAsync(AiProvider provider)

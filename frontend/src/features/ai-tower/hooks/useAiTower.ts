@@ -37,8 +37,8 @@ export const useAiTower = (appId?: string) => {
         
       setMainApp(app);
 
-      // 2. ANALİZLERİ ÇEK (Global - appId filtresi kaldırıldı)
-      const insightsData = await aiTowerService.getInsights(undefined, 15);
+      // 2. ANALİZLERİ ÇEK (appId varsa filtrele, yoksa global)
+      const insightsData = await aiTowerService.getInsights(appId, 15);
       setInsights(insightsData);
 
       // 3. AKTİF SAĞLAYICIYI BELİRLE (Uygulamaların o an kullandığı ID'ye bak)
@@ -61,7 +61,9 @@ export const useAiTower = (appId?: string) => {
 
     // Yeni Öneri Geldiğinde Tetiklenecek Olay
     const handleNewInsight = (newInsight: AiInsight) => {
-      // GLOBAL GÖRÜNÜM: appId filtresi kaldırıldı
+      // Filtreleme: Eğer appId gelmişse sadece o uygulamaya ait analizleri ekle
+      if (appId && newInsight.appId !== appId) return;
+
       setInsights(prev => {
         if (prev.some(i => i.id === newInsight.id)) return prev;
         return [newInsight, ...prev].slice(0, 15);

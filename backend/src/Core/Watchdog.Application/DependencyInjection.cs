@@ -62,7 +62,9 @@ public static class DependencyInjection
         services.AddScoped<IUseCaseAsync<ResetPasswordRequest, bool>, ResetPasswordUseCase>();
 
         services.AddScoped<SetAppAiProviderUseCase>();
-
+        services.AddScoped<IUseCaseAsync<GetDeletedAppsRequest, IEnumerable<AppDto>>, GetDeletedAppsUseCase>();
+        services.AddScoped<IUseCaseAsync<RestoreAppRequest, bool>, RestoreAppUseCase>();
+        services.AddScoped<IUseCaseAsync<ToggleAppStatusRequest, bool>, ToggleAppStatusUseCase>();
 
 
         return services;

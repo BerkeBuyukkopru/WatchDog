@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Watchdog.Domain.Entities;
@@ -62,6 +62,27 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
             // Yeni bir uygulama eklerken, sadece SİLİNMEMİŞ uygulamalar arasında bu URL var mı diye bakıyoruz.
             return await _context.MonitoredApps
                 .AnyAsync(a => a.HealthUrl == healthUrl && !a.IsDeleted);
+        }
+
+        public async Task<IEnumerable<MonitoredApp>> GetAllDeletedAsync()
+        {
+            return await _context.MonitoredApps
+                .Where(a => a.IsDeleted)
+                .ToListAsync();
+        }
+
+        public async Task<bool> RestoreAsync(Guid id)
+        {
+            var app = await _context.MonitoredApps
+                .FirstOrDefaultAsync(a => a.Id == id && a.IsDeleted);
+
+            if (app == null) return false;
+
+            app.IsDeleted = false;
+            app.DeletedAt = null;
+            app.DeletedBy = null;
+
+            return await _context.SaveChangesAsync() > 0;
         }
     }
 }

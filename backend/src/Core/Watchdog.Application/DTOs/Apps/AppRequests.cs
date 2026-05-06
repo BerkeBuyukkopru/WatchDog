@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
@@ -10,4 +10,10 @@ namespace Watchdog.Application.DTOs.Apps
 
     // ID parametreli istek (Delete için)
     public record DeleteAppRequest(Guid Id);
+
+    public record GetDeletedAppsRequest();
+    
+    public record RestoreAppRequest(Guid Id);
+    
+    public record ToggleAppStatusRequest(Guid Id);
 }

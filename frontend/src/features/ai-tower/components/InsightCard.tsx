@@ -6,6 +6,7 @@ interface InsightCardProps {
   insight: AiInsight;
   onResolve: (id: string) => void;
   onViewDetails: () => void;
+  readOnly?: boolean;
 }
 
 const typeConfig: Record<string, { title: string; color: string; icon: any; bg: string; border: string }> = {
@@ -39,7 +40,7 @@ const typeConfig: Record<string, { title: string; color: string; icon: any; bg: 
   }
 };
 
-export const InsightCard: React.FC<InsightCardProps> = ({ insight, onResolve, onViewDetails }) => {
+export const InsightCard: React.FC<InsightCardProps> = ({ insight, onResolve, onViewDetails, readOnly = false }) => {
   const [isResolving, setIsResolving] = useState(false);
   const config = typeConfig[insight.insightType] || { 
     title: 'Sistem Analizi', 
@@ -109,13 +110,15 @@ export const InsightCard: React.FC<InsightCardProps> = ({ insight, onResolve, on
             Detayları Gör
           </button>
           
-          <button 
-            onClick={handleResolve}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-medium ${config.color} bg-white/5 hover:bg-white/10 rounded border ${config.border} hover:border-white/20 transition-all`}
-          >
-            <Check size={14} />
-            Anladım
-          </button>
+          {!readOnly && (
+            <button 
+              onClick={handleResolve}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-medium ${config.color} bg-white/5 hover:bg-white/10 rounded border ${config.border} hover:border-white/20 transition-all`}
+            >
+              <Check size={14} />
+              Anladım
+            </button>
+          )}
         </div>
       </div>
     </div>

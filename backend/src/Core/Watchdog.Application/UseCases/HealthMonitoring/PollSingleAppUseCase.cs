@@ -17,17 +17,20 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
         private readonly IHealthProbeClient _probeClient;
         private readonly ISnapshotRepository _snapshotRepository;
         private readonly IUseCaseAsync<HealthSnapshot> _analyzeUseCase;
+        private readonly ISystemConfigurationRepository _sysConfigRepository;
 
         public PollSingleAppUseCase(
             IMonitoredAppRepository appRepository,
             IHealthProbeClient probeClient,
             ISnapshotRepository snapshotRepository,
-            IUseCaseAsync<HealthSnapshot> analyzeUseCase) // UC-5 Kural Motoru
+            IUseCaseAsync<HealthSnapshot> analyzeUseCase,
+            ISystemConfigurationRepository sysConfigRepository) // UC-5 Kural Motoru
         {
             _appRepository = appRepository;
             _probeClient = probeClient;
             _snapshotRepository = snapshotRepository;
             _analyzeUseCase = analyzeUseCase;
+            _sysConfigRepository = sysConfigRepository;
         }
 
         public async Task<HealthSnapshot?> ExecuteAsync(PollSingleAppRequest request)
@@ -117,6 +120,30 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                 Console.WriteLine($">>>> [NETWORK FAIL] {app.Name} pinglenemedi! Hata yutuldu ve AI'a paslanacak.");
             }
 
+            // 3.5 Global Eşikleri (Thresholds) Uygula (UI ve DB tutarlılığı için)
+            var sysConfig = await _sysConfigRepository.GetAsync();
+            if (sysConfig != null)
+            {
+                bool cpuFails = sysCpu >= sysConfig.CriticalCpuThreshold;
+                bool ramFails = sysRam >= sysConfig.CriticalRamThreshold;
+
+                // Sadece sistem geneli metrikleri baz alıyoruz
+                if (cpuFails || ramFails)
+                {
+                    finalStatus = HealthStatus.Unhealthy;
+                    Console.WriteLine($">>>> [THRESHOLD] {app.Name} kaynak sınırlarını aştı! Status Unhealthy yapıldı.");
+
+                    // JSON'ı güncelle (UI'da kırmızı parlaması ve Incident Motoru için)
+                    errorOrJson = UpdateSystemMetricsInJson(errorOrJson, cpuFails, ramFails, sysCpu, sysRam);
+                }
+                // Latency (Gecikme) Kontrolü: Yavaşsa Degraded (Sarı) yap
+                else if (finalDuration >= sysConfig.CriticalLatencyThreshold && finalStatus == HealthStatus.Healthy)
+                {
+                    finalStatus = HealthStatus.Degraded;
+                    Console.WriteLine($">>>> [THRESHOLD] {app.Name} yavaş yanıt verdi ({finalDuration}ms). Status Degraded yapıldı.");
+                }
+            }
+
             // 4. Veritabanına kaydedilecek Snapshot nesnesini hazırla
             var snapshot = new HealthSnapshot
             {
@@ -140,6 +167,44 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
 
             // 7. React'a yayınlaması için sonucu Worker'a geri dön
             return snapshot;
+        }
+
+        private string UpdateSystemMetricsInJson(string json, bool cpuFails, bool ramFails, double sysCpu, double sysRam)
+        {
+            if (string.IsNullOrEmpty(json) || !json.Trim().StartsWith("{")) return json;
+
+            try
+            {
+                var options = new System.Text.Json.JsonSerializerOptions { WriteIndented = false };
+                var dictionary = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, System.Text.Json.JsonElement>>(json);
+                if (dictionary == null) return json;
+
+                if (cpuFails && dictionary.ContainsKey("System.CPU"))
+                {
+                    dictionary["System.CPU"] = System.Text.Json.JsonSerializer.SerializeToElement(new
+                    {
+                        status = "Unhealthy",
+                        description = $"KRİTİK EŞİK AŞILDI! (Sistem: %{sysCpu})",
+                        error = "ThresholdExceeded"
+                    });
+                }
+
+                if (ramFails && dictionary.ContainsKey("System.RAM"))
+                {
+                    dictionary["System.RAM"] = System.Text.Json.JsonSerializer.SerializeToElement(new
+                    {
+                        status = "Unhealthy",
+                        description = $"KRİTİK EŞİK AŞILDI! (Sistem: %{sysRam})",
+                        error = "ThresholdExceeded"
+                    });
+                }
+
+                return System.Text.Json.JsonSerializer.Serialize(dictionary, options);
+            }
+            catch
+            {
+                return json;
+            }
         }
     }
 }

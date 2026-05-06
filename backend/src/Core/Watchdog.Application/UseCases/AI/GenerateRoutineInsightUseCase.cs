@@ -55,7 +55,7 @@ namespace Watchdog.Application.UseCases.AI
             double ramLimit = config?.CriticalRamThreshold ?? 90.0;
             double latencyLimit = config?.CriticalLatencyThreshold ?? 1000.0;
 
-            // --- YENİ MANTIK: UYGULAMAYA ÖZEL AI SEÇİMİ ---
+            // --- UYGULAMAYA ÖZEL AI SEÇİMİ ---
             AiProvider? targetProviderEntity = null;
             if (app.ActiveAiProviderId.HasValue)
             {

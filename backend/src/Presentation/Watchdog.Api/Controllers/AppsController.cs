@@ -125,5 +125,31 @@ namespace Watchdog.Api.Controllers
 
             return Ok(new { message = "Uygulama başarıyla güncellendi." });
         }
+
+        [HttpGet("deleted")]
+        [Authorize(Roles = RoleConstants.AllAdmins)]
+        public async Task<IActionResult> GetDeleted([FromServices] IUseCaseAsync<GetDeletedAppsRequest, IEnumerable<AppDto>> useCase)
+        {
+            var apps = await useCase.ExecuteAsync(new GetDeletedAppsRequest());
+            return Ok(apps);
+        }
+
+        [HttpPost("{id:guid}/restore")]
+        [Authorize(Roles = RoleConstants.AllAdmins)]
+        public async Task<IActionResult> Restore(Guid id, [FromServices] IUseCaseAsync<RestoreAppRequest, bool> useCase)
+        {
+            var result = await useCase.ExecuteAsync(new RestoreAppRequest(id));
+            if (!result) return BadRequest(new { message = "Uygulama geri yüklenemedi. Zaten aktif olabilir veya bulunamadı." });
+            return Ok(new { message = "Uygulama başarıyla geri yüklendi." });
+        }
+
+        [HttpPut("{id:guid}/toggle-status")]
+        [Authorize(Roles = RoleConstants.AllAdmins)]
+        public async Task<IActionResult> ToggleStatus(Guid id, [FromServices] IUseCaseAsync<ToggleAppStatusRequest, bool> useCase)
+        {
+            var result = await useCase.ExecuteAsync(new ToggleAppStatusRequest(id));
+            if (!result) return BadRequest(new { message = "Durum değiştirilemedi. Uygulama bulunamadı." });
+            return Ok(new { message = "Uygulama durumu başarıyla güncellendi." });
+        }
     }
 }

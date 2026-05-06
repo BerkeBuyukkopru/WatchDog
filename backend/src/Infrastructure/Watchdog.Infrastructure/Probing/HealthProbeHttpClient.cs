@@ -9,21 +9,20 @@ using Watchdog.Domain.Enums;
 using Watchdog.Application.DTOs.Monitoring;
 using Watchdog.Application.DTOs;
 using Watchdog.Application.Interfaces.ExternalClients;
+using Watchdog.Application.Interfaces.Repositories;
 
 namespace Watchdog.Infrastructure.Probing
 {
     public class HealthProbeHttpClient : IHealthProbeClient
     {
         private readonly HttpClient _httpClient;
-        private readonly AsyncTimeoutPolicy _timeoutPolicy;
+        private readonly ISystemConfigurationRepository _sysConfigRepository;
 
         // HttpClient DI (Dependency Injection) üzerinden gelecek
-        public HealthProbeHttpClient(HttpClient httpClient)
+        public HealthProbeHttpClient(HttpClient httpClient, ISystemConfigurationRepository sysConfigRepository)
         {
             _httpClient = httpClient;
-
-            // POLLY KURALI: Bekleme süresini 20 saniyeye çıkarıyoruz ki kümülatif hatalarda (Redis+RabbitMQ) timeouta düşmeyelim.
-            _timeoutPolicy = Policy.TimeoutAsync(20, TimeoutStrategy.Pessimistic);
+            _sysConfigRepository = sysConfigRepository;
         }
 
         public async Task<ProbeResult> CheckHealthAsync(string healthUrl, CancellationToken cancellationToken = default)
@@ -33,8 +32,15 @@ namespace Watchdog.Infrastructure.Probing
 
             try
             {
+                // Dinamik Sistem Ayarlarını Çek (TimeoutSeconds için)
+                var sysConfig = await _sysConfigRepository.GetAsync();
+                int timeoutSecs = sysConfig?.TimeoutSeconds ?? 20;
+
+                // Dinamik timeout policy oluştur (Pessimistic: task'ı cidden iptal etmeye çalışır)
+                var timeoutPolicy = Policy.TimeoutAsync(timeoutSecs, TimeoutStrategy.Pessimistic);
+
                 // Polly kalkanı altında HTTP isteğini fırlatıyoruz.
-                var response = await _timeoutPolicy.ExecuteAsync(async () =>
+                var response = await timeoutPolicy.ExecuteAsync(async () =>
                 {
                     return await _httpClient.GetAsync(healthUrl, cancellationToken);
                 });
@@ -64,7 +70,7 @@ namespace Watchdog.Infrastructure.Probing
                 stopwatch.Stop();
                 result.DurationMilliseconds = stopwatch.ElapsedMilliseconds;
                 result.Status = HealthStatus.Unhealthy;
-                result.JsonContent = "Timeout: Hedef uygulama 10 saniye içinde yanıt vermedi.";
+                result.JsonContent = "Timeout: Hedef uygulama belirlenen süre içinde yanıt vermedi.";
             }
             catch (Exception ex)
             {

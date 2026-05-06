@@ -9,9 +9,10 @@ import type { AiInsight } from '../../../types/ai-tower.types';
 
 interface AiTowerProps {
   selectedAppId?: string;
+  readOnly?: boolean;
 }
 
-export const AiTower: React.FC<AiTowerProps> = ({ selectedAppId }) => {
+export const AiTower: React.FC<AiTowerProps> = ({ selectedAppId, readOnly = false }) => {
   const { 
     insights, 
     loading, 
@@ -134,22 +135,24 @@ export const AiTower: React.FC<AiTowerProps> = ({ selectedAppId }) => {
           <BrainCircuit size={18} className="text-indigo-400" />
           <h2 className="text-base font-bold text-white uppercase tracking-wide">AI Insights</h2>
         </div>
-        <button
-          onClick={handleManualAnalyze}
-          disabled={isAnalyzing || !selectedAppId}
-          className={`p-2 rounded-lg transition-all border ${
-            isAnalyzing 
-            ? 'bg-indigo-500/20 border-indigo-500/30 text-indigo-400' 
-            : 'bg-white/5 border-white/10 text-slate-400 hover:bg-indigo-500/10 hover:border-indigo-500/30 hover:text-indigo-400'
-          } disabled:opacity-50`}
-          title="Manuel Analiz Tetikle"
-        >
-          {isAnalyzing ? (
-            <Loader2 size={18} className="animate-spin" />
-          ) : (
-            <Sparkles size={18} />
-          )}
-        </button>
+        {!readOnly && (
+          <button
+            onClick={handleManualAnalyze}
+            disabled={isAnalyzing || !selectedAppId}
+            className={`p-2 rounded-lg transition-all border ${
+              isAnalyzing 
+              ? 'bg-indigo-500/20 border-indigo-500/30 text-indigo-400' 
+              : 'bg-white/5 border-white/10 text-slate-400 hover:bg-indigo-500/10 hover:border-indigo-500/30 hover:text-indigo-400'
+            } disabled:opacity-50`}
+            title="Manuel Analiz Tetikle"
+          >
+            {isAnalyzing ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : (
+              <Sparkles size={18} />
+            )}
+          </button>
+        )}
       </div>
 
       {/* Content Area */}
@@ -176,6 +179,7 @@ export const AiTower: React.FC<AiTowerProps> = ({ selectedAppId }) => {
               insight={insight} 
               onResolve={resolveInsight} 
               onViewDetails={() => setSelectedInsight(insight)}
+              readOnly={readOnly}
             />
           ))
         )}
@@ -211,13 +215,13 @@ export const AiTower: React.FC<AiTowerProps> = ({ selectedAppId }) => {
               AI Motoru
             </span>
             <button 
-              onClick={() => setIsProviderMenuOpen(!isProviderMenuOpen)}
+              onClick={() => !readOnly && setIsProviderMenuOpen(!isProviderMenuOpen)}
               className={`flex items-center gap-3 px-4 py-2 rounded-xl border transition-all duration-300 group ${
                 isFallbackActive 
                 ? 'bg-amber-500/10 border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.1)]' 
-                : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
+                : 'bg-white/5 border-white/10 ' + (!readOnly ? 'hover:bg-white/10 hover:border-white/20' : 'opacity-70')
               }`}
-              disabled={loading}
+              disabled={loading || readOnly}
             >
               <div className={`w-2 h-2 rounded-full animate-pulse shadow-md ${
                 isFallbackActive ? 'bg-amber-500 shadow-amber-500/50' : 'bg-emerald-500 shadow-emerald-500/50'
@@ -227,7 +231,7 @@ export const AiTower: React.FC<AiTowerProps> = ({ selectedAppId }) => {
                   ? '...' 
                   : (showFallbackLabel ? 'Ollama (Fallback)' : (activeProvider ? `${activeProvider.name}: ${activeProvider.modelName}` : 'Seçilmedi'))}
               </span>
-              <ChevronUp size={14} className={`text-slate-500 transition-transform duration-300 ${isProviderMenuOpen ? 'rotate-180' : ''}`} />
+              {!readOnly && <ChevronUp size={14} className={`text-slate-500 transition-transform duration-300 ${isProviderMenuOpen ? 'rotate-180' : ''}`} />}
             </button>
 
             {/* Provider Menu */}

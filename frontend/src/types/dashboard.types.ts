@@ -1,7 +1,7 @@
 export interface AppDto {
   id: string;
   name: string;
-  url: string;
+  healthUrl: string;
   isActive: boolean;
   apiKey: string;
 }

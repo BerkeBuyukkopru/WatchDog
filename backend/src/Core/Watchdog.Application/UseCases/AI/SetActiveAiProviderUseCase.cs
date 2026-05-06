@@ -1,8 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Watchdog.Application.Interfaces.Common;
 using Watchdog.Application.Interfaces.Repositories;
+using Watchdog.Domain.Entities;
 
 namespace Watchdog.Application.UseCases.AI
 {
@@ -11,18 +12,59 @@ namespace Watchdog.Application.UseCases.AI
     // Giriş tipi int yerine Guid, dönüş tipi işlemin başarısını belirten bool.
     public class SetActiveAiProviderUseCase : IUseCaseAsync<Guid, bool>
     {
-        private readonly IAiProviderRepository _repository;
+        private readonly IAiProviderRepository _providerRepository;
+        private readonly IMonitoredAppRepository _appRepository;
+        private readonly IAuthRepository _authRepository;
+        private readonly ICurrentUserService _currentUserService;
 
-        public SetActiveAiProviderUseCase(IAiProviderRepository repository)
+        public SetActiveAiProviderUseCase(
+            IAiProviderRepository providerRepository,
+            IMonitoredAppRepository appRepository,
+            IAuthRepository authRepository,
+            ICurrentUserService currentUserService)
         {
-            _repository = repository;
+            _providerRepository = providerRepository;
+            _appRepository = appRepository;
+            _authRepository = authRepository;
+            _currentUserService = currentUserService;
         }
 
-        // Belirtilen GUID'ye sahip sağlayıcıyı sistemin ana beyni olarak işaretler.
         public async Task<bool> ExecuteAsync(Guid id)
         {
-            // Repository katmanındaki Guid bekleyen metoda veri güvenli bir şekilde iletilir.
-            return await _repository.SetActiveProviderAsync(id);
+            // 1. Kullanıcının rolünü ve kimliğini al
+            var currentRole = _currentUserService.Role;
+            var userId = _currentUserService.UserId;
+
+            IEnumerable<MonitoredApp> targetApps;
+
+            // 3. Hangi uygulamaların güncelleneceğine karar ver
+            if (currentRole == Watchdog.Domain.Constants.RoleConstants.SuperAdmin)
+            {
+                // SuperAdmin her şeyi değiştirir
+                targetApps = await _appRepository.GetAllAsync();
+            }
+            else
+            {
+                // Normal Admin sadece kendi sorumlu olduğu uygulamaları değiştirir
+                var currentAdmin = await _authRepository.GetByIdAsync(userId);
+                if (currentAdmin == null || currentAdmin.AllowedAppIds == null || !currentAdmin.AllowedAppIds.Any())
+                {
+                    // Adminin hiç uygulaması yoksa sadece sağlayıcıyı aktif etmek yeterli
+                    return true;
+                }
+
+                var allApps = await _appRepository.GetAllAsync();
+                targetApps = allApps.Where(app => currentAdmin.AllowedAppIds.Contains(app.Id)).ToList();
+            }
+
+            // 4. Hedef uygulamaların AI motorunu güncelle
+            foreach (var app in targetApps)
+            {
+                app.ActiveAiProviderId = id;
+                await _appRepository.UpdateAsync(app);
+            }
+
+            return true;
         }
     }
 }

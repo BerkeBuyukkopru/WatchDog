@@ -5,9 +5,10 @@ import Incidents from './components/Incidents';
 import HealthTable from './components/HealthTable';
 import { dashboardService } from './api/dashboardService';
 import type { HealthCheckLogDto, AppDto } from '../../types/dashboard.types';
-import { AlertCircle, Loader2, AlertTriangle } from 'lucide-react';
+import { AlertCircle, Loader2, AlertTriangle, Clock } from 'lucide-react';
 import { useOutletContext } from 'react-router-dom';
 import { useSignalR } from '../../context/SignalRContext';
+import { systemConfigService, type SystemConfigDto } from '../../api/systemConfigService';
 
 const DashboardView: React.FC = () => {
   const [logs, setLogs] = useState<HealthCheckLogDto[]>([]);
@@ -20,6 +21,7 @@ const DashboardView: React.FC = () => {
   // Worker durumu için stateler
   const [isWorkerDead, setIsWorkerDead] = useState<boolean>(false);
   const [lastUpdateText, setLastUpdateText] = useState<string>('');
+  const [config, setConfig] = useState<SystemConfigDto | null>(null);
 
   const context = useOutletContext<{ setApiError: (val: boolean) => void } | null>();
   const setApiError = context?.setApiError || (() => { });
@@ -32,10 +34,16 @@ const DashboardView: React.FC = () => {
       setError(null);
       setApiError(false);
 
-      // İlk yüklemede veya sessiz olmayan yenilemede uygulamaları çek
+      // İlk yüklemede veya sessiz olmayan yenilemede uygulamaları ve config'i çek
       if (apps.length === 0 || !silent) {
-        const appsData = await dashboardService.getApps();
+        const [appsData, configData] = await Promise.all([
+          dashboardService.getApps(),
+          systemConfigService.getConfig()
+        ]);
+        
         setApps(appsData);
+        setConfig(configData);
+
         if (appsData.length > 0 && !appId) {
           appId = appsData[0].id;
           setSelectedAppId(appId);
@@ -151,6 +159,9 @@ const DashboardView: React.FC = () => {
     return () => clearInterval(interval);
   }, [latestLog]);
 
+  const selectedApp = apps.find(a => a.id === selectedAppId);
+  const isAppPaused = selectedApp && !selectedApp.isActive;
+
   const isAppDown = latestLog?.status === 'Unhealthy' &&
     (latestLog.dependencyDetails?.includes('Network is unreachable') ||
       latestLog.dependencyDetails?.includes('Kritik Ağ Hatası') ||
@@ -175,7 +186,19 @@ const DashboardView: React.FC = () => {
           </div>
         )}
 
-        {!isWorkerDead && (isAppDown || isInvalidJson) && (
+        {isAppPaused && (
+          <div className="p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center gap-4 shadow-lg shrink-0">
+            <div className="p-2.5 rounded-lg bg-indigo-500/20 text-indigo-400">
+              <Clock size={20} />
+            </div>
+            <div>
+              <h4 className="text-indigo-100 font-bold text-sm tracking-wide uppercase">İzleme Duraklatıldı</h4>
+              <p className="text-indigo-400/80 text-xs font-medium">Bu uygulamanın sağlık taraması ve AI analizi ayarlar kısmından duraklatılmıştır.</p>
+            </div>
+          </div>
+        )}
+
+        {!isWorkerDead && !isAppPaused && (isAppDown || isInvalidJson) && (
           <div className={`p-6 rounded-xl border flex items-center gap-4 shadow-2xl animate-pulse ${isAppDown ? 'bg-gradient-to-r from-rose-600/20 to-rose-900/20 border-rose-500/30' : 'bg-gradient-to-r from-amber-600/20 to-amber-900/20 border-amber-500/30'}`}>
             <div className={`p-3 rounded-full text-white shadow-lg ${isAppDown ? 'bg-rose-500 shadow-rose-500/50' : 'bg-amber-500 shadow-amber-500/50'}`}>
               <AlertCircle size={24} />
@@ -248,6 +271,7 @@ const DashboardView: React.FC = () => {
               isWorkerDead={isWorkerDead}
               isAppDown={isAppDown}
               lastUpdateText={lastUpdateText}
+              latencyThreshold={config?.criticalLatencyThreshold}
               onAppChange={handleAppChange}
               onCountChange={handleCountChange}
               onRefresh={() => fetchData()}

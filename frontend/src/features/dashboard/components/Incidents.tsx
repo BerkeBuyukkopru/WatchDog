@@ -8,9 +8,11 @@ import type { IncidentDto } from '../../../types/dashboard.types';
 type TabType = 'active' | 'resolved';
 
 interface IncidentsProps {
+  appId?: string;
+  readOnly?: boolean;
 }
 
-const Incidents: React.FC<IncidentsProps> = () => {
+const Incidents: React.FC<IncidentsProps> = ({ appId, readOnly = false }) => {
   const { token } = useAuth();
   const [incidents, setIncidents] = useState<IncidentDto[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -56,7 +58,9 @@ const Incidents: React.FC<IncidentsProps> = () => {
     if (!connection || !isConnected) return;
 
     const handleNewIncident = (newIncident: IncidentDto) => {
-      // "Ortak Görünüm" istediğimiz için seçili uygulamaya bakmaksızın tüm yetkili hataları ekle
+      // Filtreleme: Eğer appId gelmişse sadece o uygulamaya ait olayları ekle
+      if (appId && newIncident.appId !== appId) return;
+
       setIncidents(prev => {
         if (prev.some(i => i.id === newIncident.id)) return prev;
         return [newIncident, ...prev];
@@ -79,9 +83,8 @@ const Incidents: React.FC<IncidentsProps> = () => {
   const fetchIncidents = async () => {
     try {
       setLoading(true);
-      // Ortak Görünüm: selectedAppId'yi parametre olarak GÖNDERMİYORUZ.
-      // Backend artık token'dan kim olduğumuzu anlayıp tüm yetkili uygulamaları dönecek.
-      const data = await dashboardService.getIncidents();
+      // appId varsa filtreleyerek çek, yoksa global çek (DashboardView / GlobalDashboard ayrımı)
+      const data = await dashboardService.getIncidents(appId);
       // Sıralama: En yeniden eskiye
       const sorted = data.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
       setIncidents(sorted);
@@ -220,7 +223,7 @@ const Incidents: React.FC<IncidentsProps> = () => {
                     Detaylar
                   </button>
                   
-                  {activeTab === 'active' && (
+                  {activeTab === 'active' && !readOnly && (
                     <button 
                       onClick={() => handleResolve(incident.id)}
                       className="flex-1 flex items-center justify-center gap-2 py-2 text-xs font-medium text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 rounded border border-emerald-500/20 hover:border-emerald-500/40 transition-all"

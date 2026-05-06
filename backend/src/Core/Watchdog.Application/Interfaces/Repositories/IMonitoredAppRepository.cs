@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Watchdog.Domain.Entities;
@@ -24,5 +24,11 @@ namespace Watchdog.Application.Interfaces.Repositories
 
         //Aynı URL'in iki kez eklenmesini önleme.
         Task<bool> IsUrlExistAsync(string healthUrl);
+
+        // Silinmiş uygulamaları getir
+        Task<IEnumerable<MonitoredApp>> GetAllDeletedAsync();
+
+        // Uygulamayı geri yükle
+        Task<bool> RestoreAsync(Guid id);
     }
 }

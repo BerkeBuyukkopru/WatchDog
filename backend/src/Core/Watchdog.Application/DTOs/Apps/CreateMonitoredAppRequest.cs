@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace Watchdog.Application.DTOs.Apps
 {
@@ -14,6 +14,6 @@ namespace Watchdog.Application.DTOs.Apps
         [Range(10, 3600, ErrorMessage = "İzleme aralığı 10 saniye ile 1 saat arasında olmalıdır.")]
         public int PollingIntervalSeconds { get; set; } = 60;
 
-        // BURADAKİ NotificationEmails ve AdminEmail SATIRLARI SİLİNDİ!
+        public Guid? ActiveAiProviderId { get; set; }
     }
 }

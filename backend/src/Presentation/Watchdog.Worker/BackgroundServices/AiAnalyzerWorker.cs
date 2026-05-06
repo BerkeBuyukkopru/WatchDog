@@ -59,7 +59,8 @@ namespace Watchdog.Worker.BackgroundServices
                     // Her uygulama için teker teker AI analizi yap
                     foreach (var app in apps)
                     {
-                        // DÜZELTME: Log mesajı 24 saatlik veriyi temsil edecek şekilde güncellendi.
+                        if (!app.IsActive) continue;
+
                         _logger.LogInformation($"[ROUTINE-AI] [{app.Name}] uygulaması için son 24 saatlik AI analizi talep ediliyor...");
 
                         var request = new GenerateRoutineInsightRequest

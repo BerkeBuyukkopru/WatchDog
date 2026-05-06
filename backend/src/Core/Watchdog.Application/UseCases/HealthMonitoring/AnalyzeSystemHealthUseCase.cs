@@ -28,6 +28,7 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
         // YENİ EKLENEN: Sorumlu Adminleri bulmak için AuthRepository'i ekliyoruz.
         private readonly IAuthRepository _authRepository;
         private readonly IConfiguration _configuration;
+        private readonly ISystemConfigurationRepository _sysConfigRepository;
 
         public AnalyzeSystemHealthUseCase(
             ISnapshotRepository snapshotRepository,
@@ -37,12 +38,14 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
             IServiceScopeFactory scopeFactory,
             IStatusBroadcaster statusBroadcaster,
             IAuthRepository authRepository,
-            IConfiguration configuration) // Constructora Eklendi
+            IConfiguration configuration,
+            ISystemConfigurationRepository sysConfigRepository) // Constructora Eklendi
         {
             _snapshotRepository = snapshotRepository;
             _incidentRepository = incidentRepository;
             _notificationSender = notificationSender;
             _appRepository = appRepository;
+            _sysConfigRepository = sysConfigRepository;
             _scopeFactory = scopeFactory;
             _statusBroadcaster = statusBroadcaster;
             _authRepository = authRepository;
@@ -53,6 +56,10 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
         {
             var app = await _appRepository.GetByIdAsync(latestSnapshot.AppId);
             if (app == null) return;
+            
+            // Dinamik Sistem Ayarlarını Çek (RetryCount için)
+            var sysConfig = await _sysConfigRepository.GetAsync();
+            int retryCount = sysConfig?.RetryCount ?? 3; // Fallback to 3 if null
 
             // 🚨 CANLI YAYIN: Veriyi DTO'ya çevirip fırlat (React'in beklediği format)
             var dto = new LatestStatusDto
@@ -88,6 +95,28 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                 componentsStatus["System"] = latestSnapshot.Status;
             }
 
+            // --- YENİ EKLENEN: GLOBAL EŞİK (THRESHOLD) KONTROLLERİ ---
+            if (sysConfig != null)
+            {
+                // CPU Kontrolü (Sadece Sistem Geneli)
+                if (latestSnapshot.SystemCpuUsage >= sysConfig.CriticalCpuThreshold)
+                {
+                    componentsStatus["System.CPU"] = HealthStatus.Unhealthy;
+                }
+
+                // RAM Kontrolü
+                if (latestSnapshot.SystemRamUsage >= sysConfig.CriticalRamThreshold)
+                {
+                    componentsStatus["System.RAM"] = HealthStatus.Unhealthy;
+                }
+
+                // Latency (Gecikme) Kontrolü
+                if (latestSnapshot.TotalDuration >= sysConfig.CriticalLatencyThreshold)
+                {
+                    componentsStatus["System.Latency"] = HealthStatus.Degraded;
+                }
+            }
+
             // 2. Her bir bileşen için durumu kontrol et
             foreach (var component in componentsStatus)
             {
@@ -99,10 +128,10 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
 
                 if (!hasActiveIncident && currentStatus == HealthStatus.Unhealthy)
                 {
-                    // 3-Strike Kontrolü: Bu bileşen son 3 snapshot'ta da mı Unhealthy?
-                    var recentSnapshots = await _snapshotRepository.GetLatestSnapshotsAsync(app.Id, 3);
+                    // Dinamik Retry Kontrolü: Bu bileşen son 'retryCount' snapshot'ta da mı Unhealthy?
+                    var recentSnapshots = await _snapshotRepository.GetLatestSnapshotsAsync(app.Id, retryCount);
                     
-                    if (ShouldTriggerIncidentForComponent(recentSnapshots, componentName))
+                    if (ShouldTriggerIncidentForComponent(recentSnapshots, componentName, retryCount))
                     {
                         // EĞER AĞ HATASIYSA (Uygulama çalışmıyorsa), İNSİDENT OLUŞTURMA!
                         // Sadece bileşen bazlı (DB, Redis vb.) gerçek hataları insident olarak kaydet.
@@ -113,7 +142,7 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                             continue;
                         }
 
-                        Console.WriteLine($">>>> [INCIDENT-TRIGGER] {app.Name} - {componentName} ÜST ÜSTE 3 KEZ HATA VERDİ! Analiz başlıyor...");
+                        Console.WriteLine($">>>> [INCIDENT-TRIGGER] {app.Name} - {componentName} ÜST ÜSTE {retryCount} KEZ HATA VERDİ! Analiz başlıyor...");
 
                         var newIncident = new Incident
                         {
@@ -193,7 +222,16 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
         private Dictionary<string, HealthStatus> ParseComponentStatuses(string? dependencyDetails)
         {
             var result = new Dictionary<string, HealthStatus>();
-            if (string.IsNullOrEmpty(dependencyDetails)) return result;
+            if (string.IsNullOrWhiteSpace(dependencyDetails)) return result;
+            
+            dependencyDetails = dependencyDetails.Trim();
+            
+            // Eğer JSON formatında değilse (Örn: "Connection Error: ...") boş dön. 
+            // Yukarıdaki kod parçası zaten bunu "System" olarak ele alacaktır.
+            if (!dependencyDetails.StartsWith("{") && !dependencyDetails.StartsWith("["))
+            {
+                return result;
+            }
             
             try 
             {
@@ -233,18 +271,19 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($">>>> [PARSE-ERROR] Dependency details parse edilemedi: {ex.Message}");
+                // Parse hatası durumunda sessizce boş dön.
+                // Log kalabalığını önlemek için hata mesajını siliyoruz.
             }
 
             return result;
         }
 
-        private bool ShouldTriggerIncidentForComponent(List<HealthSnapshot> snapshots, string componentName)
+        private bool ShouldTriggerIncidentForComponent(List<HealthSnapshot> snapshots, string componentName, int retryCount)
         {
-            // Eğer 3 snapshot henüz birikmemişse tetikleme yapma
-            if (snapshots == null || snapshots.Count < 3) return false;
+            // Eğer yeterli snapshot henüz birikmemişse tetikleme yapma
+            if (snapshots == null || snapshots.Count < retryCount) return false;
 
             var fiveMinutesAgo = DateTime.UtcNow.AddMinutes(-5);
 
@@ -369,10 +408,6 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                             
                             // Analizin geri kalanında güncel nesneyi kullanalım
                             localApp = latestAppState;
-                        }
-                        else
-                        {
-                            Console.WriteLine($">>>> [RCA-AUTO-UPDATE-SKIP] Kullanıcı manuel AI değişikliği yaptığı için otomatik güncelleme atlandı.");
                         }
                     }
                 }

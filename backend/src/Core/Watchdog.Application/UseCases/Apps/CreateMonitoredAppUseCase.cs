@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Watchdog.Application.DTOs.Apps;
@@ -53,7 +53,8 @@ namespace Watchdog.Application.UseCases.Apps
                 ApiKey = "wdg_live_" + Guid.NewGuid().ToString("N").ToLower(),
 
                 // Yeni uygulama sisteme aktif olarak dahil olmalı
-                IsActive = true
+                IsActive = true,
+                ActiveAiProviderId = request.ActiveAiProviderId
             };
 
             // 3. KAYIT: Repository üzerinden veritabanına yazıyoruz

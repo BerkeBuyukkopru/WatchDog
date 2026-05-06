@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -16,5 +16,9 @@ namespace Watchdog.Application.DTOs.SystemConfig
 
         // Gecikme (Latency) sınırı (Entity'de vardı, UI'dan yönetilebilmesi için DTO'ya da ekledik)
         public double CriticalLatencyThreshold { get; set; }
+
+        public int ScanTimeoutSeconds { get; set; }
+        
+        public int RetryCount { get; set; }
     }
 }

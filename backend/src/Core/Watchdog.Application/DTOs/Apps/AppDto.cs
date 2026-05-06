@@ -14,5 +14,6 @@ namespace Watchdog.Application.DTOs.Apps
         public int PollingIntervalSeconds { get; set; }
         public DateTime CreatedAt { get; set; }
         public Guid? ActiveAiProviderId { get; set; }
+        public bool IsActive { get; set; }
     }
 }

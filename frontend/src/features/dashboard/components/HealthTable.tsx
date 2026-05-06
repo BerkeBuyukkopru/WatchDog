@@ -13,6 +13,7 @@ interface HealthTableProps {
   onCountChange: (count: number) => void;
   onRefresh: () => void;
   isAppDown?: boolean;
+  latencyThreshold?: number;
 }
 
 const getStatusColor = (status: any) => {
@@ -38,9 +39,9 @@ const getRowBg = (status: any) => {
   return 'hover:bg-slate-800/30';
 };
 
-const getDurationColor = (ms: number) => {
-  if (ms < 1000) return 'text-slate-200';
-  if (ms < 2000) return 'text-amber-400';
+const getDurationColor = (ms: number, threshold: number = 1000) => {
+  if (ms < threshold) return 'text-slate-200';
+  if (ms < threshold * 2) return 'text-amber-400';
   return 'text-rose-500';
 };
 
@@ -52,9 +53,10 @@ const HealthTable: React.FC<HealthTableProps> = ({
   isWorkerDead,
   lastUpdateText,
   onAppChange, 
-  onCountChange, 
+  onCountChange,
   onRefresh,
-  isAppDown = false // Varsayılan değer
+  isAppDown = false, // Varsayılan değer
+  latencyThreshold = 1000
 }) => {
   const handleRefresh = () => {
     onRefresh();
@@ -198,7 +200,7 @@ const HealthTable: React.FC<HealthTableProps> = ({
                     <td className="px-6 py-4 whitespace-nowrap">
                       {new Date(log.timestamp).toLocaleString('tr-TR')}
                     </td>
-                    <td className={`px-6 py-4 whitespace-nowrap font-medium ${getDurationColor(duration)}`}>
+                    <td className={`px-6 py-4 whitespace-nowrap font-medium ${getDurationColor(duration, latencyThreshold)}`}>
                       {duration}ms
                     </td>
                     <td className="px-6 py-3">
