@@ -3,7 +3,7 @@ import { AiTower } from '../ai-tower/components/AiTower';
 import Metrics from './components/Metrics';
 import Incidents from './components/Incidents';
 import HealthTable from './components/HealthTable';
-import { dashboardService } from './api/dashboardService';
+import { dashboardService } from '../../api/dashboardService';
 import type { HealthCheckLogDto, AppDto } from '../../types/dashboard.types';
 import { AlertCircle, Loader2, AlertTriangle, Clock } from 'lucide-react';
 import { useOutletContext } from 'react-router-dom';

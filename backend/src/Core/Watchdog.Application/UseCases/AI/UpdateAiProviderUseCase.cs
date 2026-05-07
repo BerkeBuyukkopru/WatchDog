@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Watchdog.Application.DTOs.AI;
@@ -33,6 +33,8 @@ namespace Watchdog.Application.UseCases.AI
             {
                 provider.ApiKey = request.ApiKey;
             }
+
+            provider.IsActive = request.IsActive; // Durum güncelleniyor
 
             // 3. Veritabanına mühürle
             return await _repository.UpdateAsync(provider);

@@ -31,16 +31,10 @@ namespace Watchdog.Application.UseCases.AI
 
         public async Task<bool> ExecuteAsync(Guid id)
         {
-            // 1. Sağlayıcıyı al ve durumunu tersine çevir (Toggle)
+            // 1. Sağlayıcının varlığını kontrol et
             var provider = await _providerRepository.GetByIdAsync(id);
-            if (provider == null) return false;
+            if (provider == null || !provider.IsActive) return false; // Sadece aktif bir sağlayıcı seçilebilir.
 
-            provider.IsActive = !provider.IsActive;
-            await _providerRepository.UpdateAsync(provider);
-
-            // Eğer sağlayıcı kapatıldıysa (IsActive = false), uygulama eşleştirmelerini değiştirmeye gerek yok.
-            // (Zaten inaktif olan bir sağlayıcı analiz sırasında Fallback mekanizmasına takılacaktır)
-            if (!provider.IsActive) return true;
 
             // 2. Kullanıcının rolünü ve kimliğini al
             var currentRole = _currentUserService.Role;

@@ -6,7 +6,7 @@ import AdminLayout from '../layouts/AdminLayout';
 import DashboardView from '../features/dashboard/DashboardView';
 import { AdminListView } from '../features/admin-management/AdminListView';
 import { AiProviderListView } from '../features/ai-providers/AiProviderListView';
-// Phase 3 Management Pages (Teammate's work)
+// Phase 3 Management Pages
 import GlobalDashboard from '../features/apps/GlobalDashboard';
 import AppsManagementPage from '../features/apps/AppsManagementPage';
 import SystemSettingsPage from '../features/system-settings/SystemSettingsPage';

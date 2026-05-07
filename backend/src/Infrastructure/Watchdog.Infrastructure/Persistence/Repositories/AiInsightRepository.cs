@@ -37,14 +37,6 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
             return await query.OrderByDescending(i => i.CreatedAt).ToListAsync();
         }
 
-        public async Task<AiInsight?> GetLatestInsightAsync(Guid appId)
-        {
-            return await _context.AiInsights
-                .AsNoTracking()
-                .Where(i => i.AppId == appId && !i.IsDeleted)
-                .OrderByDescending(i => i.CreatedAt)
-                .FirstOrDefaultAsync();
-        }
 
         public async Task<AiInsight?> GetLatestInsightByTypeAsync(Guid appId, Watchdog.Domain.Enums.InsightType type)
         {

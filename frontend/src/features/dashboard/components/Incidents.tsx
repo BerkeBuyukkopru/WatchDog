@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Loader2, CheckCircle2, Clock, ShieldAlert, X, Maximize2 } from 'lucide-react';
-import { dashboardService } from '../api/dashboardService';
+import { dashboardService } from '../../../api/dashboardService';
 import { useAuth } from '../../../context/AuthContext';
 import { useSignalR } from '../../../context/SignalRContext';
 import type { IncidentDto } from '../../../types/dashboard.types';

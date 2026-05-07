@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -11,5 +11,6 @@ namespace Watchdog.Application.DTOs.AI
         public string ModelName { get; set; } = string.Empty;
         public string? ApiUrl { get; set; }
         public string? ApiKey { get; set; } // Yeni API anahtarı buradan gelir
+        public bool IsActive { get; set; } // Durum güncellemesi için eklendi
     }
 }

@@ -1,4 +1,4 @@
-import type { MonitoredApp } from './ai-tower.types';
+import type { AppDto as MonitoredApp } from './dashboard.types';
 export type { MonitoredApp };
 
 export interface AdminUser {

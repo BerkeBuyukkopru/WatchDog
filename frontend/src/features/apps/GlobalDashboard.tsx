@@ -3,7 +3,7 @@ import SummaryCards from './components/SummaryCards';
 import AppStatusCard, { type AppStatusData } from './components/AppStatusCard';
 import GlobalAppDetailsModal from './components/GlobalAppDetailsModal';
 import { LayoutGrid, RefreshCw, Loader2 } from 'lucide-react';
-import { dashboardService } from '../dashboard/api/dashboardService';
+import { dashboardService } from '../../api/dashboardService';
 import type { AppDto, HealthCheckLogDto } from '../../types/dashboard.types';
 import { useSignalR } from '../../context/SignalRContext';
 import { toast } from 'sonner';
@@ -151,7 +151,8 @@ const GlobalDashboard: React.FC = () => {
       <SummaryCards 
         totalApps={displayApps.length} 
         healthyApps={displayApps.filter(a => a.status === 'healthy').length}
-        unhealthyApps={displayApps.filter(a => a.status === 'unhealthy' || a.status === 'degraded').length}
+        degradedApps={displayApps.filter(a => a.status === 'degraded').length}
+        unhealthyApps={displayApps.filter(a => a.status === 'unhealthy').length}
       />
 
       {/* 2. İzlenen Uygulamalar Başlığı */}

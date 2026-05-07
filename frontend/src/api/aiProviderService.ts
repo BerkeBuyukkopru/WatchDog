@@ -31,7 +31,6 @@ export const aiProviderService = {
   },
 
   toggleStatus: async (id: string): Promise<void> => {
-    // Backend'de patch metodu ve set-active ucu kullanılıyor
-    await axiosClient.patch(`${BASE_URL}/${id}/set-active`);
+    await axiosClient.patch(`${BASE_URL}/${id}/toggle-status`);
   }
 };

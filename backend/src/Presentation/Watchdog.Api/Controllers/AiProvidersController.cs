@@ -64,15 +64,27 @@ namespace Watchdog.Api.Controllers
         }
 
         // PATCH: api/AiProviders/{id}/set-active
-        // Belirli bir sağlayıcıyı sistemin aktif beyni olarak işaretler.
+        // Belirli bir sağlayıcıyı kullanıcının izlediği uygulamaların aktif beyni olarak işaretler.
         [HttpPatch("{id}/set-active")]
         [Authorize(Roles = RoleConstants.Admin + "," + RoleConstants.SuperAdmin)]
         public async Task<IActionResult> SetActive(Guid id, [FromServices] SetActiveAiProviderUseCase useCase)
         {
             var result = await useCase.ExecuteAsync(id);
-            if (result) return Ok(new { message = "AI sağlayıcısı başarıyla aktif edildi." });
+            if (result) return Ok(new { message = "AI motoru seçili uygulamalar için aktif edildi." });
 
-            return BadRequest(new { message = "İşlem başarısız. Sağlayıcı bulunamadı." });
+            return BadRequest(new { message = "İşlem başarısız. Sağlayıcı bulunamadı veya pasif durumda." });
+        }
+
+        // PATCH: api/AiProviders/{id}/toggle-status
+        // Sağlayıcının genel aktiflik durumunu (isActive) tersine çevirir.
+        [HttpPatch("{id}/toggle-status")]
+        [Authorize(Roles = RoleConstants.SuperAdmin)]
+        public async Task<IActionResult> ToggleStatus(Guid id, [FromServices] ToggleAiProviderStatusUseCase useCase)
+        {
+            var result = await useCase.ExecuteAsync(id);
+            if (result) return Ok(new { message = "Sağlayıcı durumu başarıyla değiştirildi." });
+
+            return BadRequest(new { message = "Durum güncellenemedi." });
         }
 
         // DELETE: Sağlayıcı silme SADECE SuperAdmin yetkisindedir.
