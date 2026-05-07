@@ -1,6 +1,5 @@
 @Watchdog.Api_HostAddress = http://localhost:5226
 
-GET {{Watchdog.Api_HostAddress}}/weatherforecast/
-Accept: application/json
+
 
 ###

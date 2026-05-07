@@ -131,7 +131,7 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
         // (YENİ) Aylık Arşivleme Motoru: Belirli tarih aralığındaki verileri getirir.
         public async Task<List<HealthSnapshot>> GetSnapshotsByDateRangeAsync(DateTime startDate, DateTime endDate, int batchSize)
         {
-            // DİKKAT: IsDeleted olanları getirme ki sonsuz döngüye girmeyelim!
+            // Arşivleme motoru: Belirlenen tarih aralığındaki ham verileri getirir.
             return await _context.HealthSnapshots
                 .Where(s => s.Timestamp >= startDate && s.Timestamp <= endDate)
                 .OrderBy(s => s.Timestamp)

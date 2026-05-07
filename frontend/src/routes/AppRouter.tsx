@@ -10,11 +10,6 @@ import GlobalDashboard from '../features/apps/GlobalDashboard';
 import AppsManagementPage from '../features/apps/AppsManagementPage';
 import SystemSettingsPage from '../features/system-settings/SystemSettingsPage';
 
-// Phase 3 Management Pages (Teammate's work)
-import GlobalDashboard from '../features/apps/GlobalDashboard';
-import AppsManagementPage from '../features/apps/AppsManagementPage';
-import SystemSettingsPage from '../features/system-settings/SystemSettingsPage';
-
 const AppRouter = () => {
   return (
     <Routes>

@@ -29,6 +29,7 @@ public static class DependencyInjection
         services.AddScoped<IUseCaseAsync<GetAllAiProvidersRequest, IEnumerable<AiProviderDto>>, GetAllAiProvidersUseCase>();
         services.AddScoped<SetActiveAiProviderUseCase>();
         services.AddScoped<UpdateAiProviderUseCase>();
+        services.AddScoped<ToggleAiProviderStatusUseCase>();
 
         services.AddScoped<IUseCaseAsync<GetAllAppsRequest, IEnumerable<AppDto>>, GetAllAppsUseCase>();
         services.AddScoped<IUseCaseAsync<DeleteAppRequest, bool>, DeleteAppUseCase>();

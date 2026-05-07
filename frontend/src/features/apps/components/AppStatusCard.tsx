@@ -17,17 +17,24 @@ interface AppStatusCardProps {
 const AppStatusCard: React.FC<AppStatusCardProps> = ({ app, onAnalyze }) => {
   const isHealthy = app.status === 'healthy';
   const isInactive = app.status === 'inactive';
-  const isCritical = app.status === 'unhealthy' || app.status === 'degraded';
+  const isUnhealthy = app.status === 'unhealthy';
+  const isDegraded = app.status === 'degraded';
   
   return (
     <div className={`bg-background-light border rounded-2xl p-4 flex flex-col gap-5 shadow-lg transition-all group relative overflow-hidden ${
-      isCritical 
+      isUnhealthy 
         ? 'border-rose-500 shadow-rose-500/10' 
-        : 'border-slate-800 hover:border-indigo-500/30'
+        : (isDegraded 
+            ? 'border-amber-500 shadow-amber-500/10' 
+            : 'border-slate-800 hover:border-indigo-500/30')
     }`}>
       {/* Background Subtle Glow */}
       <div className={`absolute -right-4 -top-4 w-24 h-24 blur-3xl opacity-10 transition-opacity group-hover:opacity-20 ${
-        isInactive ? 'bg-slate-500' : (isHealthy ? 'bg-emerald-500' : 'bg-rose-500')
+        isInactive 
+          ? 'bg-slate-500' 
+          : (isHealthy 
+              ? 'bg-emerald-500' 
+              : (isDegraded ? 'bg-amber-500' : 'bg-rose-500'))
       }`}></div>
 
       {/* Header: Name and Status */}
@@ -49,7 +56,9 @@ const AppStatusCard: React.FC<AppStatusCardProps> = ({ app, onAnalyze }) => {
               ? 'bg-slate-600 shadow-slate-600/50'
               : (isHealthy 
                   ? 'bg-emerald-500 shadow-emerald-500/50 animate-pulse' 
-                  : 'bg-rose-500 shadow-rose-500/50')
+                  : (isDegraded 
+                      ? 'bg-amber-500 shadow-amber-500/50 animate-pulse' 
+                      : 'bg-rose-500 shadow-rose-500/50'))
           }`}></div>
           {isInactive && <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">Kapalı</span>}
         </div>

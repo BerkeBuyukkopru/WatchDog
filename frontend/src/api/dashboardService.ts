@@ -1,5 +1,5 @@
-import axiosClient from '../../../api/axiosClient';
-import type { HealthCheckLogDto, AiInsightDto, IncidentDto, AppDto } from '../../../types/dashboard.types';
+import axiosClient from './axiosClient';
+import type { HealthCheckLogDto, AiInsightDto, IncidentDto, AppDto } from '../types/dashboard.types';
 
 export const dashboardService = {
   getApps: async (): Promise<AppDto[]> => {
