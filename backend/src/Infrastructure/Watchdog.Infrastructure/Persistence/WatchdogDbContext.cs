@@ -36,6 +36,7 @@ namespace Watchdog.Infrastructure.Persistence
             foreach (var entry in ChangeTracker.Entries())
             {
                 var isBaseEntity = false;
+                var isSimpleEntity = false;
                 var currentType = entry.Entity.GetType();
 
                 while (currentType != null && currentType != typeof(object))
@@ -45,10 +46,28 @@ namespace Watchdog.Infrastructure.Persistence
                         isBaseEntity = true;
                         break;
                     }
+                    if (currentType.IsGenericType && currentType.GetGenericTypeDefinition() == typeof(SimpleBaseEntity<>))
+                    {
+                        isSimpleEntity = true;
+                        break;
+                    }
                     currentType = currentType.BaseType;
                 }
 
-                if (isBaseEntity)
+                if (isSimpleEntity)
+                {
+                    dynamic entity = entry.Entity;
+                    if (entry.State == EntityState.Added)
+                    {
+                        if (entry.Entity is SimpleBaseEntity<Guid> guidEntity && guidEntity.Id == Guid.Empty)
+                        {
+                            guidEntity.Id = Guid.NewGuid();
+                        }
+                        entity.CreatedAt = DateTime.UtcNow;
+                        entity.CreatedBy = user;
+                    }
+                }
+                else if (isBaseEntity)
                 {
                     dynamic entity = entry.Entity;
 

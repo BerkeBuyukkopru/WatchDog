@@ -155,19 +155,22 @@ const GlobalDashboard: React.FC = () => {
       />
 
       {/* 2. İzlenen Uygulamalar Başlığı */}
-      <div className="flex items-center justify-between px-1">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400 border border-indigo-500/20">
-            <LayoutGrid size={18} />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/5 pb-6 mb-2 gap-4 sm:gap-0">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 border border-indigo-500/20 shadow-lg shadow-indigo-500/5 shrink-0">
+            <LayoutGrid size={24} />
           </div>
-          <h2 className="text-base font-black text-slate-100 uppercase tracking-[0.2em]">İzlenen Uygulamalar Ağı</h2>
+          <div>
+            <h1 className="text-xl font-black text-white uppercase tracking-[0.2em] leading-tight">Global Durum İzleme</h1>
+            <p className="text-xs text-slate-500 font-medium mt-1">Sistemdeki tüm uygulamaların canlı sağlık durumunu takip edin.</p>
+          </div>
         </div>
         <button 
           onClick={() => fetchData(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-slate-800/40 hover:bg-slate-800 text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-lg border border-slate-700/50 transition-all"
+          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-slate-800/40 hover:bg-slate-800 text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-xl border border-slate-700/50 transition-all active:scale-95 shadow-lg w-full sm:w-auto"
         >
-          <RefreshCw size={12} />
-          Listeyi Yenile
+          <RefreshCw size={14} />
+          Canlı Yenile
         </button>
       </div>
 

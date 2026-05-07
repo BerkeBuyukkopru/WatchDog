@@ -44,7 +44,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const userData: User = {
             id: decodedToken.sub || decodedToken.nameid || '',
             username: decodedToken.unique_name || decodedToken.name || '',
-            email: decodedToken.email || '',
+            email: decodedToken.email || decodedToken.upn || decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] || '',
             role: role,
           };
           
@@ -70,7 +70,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const userData: User = {
         id: decodedToken.sub || decodedToken.nameid || '',
         username: decodedToken.unique_name || decodedToken.name || '',
-        email: decodedToken.email || '',
+        email: decodedToken.email || decodedToken.upn || decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] || '',
         role: role,
       };
 

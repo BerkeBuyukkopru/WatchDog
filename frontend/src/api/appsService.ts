@@ -9,6 +9,11 @@ export interface AppDto {
   activeAiProviderId: string;
   isActive: boolean;
   createdAt: string;
+  createdBy?: string;
+  modifiedAt?: string;
+  modifiedBy?: string;
+  deletedAt?: string;
+  deletedBy?: string;
 }
 
 export interface CreateAppCommand {

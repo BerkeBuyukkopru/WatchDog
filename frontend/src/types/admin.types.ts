@@ -9,6 +9,11 @@ export interface AdminUser {
   isActive: boolean;
   isDeleted: boolean;
   createdAt: string;
+  createdBy?: string;
+  modifiedAt?: string;
+  modifiedBy?: string;
+  deletedAt?: string;
+  deletedBy?: string;
   allowedAppIds: string[];
   allowedApps?: MonitoredApp[];
   password?: string;

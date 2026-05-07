@@ -2,8 +2,16 @@ export interface AppDto {
   id: string;
   name: string;
   healthUrl: string;
+  pollingIntervalSeconds: number;
+  activeAiProviderId: string;
   isActive: boolean;
-  apiKey: string;
+
+  createdAt: string;
+  createdBy?: string;
+  modifiedAt?: string;
+  modifiedBy?: string;
+  deletedAt?: string;
+  deletedBy?: string;
 }
 
 export interface DependencyDetail {
@@ -44,6 +52,7 @@ export interface IncidentDto {
 
 export interface AiInsightDto {
   id: string;
+  appId: string;
   appName: string;
   message: string;
   evidence: string;

@@ -133,7 +133,7 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
         {
             // DİKKAT: IsDeleted olanları getirme ki sonsuz döngüye girmeyelim!
             return await _context.HealthSnapshots
-                .Where(s => s.Timestamp >= startDate && s.Timestamp <= endDate && !s.IsDeleted)
+                .Where(s => s.Timestamp >= startDate && s.Timestamp <= endDate)
                 .OrderBy(s => s.Timestamp)
                 .Take(batchSize)
                 .ToListAsync();

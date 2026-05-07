@@ -2,10 +2,10 @@ import React from 'react';
 import { 
   Pencil, 
   Trash2, 
-  Plus, 
   Globe, 
   Clock, 
-  RotateCcw 
+  RotateCcw,
+  Info 
 } from 'lucide-react';
 
 export interface AppListItem {
@@ -14,11 +14,16 @@ export interface AppListItem {
   url: string;
   interval: number;
   isActive: boolean;
+  createdAt: string;
+  createdBy?: string;
+  modifiedAt?: string;
+  modifiedBy?: string;
+  deletedAt?: string;
+  deletedBy?: string;
 }
 
 interface MonitoredAppsTableProps {
   apps: AppListItem[];
-  onAddClick: () => void;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
   onToggleStatus: (id: string) => void;
@@ -28,7 +33,6 @@ interface MonitoredAppsTableProps {
 
 const MonitoredAppsTable: React.FC<MonitoredAppsTableProps> = ({
   apps,
-  onAddClick,
   onEdit,
   onDelete,
   onToggleStatus,
@@ -36,40 +40,18 @@ const MonitoredAppsTable: React.FC<MonitoredAppsTableProps> = ({
   isDeletedMode = false
 }) => {
   return (
-    <div className="bg-background-light border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
-      {/* Table Header Area */}
-      <div className="h-[60px] px-6 border-b border-slate-800 flex items-center justify-between bg-slate-800/10">
-        <div className="flex items-center gap-3">
-          {isDeletedMode ? (
-            <Trash2 size={18} className="text-rose-400" />
-          ) : (
-            <Globe size={18} className="text-indigo-400" />
-          )}
-          <h2 className="text-sm font-black text-slate-100 uppercase tracking-[0.2em]">
-            {isDeletedMode ? 'Silinmiş Uygulamalar' : 'İzlenen Uygulamalar'}
-          </h2>
-        </div>
-        {!isDeletedMode && (
-          <button
-            onClick={onAddClick}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-black uppercase tracking-widest rounded-xl transition-all shadow-[0_0_15px_rgba(79,70,229,0.2)] active:scale-95"
-          >
-            <Plus size={14} />
-            Yeni Ekle
-          </button>
-        )}
-      </div>
+    <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden shadow-xl">
 
       {/* Table Content */}
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-slate-800/50 bg-slate-900/40">
-              <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Uygulama Adı</th>
-              <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">URL</th>
-              <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Tarama</th>
-              <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Durum</th>
-              <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">İşlemler</th>
+              <th className="px-6 py-4 text-[11px] font-black text-slate-500 uppercase tracking-widest">Uygulama Adı</th>
+              <th className="px-6 py-4 text-[11px] font-black text-slate-500 uppercase tracking-widest">URL</th>
+              <th className="px-6 py-4 text-[11px] font-black text-slate-500 uppercase tracking-widest text-center">Tarama</th>
+              <th className="px-6 py-4 text-[11px] font-black text-slate-500 uppercase tracking-widest text-center">Durum</th>
+              <th className="px-6 py-4 text-[11px] font-black text-slate-500 uppercase tracking-widest text-right">İşlemler</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/30">
@@ -80,7 +62,15 @@ const MonitoredAppsTable: React.FC<MonitoredAppsTableProps> = ({
                     <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-indigo-400 transition-colors">
                       <Globe size={14} />
                     </div>
-                    <span className="text-sm font-bold text-slate-200">{app.name}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-bold text-slate-200">{app.name}</span>
+                      <div 
+                        title={`Oluşturan: ${app.createdBy || 'Sistem'} (${new Date(app.createdAt).toLocaleDateString('tr-TR')})${app.modifiedAt ? `\nGüncelleyen: ${app.modifiedBy || 'Sistem'} (${new Date(app.modifiedAt).toLocaleDateString('tr-TR')})` : ''}${app.deletedAt ? `\nSilen: ${app.deletedBy || 'Sistem'} (${new Date(app.deletedAt).toLocaleDateString('tr-TR')})` : ''}`}
+                        className="cursor-help opacity-50 hover:opacity-100 transition-opacity"
+                      >
+                        <Info size={14} className="text-slate-500" />
+                      </div>
+                    </div>
                   </div>
                 </td>
                 <td className="px-6 py-4">
@@ -92,6 +82,7 @@ const MonitoredAppsTable: React.FC<MonitoredAppsTableProps> = ({
                     <span className="text-xs font-bold">{app.interval}s</span>
                   </div>
                 </td>
+
                 <td className="px-6 py-4">
                   <div className="flex justify-center">
                     <button
@@ -115,24 +106,23 @@ const MonitoredAppsTable: React.FC<MonitoredAppsTableProps> = ({
                     {isDeletedMode ? (
                       <button
                         onClick={() => onRestore(app.id)}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white rounded-lg transition-all text-[10px] font-black uppercase tracking-widest"
+                        className="p-2 hover:bg-white/10 rounded-lg text-slate-400 hover:text-indigo-400 transition-all opacity-70 hover:opacity-100"
                         title="Geri Yükle"
                       >
-                        <RotateCcw size={14} />
-                        Geri Yükle
+                        <RotateCcw size={16} />
                       </button>
                     ) : (
                       <>
                         <button
                           onClick={() => onEdit(app.id)}
-                          className="p-2 text-slate-400 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition-all"
+                          className="p-2 text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-all opacity-70 hover:opacity-100"
                           title="Düzenle"
                         >
                           <Pencil size={16} />
                         </button>
                         <button
                           onClick={() => onDelete(app.id)}
-                          className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all"
+                          className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all opacity-70 hover:opacity-100"
                           title="Sil"
                         >
                           <Trash2 size={16} />

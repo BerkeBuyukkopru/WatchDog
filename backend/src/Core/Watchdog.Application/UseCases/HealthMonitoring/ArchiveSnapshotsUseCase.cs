@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -61,7 +61,6 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                 // 4. Veritabanındaki hafızayı SADECE bu sınıfı kullanarak güncelle
                 lastFinishedDate = processingMonthStart;
                 config.LastArchivedDate = lastFinishedDate;
-                config.LastUpdated = DateTime.UtcNow;
 
                 // Senin projendeki Singleton update metodunu çağırıyoruz
                 await _configRepository.UpdateAsync(config);

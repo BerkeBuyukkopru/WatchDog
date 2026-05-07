@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -9,5 +9,6 @@ namespace Watchdog.Application.DTOs.Auth
     {
         // Yöneticiler kendi kullanıcı adlarını değiştiremezler.
         public string? NewPassword { get; set; }
+        public string? Email { get; set; }
     }
 }

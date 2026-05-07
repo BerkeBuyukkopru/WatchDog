@@ -19,7 +19,7 @@ const Metrics: React.FC<MetricsProps> = ({ latestLog, appName }) => {
   const appRamPercent = (appRam / totalRam) * 100;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
       {appName && (
         <div className="flex items-center gap-2 px-1 mb-1">
           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>

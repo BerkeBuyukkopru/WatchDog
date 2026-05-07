@@ -41,15 +41,15 @@ const SystemSettingsPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6 w-full max-w-5xl mx-auto">
+    <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
       {/* Page Header */}
-      <div className="flex items-center gap-4 border-b border-slate-800 pb-4">
-        <div className="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-500">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4 border-b border-white/5 pb-6">
+        <div className="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 border border-indigo-500/20 shadow-lg shadow-indigo-500/5 shrink-0">
           <Settings size={24} />
         </div>
         <div>
-          <h1 className="text-xl font-black text-slate-100 uppercase tracking-widest">Sistem Konfigürasyonu</h1>
-          <p className="text-xs text-slate-500 font-medium mt-1">Watchdog tarama motoru ve eşik değerlerini yapılandırın.</p>
+          <h1 className="text-xl font-black text-white uppercase tracking-[0.2em] leading-tight">Sistem Yapılandırması</h1>
+          <p className="text-xs text-slate-500 font-medium mt-1">Watchdog tarama motoru, eşik değerleri ve performans ayarlarını yönetin.</p>
         </div>
       </div>
 

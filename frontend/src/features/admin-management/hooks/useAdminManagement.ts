@@ -31,7 +31,6 @@ export const useAdminManagement = (activeTab: 'active' | 'deleted') => {
   }, [activeTab]);
 
   const deleteAdmin = async (id: string) => {
-    if (!window.confirm('Bu yöneticiyi silmek istediğinize emin misiniz?')) return;
     try {
       await adminService.deleteAdmin(id);
       toast.success('Yönetici başarıyla silindi');

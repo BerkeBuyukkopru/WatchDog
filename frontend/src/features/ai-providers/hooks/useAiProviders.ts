@@ -36,7 +36,6 @@ export const useAiProviders = (activeTab: 'active' | 'deleted') => {
   };
 
   const deleteProvider = async (id: string) => {
-    if (!window.confirm('Bu sağlayıcıyı dondurmak istediğinize emin misiniz?')) return;
     try {
       await aiProviderService.deleteProvider(id);
       toast.success('Sağlayıcı donduruldu (Silinenlere taşındı)');

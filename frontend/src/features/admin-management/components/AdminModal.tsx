@@ -85,9 +85,16 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose, onSucce
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#16161A] border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-        <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/5">
+    <div className="fixed top-0 left-0 w-full h-full z-[9999] flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300" 
+        onClick={onClose}
+      />
+
+      {/* Modal Box */}
+      <div className="relative z-10 bg-[#16161A] border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[95vh] flex flex-col">
+        <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/5 shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400">
               <Shield size={20} />
@@ -101,8 +108,8 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose, onSucce
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
-          <div className="grid grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto custom-scrollbar">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">İsim Soyisim</label>
               <div className="relative">
@@ -144,14 +151,14 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose, onSucce
               onChange={e => setFormData({ ...formData, role: e.target.value })}
               className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all appearance-none cursor-pointer"
             >
-              <option value="Admin">Admin (Sınırlı Erişim)</option>
-              <option value="SuperAdmin">SuperAdmin (Tam Erişim)</option>
+              <option value="Admin" className="bg-[#1A1A1E] text-white">Admin (Sınırlı Erişim)</option>
+              <option value="SuperAdmin" className="bg-[#1A1A1E] text-white">SuperAdmin (Tam Erişim)</option>
             </select>
           </div>
 
           {!admin && (
             <div className="space-y-1.5">
-              <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Geçici Şifre</label>
+              <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Şifre</label>
               <input
                 type="password"
                 required

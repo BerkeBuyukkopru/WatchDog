@@ -173,27 +173,30 @@ const DashboardView: React.FC = () => {
     !latestLog.dependencyDetails?.trim().startsWith('{');
 
   return (
-    <div className="h-full w-full flex flex-col gap-4 px-4 pb-4 pt-2 overflow-y-auto custom-scrollbar">
-      {/* Kritik Uyarı Bantları (En Üstte) */}
-      <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 animate-in fade-in duration-500 pt-4">
+      {/* Kritik Uyarı Bantları */}
+      {(isWorkerDead || (!isWorkerDead && !isAppPaused && (isAppDown || isInvalidJson))) && (
+        <div className="flex flex-col gap-4">
         {isWorkerDead && (
-          <div className="p-4 rounded-lg bg-rose-500/10 border border-rose-500/50 flex items-start gap-3 shadow-lg shrink-0">
-            <AlertTriangle className="text-rose-500 shrink-0 mt-0.5" size={24} />
+          <div className="p-4 rounded-2xl bg-rose-500/5 border border-rose-500/20 flex items-start gap-4 shadow-xl">
+            <div className="p-2.5 rounded-xl bg-rose-500/10 text-rose-500 border border-rose-500/20">
+              <AlertTriangle size={20} />
+            </div>
             <div>
-              <h4 className="text-rose-400 font-semibold mb-1">⚠️ Sistem Uyarısı: Arka plan izleme servisi (Worker) durmuş veya veritabanı bağlantısı kopmuş olabilir!</h4>
-              <p className="text-rose-500/80 text-sm">Son veriler güncel değildir. {lastUpdateText}</p>
+              <h4 className="text-rose-400 font-bold text-sm tracking-wide uppercase">Sistem Uyarısı</h4>
+              <p className="text-rose-500/80 text-xs font-medium mt-1">Arka plan izleme servisi (Worker) durmuş veya veritabanı bağlantısı kopmuş olabilir! {lastUpdateText}</p>
             </div>
           </div>
         )}
 
         {isAppPaused && (
-          <div className="p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center gap-4 shadow-lg shrink-0">
-            <div className="p-2.5 rounded-lg bg-indigo-500/20 text-indigo-400">
+          <div className="p-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/20 flex items-center gap-4 shadow-xl">
+            <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
               <Clock size={20} />
             </div>
             <div>
               <h4 className="text-indigo-100 font-bold text-sm tracking-wide uppercase">İzleme Duraklatıldı</h4>
-              <p className="text-indigo-400/80 text-xs font-medium">Bu uygulamanın sağlık taraması ve AI analizi ayarlar kısmından duraklatılmıştır.</p>
+              <p className="text-indigo-400/80 text-xs font-medium mt-1">Bu uygulamanın sağlık taraması ve AI analizi ayarlar kısmından duraklatılmıştır.</p>
             </div>
           </div>
         )}
@@ -216,6 +219,7 @@ const DashboardView: React.FC = () => {
           </div>
         )}
       </div>
+    )}
 
       {/* 1. Metrics (Full Width) */}
       <Metrics 
@@ -228,7 +232,7 @@ const DashboardView: React.FC = () => {
         <div className="lg:col-span-8 h-[550px] lg:h-full flex flex-col overflow-hidden">
           <Incidents />
         </div>
-        <div className="lg:col-span-4 border border-slate-800 rounded-xl bg-background-light overflow-hidden shadow-2xl h-[550px] lg:h-full">
+        <div className="lg:col-span-4 border border-white/10 rounded-2xl bg-white/5 overflow-hidden shadow-xl h-[550px] lg:h-full">
           {!isAppDown ? (
             <AiTower selectedAppId={selectedAppId} />
           ) : (
@@ -244,7 +248,7 @@ const DashboardView: React.FC = () => {
       </div>
 
       {/* 3. Bottom Row: Health Table (Responsive Scroll) */}
-      <div className="w-full overflow-x-auto custom-scrollbar border border-slate-800 rounded-xl bg-background-light shadow-2xl">
+      <div className="w-full overflow-x-auto custom-scrollbar border border-white/10 rounded-2xl bg-white/5 shadow-xl">
         <div className="min-w-[1000px] lg:min-w-full">
           {loading ? (
             <div className="flex flex-col items-center justify-center min-h-[400px]">
@@ -268,7 +272,6 @@ const DashboardView: React.FC = () => {
               apps={apps}
               selectedAppId={selectedAppId}
               logCount={logCount}
-              isWorkerDead={isWorkerDead}
               isAppDown={isAppDown}
               lastUpdateText={lastUpdateText}
               latencyThreshold={config?.criticalLatencyThreshold}

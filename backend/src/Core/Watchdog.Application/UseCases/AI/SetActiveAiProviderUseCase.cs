@@ -31,7 +31,18 @@ namespace Watchdog.Application.UseCases.AI
 
         public async Task<bool> ExecuteAsync(Guid id)
         {
-            // 1. Kullanıcının rolünü ve kimliğini al
+            // 1. Sağlayıcıyı al ve durumunu tersine çevir (Toggle)
+            var provider = await _providerRepository.GetByIdAsync(id);
+            if (provider == null) return false;
+
+            provider.IsActive = !provider.IsActive;
+            await _providerRepository.UpdateAsync(provider);
+
+            // Eğer sağlayıcı kapatıldıysa (IsActive = false), uygulama eşleştirmelerini değiştirmeye gerek yok.
+            // (Zaten inaktif olan bir sağlayıcı analiz sırasında Fallback mekanizmasına takılacaktır)
+            if (!provider.IsActive) return true;
+
+            // 2. Kullanıcının rolünü ve kimliğini al
             var currentRole = _currentUserService.Role;
             var userId = _currentUserService.UserId;
 
@@ -49,7 +60,6 @@ namespace Watchdog.Application.UseCases.AI
                 var currentAdmin = await _authRepository.GetByIdAsync(userId);
                 if (currentAdmin == null || currentAdmin.AllowedAppIds == null || !currentAdmin.AllowedAppIds.Any())
                 {
-                    // Adminin hiç uygulaması yoksa sadece sağlayıcıyı aktif etmek yeterli
                     return true;
                 }
 
@@ -57,7 +67,7 @@ namespace Watchdog.Application.UseCases.AI
                 targetApps = allApps.Where(app => currentAdmin.AllowedAppIds.Contains(app.Id)).ToList();
             }
 
-            // 4. Hedef uygulamaların AI motorunu güncelle
+            // 4. Hedef uygulamaların AI motorunu güncelle (SADECE aktif hale getirildiyse)
             foreach (var app in targetApps)
             {
                 app.ActiveAiProviderId = id;

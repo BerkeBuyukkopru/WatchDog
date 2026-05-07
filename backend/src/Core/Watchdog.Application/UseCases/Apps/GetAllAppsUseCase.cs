@@ -65,6 +65,11 @@ namespace Watchdog.Application.UseCases.Apps
                 HealthUrl = a.HealthUrl,
                 PollingIntervalSeconds = a.PollingIntervalSeconds,
                 CreatedAt = a.CreatedAt,
+                CreatedBy = a.CreatedBy,
+                ModifiedAt = a.ModifiedAt,
+                ModifiedBy = a.ModifiedBy,
+                DeletedAt = a.DeletedAt,
+                DeletedBy = a.DeletedBy,
                 ActiveAiProviderId = a.ActiveAiProviderId,
                 IsActive = a.IsActive
             });

@@ -59,15 +59,15 @@ const AppFormModal: React.FC<AppFormModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed top-0 left-0 w-full h-full z-[9999] flex items-center justify-center p-4">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" 
         onClick={onClose}
       />
 
       {/* Modal Container */}
-      <div className="relative w-full max-w-lg bg-background-light border border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+      <div className="relative z-10 w-full max-w-lg bg-background-light border border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col max-h-[95vh]">
         
         {/* Header */}
         <div className="h-[60px] px-6 border-b border-slate-800 flex items-center justify-between bg-slate-800/10">

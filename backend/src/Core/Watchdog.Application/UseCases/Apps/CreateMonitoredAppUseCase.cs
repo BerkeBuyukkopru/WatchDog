@@ -49,8 +49,7 @@ namespace Watchdog.Application.UseCases.Apps
 
                 // YENİ GÜNCELLEME: Mail kısımları (NotificationEmails ve AdminEmail) buradan tamamen silindi!
 
-                // Profesyonel, güvenli ve benzersiz bir API Key üretimi
-                ApiKey = "wdg_live_" + Guid.NewGuid().ToString("N").ToLower(),
+
 
                 // Yeni uygulama sisteme aktif olarak dahil olmalı
                 IsActive = true,
@@ -67,7 +66,7 @@ namespace Watchdog.Application.UseCases.Apps
                 return new CreateMonitoredAppResponse
                 {
                     Id = newApp.Id,
-                    ApiKey = newApp.ApiKey,
+
                     IsSuccess = true,
                     ErrorCode = AppErrorCode.None
                 };

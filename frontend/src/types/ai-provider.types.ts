@@ -7,6 +7,11 @@ export interface AiProviderDetail {
   isActive: boolean;
   isDeleted: boolean;
   createdAt: string;
+  createdBy?: string;
+  modifiedAt?: string;
+  modifiedBy?: string;
+  deletedAt?: string;
+  deletedBy?: string;
 }
 
 export interface CreateAiProviderRequest {

@@ -11,8 +11,15 @@ interface GlobalAppDetailsModalProps {
 
 const GlobalAppDetailsModal: React.FC<GlobalAppDetailsModalProps> = ({ appId, appName, onClose }) => {
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-300">
-      <div className="w-full max-w-[95vw] h-[90vh] bg-background-light border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-300">
+    <div className="fixed top-0 left-0 w-full h-full z-[9999] flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-background/80 backdrop-blur-md animate-in fade-in duration-300" 
+        onClick={onClose}
+      />
+
+      {/* Modal Box */}
+      <div className="relative z-10 w-full max-w-[95vw] h-[90vh] bg-background-light border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-300">
         
         {/* Header Section */}
         <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
@@ -37,19 +44,19 @@ const GlobalAppDetailsModal: React.FC<GlobalAppDetailsModalProps> = ({ appId, ap
           </button>
         </div>
 
-        {/* Content Section: 2 Columns */}
-        <div className="flex-1 flex overflow-hidden">
+        {/* Content Section: 2 Columns on Desktop, Stacked on Mobile */}
+        <div className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
           
           {/* Left Column: Incidents */}
-          <div className="flex-1 border-r border-slate-800 flex flex-col min-w-0">
-            <div className="flex-1 overflow-hidden">
+          <div className="flex-1 border-b lg:border-b-0 lg:border-r border-slate-800 flex flex-col min-w-0 min-h-[400px] lg:min-h-0">
+            <div className="flex-1 overflow-hidden lg:overflow-hidden">
               <Incidents appId={appId} readOnly={true} />
             </div>
           </div>
 
           {/* Right Column: AI Insights */}
-          <div className="flex-1 flex flex-col min-w-0">
-            <div className="flex-1 overflow-hidden">
+          <div className="flex-1 flex flex-col min-w-0 min-h-[400px] lg:min-h-0">
+            <div className="flex-1 overflow-hidden lg:overflow-hidden">
               <AiTower selectedAppId={appId} readOnly={true} />
             </div>
           </div>

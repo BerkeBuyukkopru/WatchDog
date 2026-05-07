@@ -50,10 +50,10 @@ const SystemConfigForm: React.FC<SystemConfigFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6 w-full max-w-4xl mx-auto">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-8 w-full max-w-4xl mx-auto">
       {/* 1. KAYNAK KULLANIM EŞİKLERİ (SLIDERS) */}
-      <div className="bg-background-light border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
-        <div className="h-[52px] px-4 border-b border-slate-800 flex items-center gap-3 bg-slate-800/20">
+      <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden shadow-xl">
+        <div className="min-h-[52px] px-4 border-b border-white/10 flex items-center gap-3 bg-white/5 py-3">
           <ShieldAlert size={18} className="text-rose-500" />
           <h2 className="text-sm font-black text-slate-100 uppercase tracking-[0.2em]">Kaynak Kullanım Eşikleri</h2>
         </div>
@@ -157,8 +157,8 @@ const SystemConfigForm: React.FC<SystemConfigFormProps> = ({
       </div>
 
       {/* 2. TARAMA MOTORU (ENGINE) AYARLARI */}
-      <div className="bg-background-light border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
-        <div className="h-[52px] px-4 border-b border-slate-800 flex items-center gap-3 bg-slate-800/20">
+      <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden shadow-xl">
+        <div className="min-h-[52px] px-4 border-b border-white/10 flex items-center gap-3 bg-white/5 py-3">
           <Settings size={18} className="text-indigo-500" />
           <h2 className="text-sm font-black text-slate-100 uppercase tracking-[0.2em]">Tarama Motoru (Engine)</h2>
         </div>
@@ -173,7 +173,7 @@ const SystemConfigForm: React.FC<SystemConfigFormProps> = ({
                 name="scanTimeoutSeconds"
                 value={config.scanTimeoutSeconds}
                 onChange={handleChange}
-                className="w-full bg-slate-900/50 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+                className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all"
               />
             </div>
           </div>
@@ -187,7 +187,7 @@ const SystemConfigForm: React.FC<SystemConfigFormProps> = ({
                 name="retryCount"
                 value={config.retryCount}
                 onChange={handleChange}
-                className="w-full bg-slate-900/50 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+                className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all"
               />
             </div>
           </div>
@@ -199,7 +199,7 @@ const SystemConfigForm: React.FC<SystemConfigFormProps> = ({
         <button
           type="submit"
           disabled={isLoading}
-          className="flex items-center gap-2 px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] hover:shadow-[0_0_25px_rgba(16,185,129,0.4)] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center justify-center gap-2 px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] hover:shadow-[0_0_25px_rgba(16,185,129,0.4)] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
         >
           <Save size={18} />
           {isLoading ? 'Kaydediliyor...' : 'Ayarları Kaydet'}

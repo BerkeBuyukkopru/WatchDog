@@ -33,7 +33,7 @@ namespace Watchdog.Application.UseCases.SystemConfig
             existingConfig.CriticalLatencyThreshold = request.CriticalLatencyThreshold;
             existingConfig.TimeoutSeconds = request.ScanTimeoutSeconds;
             existingConfig.RetryCount = request.RetryCount;
-            existingConfig.LastUpdated = DateTime.UtcNow;
+
 
             return await _repository.UpdateAsync(existingConfig);
         }

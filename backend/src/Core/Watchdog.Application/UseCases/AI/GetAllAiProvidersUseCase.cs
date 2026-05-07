@@ -29,7 +29,13 @@ namespace Watchdog.Application.UseCases.AI
                 ApiUrl = p.ApiUrl,
                 ApiKey = p.ApiKey, // Eklendi
                 IsActive = p.IsActive,
-                HasApiKey = !string.IsNullOrWhiteSpace(p.ApiKey) || p.Name.Contains("Ollama", StringComparison.OrdinalIgnoreCase)
+                HasApiKey = !string.IsNullOrWhiteSpace(p.ApiKey) || p.Name.Contains("Ollama", StringComparison.OrdinalIgnoreCase),
+                CreatedAt = p.CreatedAt,
+                CreatedBy = p.CreatedBy,
+                ModifiedAt = p.ModifiedAt,
+                ModifiedBy = p.ModifiedBy,
+                DeletedAt = p.DeletedAt,
+                DeletedBy = p.DeletedBy
             });
         }
     }

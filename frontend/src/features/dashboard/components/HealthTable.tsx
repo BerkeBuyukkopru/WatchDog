@@ -7,7 +7,6 @@ interface HealthTableProps {
   apps: AppDto[];
   selectedAppId: string;
   logCount: number;
-  isWorkerDead: boolean;
   lastUpdateText?: string;
   onAppChange: (appId: string) => void;
   onCountChange: (count: number) => void;
@@ -18,25 +17,25 @@ interface HealthTableProps {
 
 const getStatusColor = (status: any) => {
   const s = String(status || '').toLowerCase();
-  if (s.includes('unhealthy') || s === '3') return 'text-rose-400 border-rose-500/30';
-  if (s.includes('degraded') || s === '2') return 'text-amber-400 border-amber-500/30';
-  if (s.includes('healthy') || s === '1') return 'text-emerald-400 border-emerald-500/30';
-  return 'text-slate-400 border-slate-500/30';
+  if (s.includes('unhealthy') || s === '3') return 'text-rose-500 border-rose-500/20 bg-rose-500/5';
+  if (s.includes('degraded') || s === '2') return 'text-amber-500 border-amber-500/20 bg-amber-500/5';
+  if (s.includes('healthy') || s === '1') return 'text-emerald-500 border-emerald-500/20 bg-emerald-500/5';
+  return 'text-slate-500 border-white/10 bg-white/5';
 };
 
 const getStatusBg = (status: any) => {
   const s = String(status || '').toLowerCase();
-  if (s.includes('unhealthy') || s === '3') return 'bg-rose-500 text-white border-transparent';
-  if (s.includes('degraded') || s === '2') return 'bg-amber-500 text-white border-transparent';
-  if (s.includes('healthy') || s === '1') return 'bg-emerald-500 text-white border-transparent';
-  return 'bg-slate-500 text-white border-transparent';
+  if (s.includes('unhealthy') || s === '3') return 'bg-rose-500/10 text-rose-500 border-rose-500/20';
+  if (s.includes('degraded') || s === '2') return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
+  if (s.includes('healthy') || s === '1') return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
+  return 'bg-white/5 text-slate-500 border-white/10';
 };
 
 const getRowBg = (status: any) => {
   const s = String(status || '').toLowerCase();
-  if (s.includes('unhealthy') || s === '3') return 'bg-rose-500/10 hover:bg-rose-500/15';
-  if (s.includes('degraded') || s === '2') return 'bg-amber-500/5 hover:bg-amber-500/10';
-  return 'hover:bg-slate-800/30';
+  if (s.includes('unhealthy') || s === '3') return 'bg-rose-500/[0.03] hover:bg-rose-500/[0.05]';
+  if (s.includes('degraded') || s === '2') return 'bg-amber-500/[0.02] hover:bg-amber-500/[0.04]';
+  return 'hover:bg-white/[0.02]';
 };
 
 const getDurationColor = (ms: number, threshold: number = 1000) => {
@@ -50,7 +49,6 @@ const HealthTable: React.FC<HealthTableProps> = ({
   apps, 
   selectedAppId, 
   logCount, 
-  isWorkerDead,
   lastUpdateText,
   onAppChange, 
   onCountChange,
@@ -102,79 +100,70 @@ const HealthTable: React.FC<HealthTableProps> = ({
   return (
     <div className="flex flex-col flex-1 overflow-hidden min-h-[400px]">
       {/* Table Header Controls */}
-      <div className="p-4 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-slate-400">Uygulama:</span>
+      <div className="p-4 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/5">
+        <div className="flex flex-wrap items-center gap-6">
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Uygulama</span>
             <div className="relative">
               <select 
                 value={selectedAppId} 
                 onChange={handleAppSelect}
-                className="appearance-none bg-background border border-slate-700 text-slate-200 text-sm rounded-md pl-3 pr-8 py-1.5 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                className="appearance-none bg-black/20 border border-white/10 text-slate-200 text-xs font-bold rounded-xl pl-4 pr-10 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 cursor-pointer transition-all hover:bg-black/40"
               >
                 {apps.length === 0 && <option value="">Uygulama Yok</option>}
                 {apps.map(app => (
                   <option key={app.id} value={app.id}>{app.name}</option>
                 ))}
               </select>
-              <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-slate-400">Kayıt Sayısı:</span>
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Kayıt Sayısı</span>
             <div className="relative">
               <select 
                 value={logCount}
                 onChange={handleCountSelect}
-                className="appearance-none bg-background border border-slate-700 text-slate-200 text-sm rounded-md pl-3 pr-8 py-1.5 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                className="appearance-none bg-black/20 border border-white/10 text-slate-200 text-xs font-bold rounded-xl pl-4 pr-10 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 cursor-pointer transition-all hover:bg-black/40"
               >
                 <option value={10}>10</option>
                 <option value={50}>50</option>
                 <option value={100}>100</option>
               </select>
-              <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             {lastUpdateText && (
-              <span className="text-slate-400 text-xs hidden md:inline-block">
+              <span className="text-slate-500 text-[10px] font-bold uppercase tracking-widest hidden md:inline-block">
                 {lastUpdateText}
               </span>
             )}
             <button 
               onClick={handleRefresh}
-              className="flex items-center gap-2 px-3 py-1.5 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 border border-indigo-500/20 rounded-md transition-colors text-sm font-medium"
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-indigo-600/20 active:scale-95"
             >
               <RefreshCw size={14} />
               <span>Yenile</span>
             </button>
           </div>
         </div>
-        
-        <div className="flex items-center gap-3">
-          <div className={`flex items-center gap-2 ${isWorkerDead ? 'text-rose-500' : 'text-emerald-500'}`}>
-            <div className={`w-2 h-2 rounded-full ${isWorkerDead ? 'bg-rose-500' : 'bg-emerald-500 animate-pulse'}`}></div>
-            <span className="text-xs font-medium">
-              {isWorkerDead ? 'Veri Akışı Durdu' : 'Canlı Veri Akışı'}
-            </span>
-          </div>
-        </div>
       </div>
 
       {/* Table */}
       <div className="overflow-x-auto max-h-[600px] overflow-y-auto custom-scrollbar">
-        <table className="w-full text-left text-sm text-slate-300">
-          <thead className="text-xs text-slate-400 bg-slate-800/30 uppercase border-b border-slate-800">
+        <table className="w-full text-left border-collapse">
+          <thead className="text-[10px] font-black uppercase tracking-widest text-slate-500 bg-white/5 border-b border-white/10">
             <tr>
-              <th className="px-6 py-4 font-medium">Zaman</th>
-              <th className="px-6 py-4 font-medium">Süre</th>
-              <th className="px-6 py-4 font-medium">Bağımlılıklar (Dependencies)</th>
-              <th className="px-6 py-4 font-medium text-right">Genel Durum</th>
+              <th className="px-6 py-4">Zaman Damgası</th>
+              <th className="px-6 py-4">Süre</th>
+              <th className="px-6 py-4">Bağımlılık Durumu</th>
+              <th className="px-6 py-4 text-right">Durum</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800/50">
+          <tbody className="divide-y divide-white/5">
             {isAppDown ? (
               <tr>
                 <td colSpan={4} className="px-6 py-20 text-center">
@@ -244,7 +233,7 @@ const HealthTable: React.FC<HealthTableProps> = ({
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <span className={`px-3 py-1 text-xs font-semibold rounded-md border ${getStatusBg(log.status)}`}>
+                      <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg border ${getStatusBg(log.status)}`}>
                         {log.status}
                       </span>
                     </td>

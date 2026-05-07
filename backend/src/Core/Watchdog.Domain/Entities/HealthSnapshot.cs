@@ -1,11 +1,11 @@
-﻿using System;
+using System;
 using System.Text.Json.Serialization; // 1. BU SATIRI EKLEYİN
 using Watchdog.Domain.Common;
 using Watchdog.Domain.Enums;
 
 namespace Watchdog.Domain.Entities
 {
-    public class HealthSnapshot : BaseEntity
+    public class HealthSnapshot : SimpleBaseEntity
     {
         public Guid AppId { get; set; }
         [JsonIgnore]

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import MonitoredAppsTable, { type AppListItem } from './components/MonitoredAppsTable';
 import AppFormModal, { type AppFormData } from './components/AppFormModal';
 import { appsService } from '../../api/appsService';
-import { LayoutGrid, Loader2, Trash2, CheckCircle2 } from 'lucide-react';
+import { LayoutGrid, Loader2, Trash2, CheckCircle2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import ConfirmModal from '../../components/common/ConfirmModal';
 
@@ -41,7 +41,13 @@ const AppsManagementPage: React.FC = () => {
         name: app.name,
         url: app.healthUrl,
         interval: app.pollingIntervalSeconds,
-        isActive: app.isActive
+        isActive: app.isActive,
+        createdAt: app.createdAt,
+        createdBy: app.createdBy,
+        modifiedAt: app.modifiedAt,
+        modifiedBy: app.modifiedBy,
+        deletedAt: app.deletedAt,
+        deletedBy: app.deletedBy
       }));
       setApps(mappedApps);
     } catch (error) {
@@ -143,41 +149,52 @@ const AppsManagementPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6 w-full max-w-7xl mx-auto">
+    <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
       {/* Page Header */}
-      <div className="flex items-center gap-4 border-b border-slate-800 pb-4">
-        <div className="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-500">
-          <LayoutGrid size={24} />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/5 pb-6 gap-4 sm:gap-0">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 border border-indigo-500/20 shadow-lg shadow-indigo-500/5 shrink-0">
+            <LayoutGrid size={24} />
+          </div>
+          <div>
+            <h1 className="text-xl font-black text-white uppercase tracking-[0.2em] leading-tight">Uygulama Yönetimi</h1>
+            <p className="text-xs text-slate-500 font-medium mt-1">Sistemdeki tüm uygulamaları izleyin, ekleyin ve yapılandırın.</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-xl font-black text-slate-100 uppercase tracking-widest">Uygulama Yönetimi</h1>
-          <p className="text-xs text-slate-500 font-medium mt-1">Sistemdeki tüm uygulamaları izleyin, ekleyin ve yapılandırın.</p>
-        </div>
+        {!isLoading && viewMode === 'active' && (
+          <button
+            onClick={handleAddClick}
+            className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all font-bold text-xs uppercase tracking-widest shadow-lg shadow-indigo-600/20 active:scale-95 w-full sm:w-auto"
+          >
+            <Plus size={16} strokeWidth={3} />
+            Yeni Ekle
+          </button>
+        )}
       </div>
 
       {/* Tabs Switcher */}
-      <div className="flex items-center gap-1 bg-slate-900/50 p-1 rounded-xl w-fit border border-slate-800">
+      <div className="flex flex-col sm:flex-row gap-1.5 p-1.5 bg-white/[0.03] w-full sm:w-fit rounded-2xl border border-white/5 shadow-inner">
         <button
           onClick={() => setViewMode('active')}
-          className={`flex items-center gap-2 px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+          className={`flex items-center justify-center gap-2 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex-1 sm:flex-none ${
             viewMode === 'active' 
-            ? 'bg-indigo-600 text-white shadow-lg' 
-            : 'text-slate-500 hover:text-slate-300'
+            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' 
+            : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
           }`}
         >
           <CheckCircle2 size={14} />
-          İzlenenler
+          İzlenen Uygulamalar
         </button>
         <button
           onClick={() => setViewMode('deleted')}
-          className={`flex items-center gap-2 px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+          className={`flex items-center justify-center gap-2 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex-1 sm:flex-none ${
             viewMode === 'deleted' 
-            ? 'bg-rose-600 text-white shadow-lg' 
-            : 'text-slate-500 hover:text-slate-300'
+            ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/20' 
+            : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
           }`}
         >
           <Trash2 size={14} />
-          Silinenler
+          Silinen Uygulamalar
         </button>
       </div>
 
@@ -191,7 +208,6 @@ const AppsManagementPage: React.FC = () => {
         ) : (
           <MonitoredAppsTable 
             apps={apps}
-            onAddClick={handleAddClick}
             onEdit={handleEditClick}
             onDelete={handleDeleteClick}
             onToggleStatus={handleToggleStatus}

@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
@@ -31,6 +31,7 @@ namespace Watchdog.Infrastructure.Auth
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.UniqueName, user.Username),
+                new Claim(JwtRegisteredClaimNames.Email, user.Email), // E-posta eklendi
                 new Claim(ClaimTypes.Role, user.Role), // Rol yetkilendirmesi için kritik!
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };

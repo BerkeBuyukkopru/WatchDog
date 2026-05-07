@@ -50,8 +50,7 @@ namespace Watchdog.Api.Controllers
             var responsePayload = new
             {
                 id = result.Id,
-                message = "Uygulama başarıyla eklendi.",
-                apiKey = result.ApiKey
+                message = "Uygulama başarıyla eklendi."
             };
             return CreatedAtAction(nameof(GetAll), new { id = result.Id }, responsePayload);
         }

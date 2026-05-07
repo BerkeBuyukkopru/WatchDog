@@ -9,7 +9,7 @@ namespace Watchdog.Domain.Entities
         public string Name { get; set; } = string.Empty;
         public string HealthUrl { get; set; } = string.Empty;
         public int PollingIntervalSeconds { get; set; }
-        public string? ApiKey { get; set; }
+
 
         // İŞ MANTIĞI: İzleme aktif mi pasif mi? (Silme ile karıştırılmamalı)
         public bool IsActive { get; set; } = true;

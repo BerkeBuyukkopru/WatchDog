@@ -41,9 +41,14 @@ export const useAiTower = (appId?: string) => {
       const insightsData = await aiTowerService.getInsights(appId, 15);
       setInsights(insightsData);
 
-      // 3. AKTİF SAĞLAYICIYI BELİRLE (Uygulamaların o an kullandığı ID'ye bak)
-      const currentProviderId = appsData[0]?.activeAiProviderId;
-      const active = providersData.find(p => p.id === currentProviderId) || providersData.find(p => p.isActive);
+      // 3. AKTİF SAĞLAYICIYI BELİRLE (Uygulamaların o an kullandığı ID'ye bak ama sadece AKTİF olanları seç)
+      const currentProviderId = app?.activeAiProviderId || appsData[0]?.activeAiProviderId;
+      
+      // Önce uygulamaya özel ID ile eşleşen ve AKTİF olanı ara. 
+      // Bulamazsan herhangi bir AKTİF olanı al.
+      const active = providersData.find(p => p.id === currentProviderId && p.isActive) 
+                  || providersData.find(p => p.isActive);
+                  
       setActiveProvider(active || providersData[0] || null);
 
     } catch (error) {

@@ -47,9 +47,7 @@ namespace Watchdog.Infrastructure.Persistence
                     CriticalCpuThreshold = 90.0,
                     CriticalRamThreshold = 90.0,
                     CriticalLatencyThreshold = 1000.0,
-                    LastUpdated = DateTime.UtcNow,
-                    CreatedBy = "System Seeder",
-                    IsDeleted = false
+                    CreatedBy = "System Seeder"
                 });
 
                 // KRİTİK EKLEME: Kaydı hemen veritabanına mühürlüyoruz. 

@@ -93,7 +93,23 @@ namespace Watchdog.Api.Controllers
         public async Task<IActionResult> GetDeleted([FromServices] IAiProviderRepository repository)
         {
             var deletedProviders = await repository.GetDeletedProvidersAsync();
-            return Ok(deletedProviders);
+            var response = deletedProviders.Select(p => new AiProviderDto
+            {
+                Id = p.Id,
+                Name = p.Name,
+                ModelName = p.ModelName,
+                ApiUrl = p.ApiUrl,
+                ApiKey = p.ApiKey,
+                IsActive = p.IsActive,
+                HasApiKey = !string.IsNullOrWhiteSpace(p.ApiKey) || p.Name.Contains("Ollama", StringComparison.OrdinalIgnoreCase),
+                CreatedAt = p.CreatedAt,
+                CreatedBy = p.CreatedBy,
+                ModifiedAt = p.ModifiedAt,
+                ModifiedBy = p.ModifiedBy,
+                DeletedAt = p.DeletedAt,
+                DeletedBy = p.DeletedBy
+            });
+            return Ok(response);
         }
 
         // POST: api/AiProviders/{id}/restore

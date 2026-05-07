@@ -47,6 +47,9 @@ namespace Watchdog.Api.Controllers
                 a.Email,
                 a.Role,
                 a.CreatedAt,
+                a.CreatedBy,
+                a.ModifiedAt,
+                a.ModifiedBy,
                 a.AllowedAppIds
             });
 
@@ -111,7 +114,8 @@ namespace Watchdog.Api.Controllers
             {
                 Id = myId,
                 Username = string.Empty, // BOŞ GÖNDERİYORUZ! UseCase bunu görünce mevcut ismi koruyacak.
-                NewPassword = request.NewPassword
+                NewPassword = request.NewPassword,
+                Email = request.Email
             };
 
             var result = await _updateUseCase.ExecuteAsync(updateRequest);
@@ -135,6 +139,10 @@ namespace Watchdog.Api.Controllers
                 a.Username,
                 a.Email,
                 a.Role,
+                a.CreatedAt,
+                a.CreatedBy,
+                a.ModifiedAt,
+                a.ModifiedBy,
                 a.DeletedAt,
                 a.DeletedBy,
                 a.AllowedAppIds

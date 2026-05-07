@@ -18,8 +18,15 @@ export const AuthorizedAppsModal: React.FC<AuthorizedAppsModalProps> = ({ isOpen
   );
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#16161A] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+    <div className="fixed top-0 left-0 w-full h-full z-[9999] flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300" 
+        onClick={onClose}
+      />
+
+      {/* Modal Box */}
+      <div className="relative z-10 bg-[#16161A] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
         <div className="p-5 border-b border-white/5 flex items-center justify-between bg-white/5">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400">
@@ -51,7 +58,13 @@ export const AuthorizedAppsModal: React.FC<AuthorizedAppsModalProps> = ({ isOpen
                     </div>
                     <span className="text-sm font-semibold text-slate-200">{app.name}</span>
                   </div>
-                  <span className="text-[10px] font-bold text-emerald-500/60 bg-emerald-500/5 px-2 py-1 rounded border border-emerald-500/10">AKTİF</span>
+                    <span className={`text-[10px] font-bold px-2 py-1 rounded border ${
+                      app.isActive 
+                      ? 'text-emerald-500/60 bg-emerald-500/5 border-emerald-500/10' 
+                      : 'text-slate-500/60 bg-slate-500/5 border-slate-500/10'
+                    }`}>
+                      {app.isActive ? 'İZLENİYOR' : 'PASİF'}
+                    </span>
                 </div>
               ))
             ) : (

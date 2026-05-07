@@ -42,6 +42,12 @@ namespace Watchdog.Application.UseCases.Auth
                 admin.Username = request.Username;
             }
 
+            // 2.1 E-posta güncelleme mantığı
+            if (!string.IsNullOrWhiteSpace(request.Email) && !admin.Email.Equals(request.Email, StringComparison.OrdinalIgnoreCase))
+            {
+                admin.Email = request.Email;
+            }
+
             // 3. Eğer yeni bir şifre gönderilmişse hashleyerek güncelle.
             if (!string.IsNullOrEmpty(request.NewPassword))
             {

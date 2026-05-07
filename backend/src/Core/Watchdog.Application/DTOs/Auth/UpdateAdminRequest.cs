@@ -16,6 +16,9 @@ namespace Watchdog.Application.DTOs.Auth
         // Eğer şifre değiştirilmek isteniyorsa doldurulur.
         public string? NewPassword { get; set; }
 
+        // Güncellenecek e-posta adresi.
+        public string? Email { get; set; }
+
         // Sadece bu yeni listeyi ekledik, Role yok. (Artık var!)
         public string? Role { get; set; }
 

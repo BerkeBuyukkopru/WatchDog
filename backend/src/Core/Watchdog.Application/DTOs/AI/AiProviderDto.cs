@@ -14,5 +14,11 @@ namespace Watchdog.Application.DTOs.AI
         public string? ApiKey { get; set; } // SuperAdmin görebilsin diye eklendi
         public bool IsActive { get; set; }
         public bool HasApiKey { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public string? CreatedBy { get; set; }
+        public DateTime? ModifiedAt { get; set; }
+        public string? ModifiedBy { get; set; }
+        public DateTime? DeletedAt { get; set; }
+        public string? DeletedBy { get; set; }
     }
 }
