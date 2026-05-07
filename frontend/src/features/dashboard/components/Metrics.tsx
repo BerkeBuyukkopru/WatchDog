@@ -3,10 +3,9 @@ import type { HealthCheckLogDto } from '../../../types/dashboard.types';
 
 interface MetricsProps {
   latestLog: HealthCheckLogDto | null;
-  appName?: string;
 }
 
-const Metrics: React.FC<MetricsProps> = ({ latestLog, appName }) => {
+const Metrics: React.FC<MetricsProps> = ({ latestLog }) => {
   const sysCpu = latestLog?.systemCpuUsage || 0;
   const appCpu = latestLog?.appCpuUsage || 0;
   const sysRam = latestLog?.systemRamUsage || 0;
@@ -20,20 +19,6 @@ const Metrics: React.FC<MetricsProps> = ({ latestLog, appName }) => {
 
   return (
     <div className="flex flex-col gap-3">
-      {appName && (
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 px-1 mb-2">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.6)]"></div>
-            <span className="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-[0.2em]">
-              Metrik İzleme
-            </span>
-          </div>
-          <div className="hidden sm:block w-px h-3 bg-white/10"></div>
-          <span className="text-sm sm:text-lg font-black text-white uppercase tracking-wider">
-            {appName}
-          </span>
-        </div>
-      )}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {/* CPU Card */}
         <div className="bg-background-light border border-slate-800 rounded-xl p-3 sm:p-4 flex flex-col justify-between shadow-lg">

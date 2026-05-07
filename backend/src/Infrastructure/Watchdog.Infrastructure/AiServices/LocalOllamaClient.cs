@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.AI;
+using Microsoft.Extensions.AI;
 using OllamaSharp;
 using System;
 using System.Threading;
@@ -15,7 +15,9 @@ namespace Watchdog.Infrastructure.AiServices
         // Burada da 'modelName' parametresini ekledik. Böylece yarın sunucuya "llama3" veya "mistral" kurarsak, sadece Dashboard'dan ismini değiştirmemiz yetecek.
         public LocalOllamaClient(string? apiUrl, string modelName)
         {
-            var endpoint = new Uri(string.IsNullOrWhiteSpace(apiUrl) ? "http://localhost:11434" : apiUrl);
+            var cleanUrl = (apiUrl ?? "http://localhost:11434").TrimEnd('/');
+            if (cleanUrl.EndsWith("/api")) cleanUrl = cleanUrl.Substring(0, cleanUrl.Length - 4);
+            var endpoint = new Uri(cleanUrl);
 
             // Yerel modelin asenkron yanıt üretmesi uzun sürebileceği için 
             // HttpClient'ın zaman aşımına (Timeout) uğrayıp işlemi yarıda kesmesini engelliyoruz.

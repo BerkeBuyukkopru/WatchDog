@@ -44,7 +44,9 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
             DateTime lastFinishedDate = config.LastArchivedDate ?? new DateTime(2026, 01, 01);
 
             DateTime today = DateTime.UtcNow;
-            DateTime targetEndDate = new DateTime(today.Year, today.Month, 1).AddTicks(-1);
+            // 1 Ay Tampon Bırakıyoruz: İçinde bulunduğumuz ayı ve bir önceki ayı veritabanında tutuyoruz.
+            // Örneğin Mayıs ayındaysak, sadece Mart ve öncesini arşivliyoruz. Nisan veritabanında kalıyor.
+            DateTime targetEndDate = new DateTime(today.Year, today.Month, 1).AddMonths(-1);
 
             // 3. Geçmiş ayları süpürme döngüsü (Catch-up)
             while (lastFinishedDate < targetEndDate)

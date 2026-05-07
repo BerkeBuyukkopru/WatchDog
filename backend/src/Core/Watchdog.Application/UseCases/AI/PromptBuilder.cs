@@ -3,11 +3,11 @@ using Watchdog.Application.DTOs.AI;
 using Watchdog.Application.Interfaces.Common;
 using Watchdog.Domain.Entities;
 using Watchdog.Domain.Enums;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Watchdog.Application.UseCases.AI
 {
-    // Bütün yapay zeka soruları (Promptlar) UseCase'lerden çıkarılıp buraya taşındı. Artık metinlerde bir değişiklik yapacaksak UseCase sınıflarını kirletmeden buradan yapacağız.
-    // Tüm promptlar "Birleşik (Unified)" formata geçirildi. Hangi AI motoru (OpenAI veya Ollama)  çalışırsa çalışsın, aynı veri setini alacak ve ÇOK KATI bir şekilde aynı 3 başlıkta cevap vermeye zorlanacak.
     public class PromptBuilder : IPromptBuilder
     {
         // --- 1. EVENT-DRIVEN RCA PROMPT ---
@@ -16,102 +16,102 @@ namespace Watchdog.Application.UseCases.AI
             var summary = AggregateSnapshots(recentSnapshots);
             var jsonContext = JsonSerializer.Serialize(summary);
 
-            return $@"SYSTEM ROLE: You are an expert SRE (Site Reliability Engineer) and Incident Responder.
-TASK: Analyze the crash data for '{appName}'. 
-RULES:
-- Start your response with the exact prefix: [KRİTİK OLAY ANALİZİ]
-- YOU MUST RESPOND IN TURKISH.
-- Use a professional, technical, and urgent tone.
-- Follow the 3-section structure exactly.
+            return $@"SİSTEM ROLÜ: Sen uzman bir SRE (Site Reliability Engineer) ve Olay Müdahale Uzmanısın.
+GÖREV: '{appName}' uygulaması için oluşan kesintiyi analiz et. 
+KURALLAR:
+- Cevabına tam olarak şu önekle başla: 🚨 KRİTİK OLAY VE KÖK NEDEN ANALİZİ
+- KESİNLİKLE TÜRKÇE CEVAP VERMELİSİN (İstanbul Türkçesi).
+- Başlıkları KESİNLİKLE kalınlaştırma (bold) veya yıldız (**) ile işaretleme. Sadece düz metin kullan.
+- Aşağıdaki 3 bölümlü yapıyı eksiksiz uygula.
 
-[DATA CONTEXT]
-Recent Telemetry: {jsonContext}
+[VERİ BAĞLAMI]
+Son Telemetri Verileri: {jsonContext}
 
 KÖK NEDEN ANALİZİ:
-(Technically explain why the crash happened based on data)
+(Verilere dayanarak kesintinin neden kaynaklandığını teknik detaylarıyla açıkla)
 
 KAPASİTE DURUMU:
-(Assess if current resources are sufficient to handle this load)
+(Mevcut kaynakların bu yükü kaldırmak için yeterli olup olmadığını değerlendir)
 
-ACİL EYLEM PLANI:
-(Provide 1-2 immediate technical recovery steps)";
+STRATEJİK TAVSİYE:
+(Sistemi ayağa kaldırmak için 1-2 acil teknik adım öner)";
         }
 
         // --- 2. HOURLY ROUTINE PROMPT ---
         public string BuildRoutinePrompt(
-      MonitoredApp app,
-      double cpuLimit, double ramLimit, double latencyLimit,
-      double avgCpu24h, double avgRam24h, double avgLatency24h,
-      double avgCpu2h, double avgRam2h, double avgLatency2h,
-      double maxCpu2h, double maxRam2h, double maxLatency2h,
-      string peakCpuTime, string dependencyContext,
-      int outageCount)
+            MonitoredApp app,
+            double cpuLimit, double ramLimit, double latencyLimit,
+            double avgCpu24h, double avgRam24h, double avgLatency24h,
+            double avgCpu2h, double avgRam2h, double avgLatency2h,
+            double maxCpu2h, double maxRam2h, double maxLatency2h,
+            string peakCpuTime, string dependencyContext,
+            int outageCount)
         {
-            return $@"SYSTEM ROLE: You are an AIOps Capacity Analysis Expert.
-TASK: Review the 24-hour performance trends for '{app.Name}'.
-RULES:
-- Start your response with the exact prefix: [RUTİN KAPASİTE RAPORU]
-- YOU MUST RESPOND IN TURKISH.
-- If CPU/RAM is 0% while outages exist, diagnose it as 'Service Down' not 'Efficient'.
-- Follow the 3-section structure exactly.
+            return $@"SİSTEM ROLÜ: Sen bir AIOps Kapasite Analiz Uzmanısın.
+GÖREV: '{app.Name}' uygulaması için son 24 saatlik performans trendlerini incele.
+KURALLAR:
+- Cevabına tam olarak şu önekle başla: 📊 GÜNLÜK SİSTEM PERFORMANS VE DURUM ANALİZİ
+- KESİNLİKLE PROFESYONEL TÜRKÇE KULLAN.
+- Başlıkları KESİNLİKLE kalınlaştırma (bold) veya yıldız (**) ile işaretleme. Sadece düz metin kullan.
+- Aşağıdaki 3 bölümlü yapıyı eksiksiz uygula.
 
-[TELEMETRY DATA]
-Outages: {outageCount} | Latency Avg: {avgLatency24h}ms
-CPU Avg/Max: {avgCpu24h}% / {maxCpu2h}%
-RAM Avg/Max: {avgRam24h}% / {maxRam2h}%
-Dependencies: {dependencyContext}
+[GÜNLÜK TELEMETRİ ÖZETİ]
+Kesinti Sayısı: {outageCount} | Ort. Gecikme: {avgLatency24h}ms
+İşlemci (CPU) Ort/Maks: %{avgCpu24h} / %{maxCpu2h}
+Bellek (RAM) Ort/Maks: %{avgRam24h} / %{maxRam2h}
+Bağımlılıklar: {dependencyContext}
 
 KÖK NEDEN ANALİZİ:
-(Explain performance drops or outages)
+(Son 24 saatteki performans değişimlerini ve varsa kesintileri teknik olarak açıkla)
 
 KAPASİTE DURUMU:
-(Evaluate resource usage vs configured limits)
+(Mevcut yükü ve kaynak tüketimini tanımlanan eşiklerle karşılaştırarak analiz et)
 
 STRATEJİK TAVSİYE:
-(Provide optimization or scaling steps for the next few hours)";
+(Önümüzdeki birkaç saat içinde sistem stabilitesini artıracak teknik adımlar öner)";
         }
 
         // --- 3. WEEKLY STRATEGIC PROMPT ---
         public string BuildStrategicPrompt(
-      MonitoredApp app,
-      DailyEnrichedSnapshotDto baselineDay,
-      DailyEnrichedSnapshotDto targetDay,
-      double weeklyAvgCpu, double weeklyAvgRam,
-      string baselineErrors, string targetErrors)
+            MonitoredApp app,
+            DailyEnrichedSnapshotDto baselineDay,
+            DailyEnrichedSnapshotDto targetDay,
+            double weeklyAvgCpu, double weeklyAvgRam,
+            string baselineErrors, string targetErrors)
         {
-            return $@"SYSTEM ROLE: You are a Senior Infrastructure Architect and Capacity Planner.
-TASK: Compare last week vs yesterday for '{app.Name}' and forecast risks.
-RULES:
-- Start your response with the exact prefix: [STRATEJİK GELECEK TAHMİNİ]
-- YOU MUST RESPOND IN TURKISH.
-- Be highly strategic and look for long-term trends.
-- Follow the 3-section structure exactly.
+            return $@"SİSTEM ROLÜ: Sen Kıdemli Altyapı Mimarı ve Kapasite Planlamacısın.
+GÖREV: '{app.Name}' için son 30 günlük verileri analiz et ve aylık trend raporu sun.
+KURALLAR:
+- Cevabına tam olarak şu önekle başla: 📅 AYLIK SİSTEM PERFORMANS VE TREND ANALİZİ
+- KESİNLİKLE PROFESYONEL TÜRKÇE KULLAN.
+- Başlıkları KESİNLİKLE kalınlaştırma (bold) veya yıldız (**) ile işaretleme. Sadece düz metin kullan.
+- Aşağıdaki 3 bölümlü yapıyı eksiksiz uygula.
 
-[COMPARATIVE DATA]
-Baseline (Last Week): CPU {baselineDay.AvgCpu}%, RAM {baselineDay.AvgRam}% | Errors: {baselineErrors}
-Target (Yesterday): CPU {targetDay.AvgCpu}%, RAM {targetDay.AvgRam}% | Errors: {targetErrors}
-Weekly Trend: CPU {weeklyAvgCpu}%, RAM {weeklyAvgRam}%
+[AYLIK KARŞILAŞTIRMALI VERİ SETİ]
+Referans (30 Gün Önce): CPU %{baselineDay.AvgCpu}, RAM %{baselineDay.AvgRam} | Hatalar: {baselineErrors}
+Hedef (Dün): CPU %{targetDay.AvgCpu}, RAM %{targetDay.AvgRam} | Hatalar: {targetErrors}
+30 Günlük Genel Trend: CPU %{weeklyAvgCpu}, RAM %{weeklyAvgRam}
 
-KARŞILAŞTIRMALI ANALİZ:
-(Identify key differences in behavior between the two periods)
+PERFORMANS VE DEĞİŞİM ANALİZİ:
+(Son 30 gündeki genel gidişatı, iyileşme veya kötüleşme trendlerini tanımla)
 
-HAFTALIK RİSK TAHMİNİ:
-(Forecast potential resource exhaustion or stability issues for next week)
+GELECEK AY İÇİN RİSK VE KAPASİTE TAHMİNİ:
+(Önümüzdeki ay için olası kaynak tükenmesi veya stabilite sorunlarını öngör)
 
-STRATEJİK ÖNERİ:
-(Provide architectural or infrastructure improvements)";
+STRATEJİK MİMARİ VE KAYNAK ÖNERİLERİ:
+(Gelecek ayın daha verimli geçmesi için kapasite planlaması veya kod iyileştirme tavsiyeleri sun)";
         }
 
-        // Kriz anında logları hafifleten özel metot (App ve System ayrımı yapıldı)
         private object AggregateSnapshots(List<HealthSnapshot> snapshots)
         {
+            if (snapshots == null || !snapshots.Any()) return new { };
             return new
             {
                 TotalRecords = snapshots.Count,
                 AverageAppCpu = snapshots.Average(s => s.AppCpuUsage),
-                AverageSystemCpu = snapshots.Average(s => s.SystemCpuUsage), // AI Sunucuyu da görsün
+                AverageSystemCpu = snapshots.Average(s => s.SystemCpuUsage),
                 AverageAppRam = snapshots.Average(s => s.AppRamUsage),
-                AverageSystemRam = snapshots.Average(s => s.SystemRamUsage), // AI Sunucuyu da görsün
+                AverageSystemRam = snapshots.Average(s => s.SystemRamUsage),
                 LowestDiskSpace = snapshots.Min(s => s.FreeDiskGb),
                 ErrorCounts = snapshots.Count(s => s.Status == HealthStatus.Unhealthy),
                 LatestDependencies = snapshots.OrderByDescending(s => s.Timestamp).FirstOrDefault()?.DependencyDetails
