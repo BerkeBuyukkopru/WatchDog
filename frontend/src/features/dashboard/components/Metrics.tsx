@@ -3,10 +3,9 @@ import type { HealthCheckLogDto } from '../../../types/dashboard.types';
 
 interface MetricsProps {
   latestLog: HealthCheckLogDto | null;
-  appName?: string;
 }
 
-const Metrics: React.FC<MetricsProps> = ({ latestLog, appName }) => {
+const Metrics: React.FC<MetricsProps> = ({ latestLog }) => {
   const sysCpu = latestLog?.systemCpuUsage || 0;
   const appCpu = latestLog?.appCpuUsage || 0;
   const sysRam = latestLog?.systemRamUsage || 0;
@@ -20,14 +19,6 @@ const Metrics: React.FC<MetricsProps> = ({ latestLog, appName }) => {
 
   return (
     <div className="flex flex-col gap-3">
-      {appName && (
-        <div className="flex items-center gap-2 px-1 mb-1">
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-            Metrik İzleme: <span className="text-slate-100">{appName}</span>
-          </span>
-        </div>
-      )}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* CPU Card */}
         <div className="bg-background-light border border-slate-800 rounded-xl p-4 flex flex-col justify-between shadow-lg">

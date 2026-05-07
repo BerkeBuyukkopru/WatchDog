@@ -65,6 +65,7 @@ public static class DependencyInjection
         services.AddScoped<IUseCaseAsync<GetDeletedAppsRequest, IEnumerable<AppDto>>, GetDeletedAppsUseCase>();
         services.AddScoped<IUseCaseAsync<RestoreAppRequest, bool>, RestoreAppUseCase>();
         services.AddScoped<IUseCaseAsync<ToggleAppStatusRequest, bool>, ToggleAppStatusUseCase>();
+        services.AddScoped<ExportAppHistoryUseCase>();
 
 
         return services;

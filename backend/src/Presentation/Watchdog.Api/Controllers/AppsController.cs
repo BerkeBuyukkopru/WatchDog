@@ -150,5 +150,20 @@ namespace Watchdog.Api.Controllers
             if (!result) return BadRequest(new { message = "Durum değiştirilemedi. Uygulama bulunamadı." });
             return Ok(new { message = "Uygulama durumu başarıyla güncellendi." });
         }
+
+        [HttpGet("{id:guid}/export")]
+        [Authorize(Roles = RoleConstants.AllAdmins)]
+        public async Task<IActionResult> Export(Guid id, [FromQuery] int days, [FromServices] ExportAppHistoryUseCase useCase)
+        {
+            try
+            {
+                var (content, fileName) = await useCase.ExecuteAsync(id, days);
+                return File(content, "text/csv", fileName);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

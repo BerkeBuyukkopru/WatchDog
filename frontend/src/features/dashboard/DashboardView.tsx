@@ -22,6 +22,7 @@ const DashboardView: React.FC = () => {
   const [isWorkerDead, setIsWorkerDead] = useState<boolean>(false);
   const [lastUpdateText, setLastUpdateText] = useState<string>('');
   const [config, setConfig] = useState<SystemConfigDto | null>(null);
+  const [isExporting, setIsExporting] = useState<boolean>(false);
 
   const context = useOutletContext<{ setApiError: (val: boolean) => void } | null>();
   const setApiError = context?.setApiError || (() => { });
@@ -72,6 +73,20 @@ const DashboardView: React.FC = () => {
   }, []);
 
   // === SIGNALR CANLI VERİ DİNLEYİCİSİ ===
+  const handleExport = async (days: number) => {
+    if (!selectedAppId) return;
+    try {
+      setIsExporting(true);
+      const appName = apps.find(a => a.id === selectedAppId)?.name;
+      await dashboardService.exportHistory(selectedAppId, days, appName);
+    } catch (err) {
+      console.error('Export failed:', err);
+      alert('Dışa aktarma sırasında bir hata oluştu.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   useEffect(() => {
     if (!connection || !isConnected || !selectedAppId) return;
 
@@ -174,6 +189,28 @@ const DashboardView: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-500 pt-4">
+      {/* Dashboard Top Bar: App Info & Export Controls */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-background-light p-6 rounded-2xl border border-white/5 shadow-xl">
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-white tracking-tight">
+              {selectedApp?.name || 'Uygulama Seçiniz'}
+            </h1>
+            <div className={`flex items-center gap-2 px-3 py-1 rounded-full border ${isAppDown ? 'bg-rose-500/10 border-rose-500/20 text-rose-500' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'}`}>
+              <div className={`w-1.5 h-1.5 rounded-full ${isAppDown ? 'bg-rose-500' : 'bg-emerald-500 animate-pulse'}`}></div>
+              <span className="text-[10px] font-black uppercase tracking-widest">
+                {isAppDown ? 'ÇEVRİMDIŞI' : 'CANLI VERİ AKIŞI'}
+              </span>
+            </div>
+          </div>
+          <p className="text-slate-500 text-xs font-medium uppercase tracking-widest">
+            {selectedApp?.id || 'Analiz paneli hazırlanıyor...'}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-4">
+        </div>
+      </div>
       {/* Kritik Uyarı Bantları */}
       {(isWorkerDead || (!isWorkerDead && !isAppPaused && (isAppDown || isInvalidJson))) && (
         <div className="flex flex-col gap-4">
@@ -224,7 +261,6 @@ const DashboardView: React.FC = () => {
       {/* 1. Metrics (Full Width) */}
       <Metrics 
         latestLog={latestLog} 
-        appName={apps.find(a => a.id === selectedAppId)?.name} 
       />
 
       {/* 2. Middle Row: Incidents & AI Tower (Responsive Split) */}
@@ -278,6 +314,8 @@ const DashboardView: React.FC = () => {
               onAppChange={handleAppChange}
               onCountChange={handleCountChange}
               onRefresh={() => fetchData()}
+              onExport={handleExport}
+              isExporting={isExporting}
             />
           )}
         </div>

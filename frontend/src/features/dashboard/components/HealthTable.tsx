@@ -1,5 +1,5 @@
-import React from 'react';
-import { ChevronDown, RefreshCw } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChevronDown, RefreshCw, Download, Loader2 } from 'lucide-react';
 import type { HealthCheckLogDto, DependencyDetail, AppDto } from '../../../types/dashboard.types';
 
 interface HealthTableProps {
@@ -11,6 +11,8 @@ interface HealthTableProps {
   onAppChange: (appId: string) => void;
   onCountChange: (count: number) => void;
   onRefresh: () => void;
+  onExport: (days: number) => void;
+  isExporting: boolean;
   isAppDown?: boolean;
   latencyThreshold?: number;
 }
@@ -53,11 +55,22 @@ const HealthTable: React.FC<HealthTableProps> = ({
   onAppChange, 
   onCountChange,
   onRefresh,
-  isAppDown = false, // Varsayılan değer
+  onExport,
+  isExporting,
+  isAppDown = false,
   latencyThreshold = 1000
 }) => {
+  const [exportDays, setExportDays] = useState<string>('30');
+
   const handleRefresh = () => {
     onRefresh();
+  };
+
+  const handleExport = () => {
+    const days = parseInt(exportDays);
+    const validatedDays = isNaN(days) ? 30 : Math.min(30, Math.max(1, days));
+    setExportDays(validatedDays.toString());
+    onExport(validatedDays);
   };
 
   const handleAppSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -141,6 +154,34 @@ const HealthTable: React.FC<HealthTableProps> = ({
                 {lastUpdateText}
               </span>
             )}
+            
+            <div className="h-8 w-[1px] bg-white/10 mx-2 hidden sm:block"></div>
+
+            {/* Dışa Aktarma Bölümü */}
+            <div className="flex items-center gap-3 bg-emerald-500/5 p-1.5 px-3 rounded-xl border border-emerald-500/20 shadow-inner">
+              <div className="flex flex-col items-center">
+                <input 
+                  type="number" 
+                  min="1" 
+                  max="30"
+                  value={exportDays}
+                  onChange={(e) => setExportDays(e.target.value)}
+                  className="w-14 bg-black/60 border border-emerald-500/30 text-emerald-400 text-sm font-black rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-center transition-all"
+                />
+              </div>
+              <span className="text-[11px] font-black text-emerald-500 uppercase tracking-widest">Gün</span>
+              <div className="h-6 w-px bg-emerald-500/20 mx-1"></div>
+              <button 
+                onClick={handleExport}
+                disabled={isExporting || !selectedAppId}
+                className="flex items-center gap-2 px-5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-30 text-white text-[11px] font-black uppercase tracking-[0.1em] rounded-lg shadow-lg shadow-emerald-900/20 transition-all active:scale-95"
+                title="CSV Olarak İndir"
+              >
+                {isExporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                <span>İndir</span>
+              </button>
+            </div>
+
             <button 
               onClick={handleRefresh}
               className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-indigo-600/20 active:scale-95"
