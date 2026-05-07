@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using Watchdog.Application.DTOs.AI;
 using Watchdog.Application.Interfaces.Common;
 using Watchdog.Domain.Entities;
@@ -10,33 +10,34 @@ namespace Watchdog.Application.UseCases.AI
     // Tüm promptlar "Birleşik (Unified)" formata geçirildi. Hangi AI motoru (OpenAI veya Ollama)  çalışırsa çalışsın, aynı veri setini alacak ve ÇOK KATI bir şekilde aynı 3 başlıkta cevap vermeye zorlanacak.
     public class PromptBuilder : IPromptBuilder
     {
-        // --- 1. KRİZ ANI (EVENT-DRIVEN) PROMPTU ---
+        // --- 1. EVENT-DRIVEN RCA PROMPT ---
         public string BuildRootCausePrompt(List<HealthSnapshot> recentSnapshots, string appName)
         {
             var summary = AggregateSnapshots(recentSnapshots);
             var jsonContext = JsonSerializer.Serialize(summary);
 
-            return $@"SYSTEM ROLE: You are an Expert DevOps and SRE AI.
+            return $@"SYSTEM ROLE: You are an expert SRE (Site Reliability Engineer) and Incident Responder.
+TASK: Analyze the crash data for '{appName}'. 
+RULES:
+- Start your response with the exact prefix: [KRİTİK OLAY ANALİZİ]
+- YOU MUST RESPOND IN TURKISH.
+- Use a professional, technical, and urgent tone.
+- Follow the 3-section structure exactly.
 
-[CONTEXT - TELEMETRY DATA]
-App Name: '{appName}'
-Current Status: UNHEALTHY (Crash Detected)
-Recent Logs: {jsonContext}
+[DATA CONTEXT]
+Recent Telemetry: {jsonContext}
 
-[TASK]
-Analyze the data above. Your output MUST EXACTLY MATCH the 3 sections below. Do not add any greetings or conversational text.
+KÖK NEDEN ANALİZİ:
+(Technically explain why the crash happened based on data)
 
-ROOT CAUSE ANALYSIS:
-(Write your root cause analysis here based on the logs)
+KAPASİTE DURUMU:
+(Assess if current resources are sufficient to handle this load)
 
-CAPACITY STATUS:
-(Write the current resource status here)
-
-ACTIONABLE ADVICE:
-(Write 1-2 direct technical steps to recover the system)";
+ACİL EYLEM PLANI:
+(Provide 1-2 immediate technical recovery steps)";
         }
 
-        // --- 2. SAATLİK RUTİN (CAPACITY) PROMPTU ---
+        // --- 2. HOURLY ROUTINE PROMPT ---
         public string BuildRoutinePrompt(
       MonitoredApp app,
       double cpuLimit, double ramLimit, double latencyLimit,
@@ -46,38 +47,31 @@ ACTIONABLE ADVICE:
       string peakCpuTime, string dependencyContext,
       int outageCount)
         {
-            return $@"SYSTEM ROLE: You are an automated SRE diagnostic engine.
+            return $@"SYSTEM ROLE: You are an AIOps Capacity Analysis Expert.
+TASK: Review the 24-hour performance trends for '{app.Name}'.
+RULES:
+- Start your response with the exact prefix: [RUTİN KAPASİTE RAPORU]
+- YOU MUST RESPOND IN TURKISH.
+- If CPU/RAM is 0% while outages exist, diagnose it as 'Service Down' not 'Efficient'.
+- Follow the 3-section structure exactly.
 
-[STRICT INTERPRETATION RULE]:
-- If CPU/RAM values are near 0% AND 'Outages Detected' is greater than 0, this means the app was CRASHED/DOWN, not efficient.
-- Diagnose these 0% values as 'Service Unavailable' in your report.
-
-[CONFIGURATION & THRESHOLDS]
-CPU Limit: {cpuLimit}% | RAM Limit: {ramLimit}% | Latency Limit: {latencyLimit}ms
-
-[TELEMETRY & AVAILABILITY DATA]
-App: {app.Name}
-Outages Detected (Last 24h): {outageCount} times! << IMPORTANT
-CPU Stats: 24h-Avg: {avgCpu24h}%, 2h-PEAK: {maxCpu2h}% at {peakCpuTime}
-RAM Stats: 24h-Avg: {avgRam24h}%, 2h-PEAK: {maxRam2h}%
-Latency Stats: 24h-Avg: {avgLatency24h}ms, 2h-Avg: {avgLatency2h}ms
+[TELEMETRY DATA]
+Outages: {outageCount} | Latency Avg: {avgLatency24h}ms
+CPU Avg/Max: {avgCpu24h}% / {maxCpu2h}%
+RAM Avg/Max: {avgRam24h}% / {maxRam2h}%
 Dependencies: {dependencyContext}
 
-[TASK]
-Analyze the data. If outages occurred, focus your Root Cause Analysis on why the service was down.
-Your output MUST EXACTLY MATCH the 3 sections below.
+KÖK NEDEN ANALİZİ:
+(Explain performance drops or outages)
 
-ROOT CAUSE ANALYSIS:
-(Explain if it's high load or a total service outage)
+KAPASİTE DURUMU:
+(Evaluate resource usage vs configured limits)
 
-CAPACITY STATUS:
-(Evaluate resource usage vs outages)
-
-ACTIONABLE ADVICE:
-(Provide recovery or scaling steps)";
+STRATEJİK TAVSİYE:
+(Provide optimization or scaling steps for the next few hours)";
         }
 
-        // --- 3. HAFTALIK STRATEJİK (FORECAST) PROMPTU ---
+        // --- 3. WEEKLY STRATEGIC PROMPT ---
         public string BuildStrategicPrompt(
       MonitoredApp app,
       DailyEnrichedSnapshotDto baselineDay,
@@ -85,32 +79,27 @@ ACTIONABLE ADVICE:
       double weeklyAvgCpu, double weeklyAvgRam,
       string baselineErrors, string targetErrors)
         {
-            return $@"SYSTEM ROLE: You are an advanced AIOps and Capacity Planning AI. Your goal is to analyze historical trends, identify anomalies between matching days, and provide capacity forecasts.
+            return $@"SYSTEM ROLE: You are a Senior Infrastructure Architect and Capacity Planner.
+TASK: Compare last week vs yesterday for '{app.Name}' and forecast risks.
+RULES:
+- Start your response with the exact prefix: [STRATEJİK GELECEK TAHMİNİ]
+- YOU MUST RESPOND IN TURKISH.
+- Be highly strategic and look for long-term trends.
+- Follow the 3-section structure exactly.
 
-STRICT RULES:
-- Output ONLY the three requested sections below. No greetings, no markdown blocks around the text.
-- Keep it highly professional and technical.
+[COMPARATIVE DATA]
+Baseline (Last Week): CPU {baselineDay.AvgCpu}%, RAM {baselineDay.AvgRam}% | Errors: {baselineErrors}
+Target (Yesterday): CPU {targetDay.AvgCpu}%, RAM {targetDay.AvgRam}% | Errors: {targetErrors}
+Weekly Trend: CPU {weeklyAvgCpu}%, RAM {weeklyAvgRam}%
 
-[COMPARATIVE DATA (Day-Over-Day)]
-App: {app.Name}
-Baseline (Last Week {baselineDay.Date:dddd}): Avg CPU: {baselineDay.AvgCpu}%, Max CPU: {baselineDay.MaxCpu}% | Avg RAM: {baselineDay.AvgRam}%, Max RAM: {baselineDay.MaxRam}% | Top Errors: {baselineErrors}
-Target (Yesterday {targetDay.Date:dddd}): Avg CPU: {targetDay.AvgCpu}%, Max CPU: {targetDay.MaxCpu}% (Peak at {targetDay.PeakHour}) | Avg RAM: {targetDay.AvgRam}%, Max RAM: {targetDay.MaxRam}% | Top Errors: {targetErrors}
+KARŞILAŞTIRMALI ANALİZ:
+(Identify key differences in behavior between the two periods)
 
-[WEEKLY TREND]
-7-Day Rolling Averages -> CPU: {weeklyAvgCpu}%, RAM: {weeklyAvgRam}%
+HAFTALIK RİSK TAHMİNİ:
+(Forecast potential resource exhaustion or stability issues for next week)
 
-[TASK]
-Analyze historical trends and anomalies between the baseline and target day.
-Your output MUST EXACTLY MATCH the 3 sections below.
-
-COMPARATIVE ROOT CAUSE:
-(Identify why CPU/RAM changed or why specific errors occurred here)
-
-WEEKLY FORECAST:
-(Based on the 7-day trend, forecast the resource risk for next week here)
-
-STRATEGIC RECOMMENDATION:
-(Provide 1-2 architectural or scaling recommendations to handle future load here)";
+STRATEJİK ÖNERİ:
+(Provide architectural or infrastructure improvements)";
         }
 
         // Kriz anında logları hafifleten özel metot (App ve System ayrımı yapıldı)

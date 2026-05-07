@@ -7,6 +7,11 @@ import DashboardView from '../features/dashboard/DashboardView';
 import { AdminListView } from '../features/admin-management/AdminListView';
 import { AiProviderListView } from '../features/ai-providers/AiProviderListView';
 
+// Phase 3 Management Pages (Teammate's work)
+import GlobalDashboard from '../features/apps/GlobalDashboard';
+import AppsManagementPage from '../features/apps/AppsManagementPage';
+import SystemSettingsPage from '../features/system-settings/SystemSettingsPage';
+
 const AppRouter = () => {
   return (
     <Routes>
@@ -27,33 +32,15 @@ const AppRouter = () => {
       {/* Super Admin Management - Only for SuperAdmin */}
       <Route element={<ProtectedRoute allowedRoles={['SuperAdmin']} />}>
         <Route path="/management" element={<SuperAdminLayout />}>
-          <Route index element={
-            <div className="h-full flex items-center justify-center min-h-[400px]">
-              <div className="text-white p-8 sm:p-10 text-center text-lg sm:text-xl bg-background border border-slate-800 rounded-lg w-full max-w-2xl mx-auto shadow-xl">
-                Global Durum (Geliştirici B Yapacak)
-              </div>
-            </div>
-          } />
+          <Route index element={<GlobalDashboard />} />
 
           <Route path="admins" element={<AdminListView />} />
 
           <Route path="ai-providers" element={<AiProviderListView />} />
 
-          <Route path="apps" element={
-            <div className="h-full flex items-center justify-center min-h-[400px]">
-              <div className="text-white p-8 sm:p-10 text-center text-lg sm:text-xl bg-background border border-slate-800 rounded-lg w-full max-w-2xl mx-auto shadow-xl">
-                İzlenen Uygulamalar (Geliştirici B Yapacak)
-              </div>
-            </div>
-          } />
+          <Route path="apps" element={<AppsManagementPage />} />
 
-          <Route path="settings" element={
-            <div className="h-full flex items-center justify-center min-h-[400px]">
-              <div className="text-white p-8 sm:p-10 text-center text-lg sm:text-xl bg-background border border-slate-800 rounded-lg w-full max-w-2xl mx-auto shadow-xl">
-                Sistem Ayarları (Geliştirici B Yapacak)
-              </div>
-            </div>
-          } />
+          <Route path="settings" element={<SystemSettingsPage />} />
         </Route>
       </Route>
     </Routes>

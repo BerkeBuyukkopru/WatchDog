@@ -23,6 +23,7 @@ services:
     environment:
       - ConnectionStrings__DefaultConnection=Server=watchdog-db;Database=${DB_NAME};User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;Encrypt=False
       - ASPNETCORE_ENVIRONMENT=Development
+      - MailSettings__Host=watchdog-mail
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -38,10 +39,13 @@ services:
     environment:
       - ConnectionStrings__DefaultConnection=Server=watchdog-db;Database=${DB_NAME};User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;Encrypt=False
       - ASPNETCORE_ENVIRONMENT=Development
+      - MailSettings__Host=watchdog-mail
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
       - watchdog-db
+    volumes:
+      - ./archives:/app/WatchDogArchives
 
   # 4. Frontend Servisi (Yeni)
   watchdog-ui:
@@ -56,6 +60,15 @@ services:
       - VITE_API_URL=http://localhost:${API_PORT}
     depends_on:
       - watchdog-api
+
+  # 5. MailHog Servisi (Yerel Mail Test Sunucusu)
+  watchdog-mail:
+    image: mailhog/mailhog:latest
+    container_name: watchdog-mail
+    ports:
+      - "1025:1025" # SMTP Portu
+      - "8025:8025" # Web Arayüzü (Dashboard)
+    restart: always
 
 volumes:
   sql_data:
