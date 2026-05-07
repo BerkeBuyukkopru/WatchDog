@@ -130,7 +130,7 @@ export const AiTower: React.FC<AiTowerProps> = ({ selectedAppId, readOnly = fals
   return (
     <div className="h-full flex flex-col bg-black/20 backdrop-blur-sm border-l border-white/5 w-full relative">
       {/* Standardized Header (Matches Incidents) */}
-      <div className="h-[52px] px-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-800/20 shrink-0">
+      <div className="h-[52px] px-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-800/20 shrink-0 relative z-30">
         <div className="flex items-center gap-3">
           <BrainCircuit size={18} className="text-indigo-400" />
           <h2 className="text-base font-bold text-white uppercase tracking-wide">AI Insights</h2>
@@ -139,12 +139,12 @@ export const AiTower: React.FC<AiTowerProps> = ({ selectedAppId, readOnly = fals
           <button
             onClick={handleManualAnalyze}
             disabled={isAnalyzing || !selectedAppId}
-            className={`p-2 rounded-lg transition-all border ${
+            className={`p-2 rounded-lg transition-all border relative z-40 ${
               isAnalyzing 
-              ? 'bg-indigo-500/20 border-indigo-500/30 text-indigo-400' 
-              : 'bg-white/5 border-white/10 text-slate-400 hover:bg-indigo-500/10 hover:border-indigo-500/30 hover:text-indigo-400'
-            } disabled:opacity-50`}
-            title="Manuel Analiz Tetikle"
+              ? 'bg-indigo-500/20 border-indigo-500/30 text-indigo-400 cursor-wait' 
+              : 'bg-white/5 border-white/10 text-slate-400 hover:bg-indigo-500/10 hover:border-indigo-500/30 hover:text-indigo-400 active:scale-90 cursor-pointer shadow-lg'
+            } disabled:opacity-30 disabled:cursor-not-allowed`}
+            title={!selectedAppId ? "Lütfen bir uygulama seçin" : "Manuel Analiz Tetikle"}
           >
             {isAnalyzing ? (
               <Loader2 size={18} className="animate-spin" />

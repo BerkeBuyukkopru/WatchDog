@@ -173,53 +173,53 @@ const DashboardView: React.FC = () => {
     !latestLog.dependencyDetails?.trim().startsWith('{');
 
   return (
-    <div className="flex flex-col gap-6 animate-in fade-in duration-500 pt-4">
+    <div className="flex flex-col gap-4 sm:gap-6 animate-in fade-in duration-500">
       {/* Kritik Uyarı Bantları */}
       {(isWorkerDead || (!isWorkerDead && !isAppPaused && (isAppDown || isInvalidJson))) && (
-        <div className="flex flex-col gap-4">
-        {isWorkerDead && (
-          <div className="p-4 rounded-2xl bg-rose-500/5 border border-rose-500/20 flex items-start gap-4 shadow-xl">
-            <div className="p-2.5 rounded-xl bg-rose-500/10 text-rose-500 border border-rose-500/20">
-              <AlertTriangle size={20} />
+        <div className="flex flex-col gap-4 px-1">
+          {isWorkerDead && (
+            <div className="p-4 rounded-2xl bg-rose-500/5 border border-rose-500/20 flex items-start sm:items-center gap-4 shadow-xl">
+              <div className="p-2.5 rounded-xl bg-rose-500/10 text-rose-500 border border-rose-500/20 shrink-0">
+                <AlertTriangle size={20} />
+              </div>
+              <div>
+                <h4 className="text-rose-400 font-bold text-xs sm:text-sm tracking-wide uppercase">Sistem Uyarısı</h4>
+                <p className="text-rose-500/80 text-[10px] sm:text-xs font-medium mt-1">Arka plan izleme servisi (Worker) durmuş veya veritabanı bağlantısı kopmuş olabilir! {lastUpdateText}</p>
+              </div>
             </div>
-            <div>
-              <h4 className="text-rose-400 font-bold text-sm tracking-wide uppercase">Sistem Uyarısı</h4>
-              <p className="text-rose-500/80 text-xs font-medium mt-1">Arka plan izleme servisi (Worker) durmuş veya veritabanı bağlantısı kopmuş olabilir! {lastUpdateText}</p>
-            </div>
-          </div>
-        )}
+          )}
 
-        {isAppPaused && (
-          <div className="p-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/20 flex items-center gap-4 shadow-xl">
-            <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-              <Clock size={20} />
+          {isAppPaused && (
+            <div className="p-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/20 flex items-start sm:items-center gap-4 shadow-xl">
+              <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shrink-0">
+                <Clock size={20} />
+              </div>
+              <div>
+                <h4 className="text-indigo-100 font-bold text-xs sm:text-sm tracking-wide uppercase">İzleme Duraklatıldı</h4>
+                <p className="text-indigo-400/80 text-[10px] sm:text-xs font-medium mt-1">Bu uygulamanın sağlık taraması ve AI analizi ayarlar kısmından duraklatılmıştır.</p>
+              </div>
             </div>
-            <div>
-              <h4 className="text-indigo-100 font-bold text-sm tracking-wide uppercase">İzleme Duraklatıldı</h4>
-              <p className="text-indigo-400/80 text-xs font-medium mt-1">Bu uygulamanın sağlık taraması ve AI analizi ayarlar kısmından duraklatılmıştır.</p>
-            </div>
-          </div>
-        )}
+          )}
 
-        {!isWorkerDead && !isAppPaused && (isAppDown || isInvalidJson) && (
-          <div className={`p-6 rounded-xl border flex items-center gap-4 shadow-2xl animate-pulse ${isAppDown ? 'bg-gradient-to-r from-rose-600/20 to-rose-900/20 border-rose-500/30' : 'bg-gradient-to-r from-amber-600/20 to-amber-900/20 border-amber-500/30'}`}>
-            <div className={`p-3 rounded-full text-white shadow-lg ${isAppDown ? 'bg-rose-500 shadow-rose-500/50' : 'bg-amber-500 shadow-amber-500/50'}`}>
-              <AlertCircle size={24} />
+          {!isWorkerDead && !isAppPaused && (isAppDown || isInvalidJson) && (
+            <div className={`p-4 sm:p-6 rounded-2xl border flex flex-col sm:flex-row sm:items-center gap-4 shadow-2xl animate-pulse ${isAppDown ? 'bg-gradient-to-r from-rose-600/20 to-rose-900/20 border-rose-500/30' : 'bg-gradient-to-r from-amber-600/20 to-amber-900/20 border-amber-500/30'}`}>
+              <div className={`p-3 rounded-full text-white shadow-lg shrink-0 w-fit ${isAppDown ? 'bg-rose-500 shadow-rose-500/50' : 'bg-amber-500 shadow-amber-500/50'}`}>
+                <AlertCircle size={24} />
+              </div>
+              <div>
+                <h3 className={`text-lg sm:text-xl font-bold ${isAppDown ? 'text-rose-100' : 'text-amber-100'}`}>
+                  {isAppDown ? 'Uygulama çalışmamaktadır!' : 'Sağlık verisi okunamıyor!'}
+                </h3>
+                <p className={`${isAppDown ? 'text-rose-300' : 'text-amber-300'} text-xs sm:text-sm font-medium`}>
+                  {isAppDown
+                    ? 'Seçili uygulamanın sağlık kontrolü (Health Check) adresine ulaşılamıyor. Lütfen uygulama durumunu kontrol edin.'
+                    : 'Uygulamadan gelen yanıt beklenen JSON formatında değil. Uygulama bir iç hata (500) veriyor olabilir.'}
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className={`text-xl font-bold ${isAppDown ? 'text-rose-100' : 'text-amber-100'}`}>
-                {isAppDown ? 'Uygulama çalışmamaktadır!' : 'Sağlık verisi okunamıyor!'}
-              </h3>
-              <p className={`${isAppDown ? 'text-rose-300' : 'text-amber-300'} text-sm font-medium`}>
-                {isAppDown
-                  ? 'Seçili uygulamanın sağlık kontrolü (Health Check) adresine ulaşılamıyor. Lütfen uygulama durumunu kontrol edin.'
-                  : 'Uygulamadan gelen yanıt beklenen JSON formatında değil. Uygulama bir iç hata (500) veriyor olabilir.'}
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
-    )}
+          )}
+        </div>
+      )}
 
       {/* 1. Metrics (Full Width) */}
       <Metrics 
@@ -228,58 +228,50 @@ const DashboardView: React.FC = () => {
       />
 
       {/* 2. Middle Row: Incidents & AI Tower (Responsive Split) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:h-[550px] shrink-0">
-        <div className="lg:col-span-8 h-[550px] lg:h-full flex flex-col overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:h-[550px] shrink-0">
+        <div className="lg:col-span-8 h-[500px] sm:h-[550px] lg:h-full flex flex-col overflow-hidden">
           <Incidents />
         </div>
-        <div className="lg:col-span-4 border border-white/10 rounded-2xl bg-white/5 overflow-hidden shadow-xl h-[550px] lg:h-full">
-          {!isAppDown ? (
-            <AiTower selectedAppId={selectedAppId} />
-          ) : (
-            <div className="h-full flex flex-col items-center justify-center p-8 text-center text-slate-500">
-              <div className="w-16 h-16 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500 mb-4">
-                <AlertCircle size={32} />
-              </div>
-              <h3 className="text-lg font-bold text-slate-300 mb-2">AI Analizi Devre Dışı</h3>
-              <p className="text-sm">Uygulama çalışmadığı için yapay zeka analizi yapılamamaktadır.</p>
-            </div>
-          )}
+        <div className="lg:col-span-4 border border-white/10 rounded-2xl bg-white/5 overflow-hidden shadow-xl h-[500px] sm:h-[550px] lg:h-full">
+          <AiTower selectedAppId={selectedAppId} />
         </div>
       </div>
 
       {/* 3. Bottom Row: Health Table (Responsive Scroll) */}
-      <div className="w-full overflow-x-auto custom-scrollbar border border-white/10 rounded-2xl bg-white/5 shadow-xl">
-        <div className="min-w-[1000px] lg:min-w-full">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center min-h-[400px]">
-              <Loader2 className="w-10 h-10 text-emerald-500 animate-spin mb-4" />
-              <p className="text-slate-400">Veriler yükleniyor...</p>
-            </div>
-          ) : error ? (
-            <div className="flex flex-col items-center justify-center min-h-[400px] bg-rose-500/5">
-              <AlertCircle className="w-12 h-12 text-rose-500 mb-4" />
-              <p className="text-rose-400 font-medium">{error}</p>
-              <button
-                onClick={() => fetchData()}
-                className="mt-4 px-4 py-2 bg-rose-500/10 text-rose-500 border border-rose-500/20 rounded-md hover:bg-rose-500/20 transition-colors"
-              >
-                Tekrar Dene
-              </button>
-            </div>
-          ) : (
-            <HealthTable
-              logs={logs}
-              apps={apps}
-              selectedAppId={selectedAppId}
-              logCount={logCount}
-              isAppDown={isAppDown}
-              lastUpdateText={lastUpdateText}
-              latencyThreshold={config?.criticalLatencyThreshold}
-              onAppChange={handleAppChange}
-              onCountChange={handleCountChange}
-              onRefresh={() => fetchData()}
-            />
-          )}
+      <div className="w-full overflow-hidden border border-white/10 rounded-2xl bg-white/5 shadow-xl">
+        <div className="overflow-x-auto custom-scrollbar">
+          <div className="min-w-[800px] sm:min-w-[1000px] lg:min-w-full">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center min-h-[400px]">
+                <Loader2 className="w-10 h-10 text-emerald-500 animate-spin mb-4" />
+                <p className="text-slate-400">Veriler yükleniyor...</p>
+              </div>
+            ) : error ? (
+              <div className="flex flex-col items-center justify-center min-h-[400px] bg-rose-500/5">
+                <AlertCircle className="w-12 h-12 text-rose-500 mb-4" />
+                <p className="text-rose-400 font-medium">{error}</p>
+                <button
+                  onClick={() => fetchData()}
+                  className="mt-4 px-4 py-2 bg-rose-500/10 text-rose-500 border border-rose-500/20 rounded-md hover:bg-rose-500/20 transition-colors"
+                >
+                  Tekrar Dene
+                </button>
+              </div>
+            ) : (
+              <HealthTable
+                logs={logs}
+                apps={apps}
+                selectedAppId={selectedAppId}
+                logCount={logCount}
+                isAppDown={isAppDown}
+                lastUpdateText={lastUpdateText}
+                latencyThreshold={config?.criticalLatencyThreshold}
+                onAppChange={handleAppChange}
+                onCountChange={handleCountChange}
+                onRefresh={() => fetchData()}
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>

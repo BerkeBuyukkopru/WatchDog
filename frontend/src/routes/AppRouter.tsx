@@ -20,7 +20,7 @@ const AppRouter = () => {
       <Route path="/login" element={<AuthPage />} />
 
       {/* Protected Routes */}
-      <Route element={<ProtectedRoute allowedRoles={['Admin', 'SuperAdmin']} />}>
+      <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
         {/* Live Dashboard (Phase 2) */}
         <Route path="/dashboard" element={<AdminLayout />}>
           <Route index element={<DashboardView />} />

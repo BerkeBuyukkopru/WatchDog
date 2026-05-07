@@ -19,8 +19,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) 
   if (allowedRoles && allowedRoles.length > 0 && user) {
     const hasRequiredRole = allowedRoles.includes(user.role);
     if (!hasRequiredRole) {
-      // If they don't have the required role, maybe redirect to a generic page or dashboard
-      return <Navigate to="/dashboard" replace />;
+      // Yetkisi yoksa, kendi ana sayfasına yönlendir
+      const targetPath = user.role === 'SuperAdmin' ? '/management' : '/dashboard';
+      return <Navigate to={targetPath} replace />;
     }
   }
 

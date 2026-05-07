@@ -11,7 +11,6 @@ export const useAiTower = (appId?: string) => {
   const [loading, setLoading] = useState(true);
   const [providers, setProviders] = useState<AiProvider[]>([]);
   const [activeProvider, setActiveProvider] = useState<AiProvider | null>(null);
-  const [mainApp, setMainApp] = useState<MonitoredApp | null>(null);
 
   const { connection, isConnected } = useSignalR();
 
@@ -35,10 +34,9 @@ export const useAiTower = (appId?: string) => {
         app = appsData[0];
       }
         
-      setMainApp(app);
 
-      // 2. ANALİZLERİ ÇEK (appId varsa filtrele, yoksa global)
-      const insightsData = await aiTowerService.getInsights(appId, 15);
+      // 2. ANALİZLERİ ÇEK (Her zaman global çekiyoruz ki ortak alan dolu kalsın)
+      const insightsData = await aiTowerService.getInsights(undefined, 15);
       setInsights(insightsData);
 
       // 3. AKTİF SAĞLAYICIYI BELİRLE (Uygulamaların o an kullandığı ID'ye bak ama sadece AKTİF olanları seç)
@@ -66,8 +64,7 @@ export const useAiTower = (appId?: string) => {
 
     // Yeni Öneri Geldiğinde Tetiklenecek Olay
     const handleNewInsight = (newInsight: AiInsight) => {
-      // Filtreleme: Eğer appId gelmişse sadece o uygulamaya ait analizleri ekle
-      if (appId && newInsight.appId !== appId) return;
+      // Filtreleme KALDIRILDI: Ortak alan olduğu için tüm yeni analizler eklenmeli
 
       setInsights(prev => {
         if (prev.some(i => i.id === newInsight.id)) return prev;
@@ -109,7 +106,7 @@ export const useAiTower = (appId?: string) => {
       connection.off('ReceiveInsightResolved', handleSingleInsightResolved);
       clearInterval(pollInterval);
     };
-  }, [connection, isConnected, appId, mainApp?.id, token]);
+  }, [connection, isConnected, token]);
 
   const resolveInsight = async (id: string) => {
     try {

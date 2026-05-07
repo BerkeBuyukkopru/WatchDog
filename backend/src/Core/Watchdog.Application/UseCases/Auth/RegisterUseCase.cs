@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Watchdog.Application.DTOs.Auth;
@@ -37,7 +37,10 @@ namespace Watchdog.Application.UseCases.Auth
                 return new RegisterResponse { IsSuccess = false, ErrorMessage = $"Geçersiz rol belirtildi." };
             }
 
-            var allowedApps = request.AllowedAppIds ?? new List<Guid>();
+            // SuperAdmin ise uygulama atamasını zorla boşalt
+            var allowedApps = normalizedRole == RoleConstants.SuperAdmin 
+                ? new List<Guid>() 
+                : (request.AllowedAppIds ?? new List<Guid>());
 
             // OLUŞTURMA: Yeni admin nesnesi (Artık kendi şahsi maili ile kaydediliyor)
             var newUser = new AdminUser

@@ -62,21 +62,9 @@ namespace Watchdog.Application.UseCases.Auth
                 admin.AllowedAppIds = request.AllowedAppIds;
             }
 
-            // 5. 🛡️ SON SUPERADMIN KORUMASI VE ROL GÜNCELLEME
-            if (!string.IsNullOrWhiteSpace(request.Role) && !admin.Role.Equals(request.Role, StringComparison.OrdinalIgnoreCase))
-            {
-                // Eğer mevcut bir SuperAdmin, Admin'e dönüştürülmeye çalışılıyorsa:
-                if (admin.Role == Watchdog.Domain.Constants.RoleConstants.SuperAdmin && 
-                    request.Role == Watchdog.Domain.Constants.RoleConstants.Admin)
-                {
-                    var superAdminCount = await _authRepository.GetActiveSuperAdminCountAsync();
-                    if (superAdminCount <= 1)
-                    {
-                        throw new InvalidOperationException("İşlem reddedildi: Sistemde en az bir adet SuperAdmin kalmak zorundadır.");
-                    }
-                }
-                admin.Role = request.Role;
-            }
+            // 5. 🛡️ ROL GÜNCELLEME DEVRE DIŞI
+            // Tasarım gereği rol bir kez belirlenir ve değiştirilemez.
+            // Arka planda bir saldırı veya yanlış istek gelirse rol değişikliği göz ardı edilir.
 
             // 6. Repository üzerinden güncellemeyi tamamla.
             return await _authRepository.UpdateUserAsync(admin);

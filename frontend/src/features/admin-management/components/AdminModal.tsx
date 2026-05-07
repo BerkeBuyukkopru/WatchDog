@@ -53,7 +53,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose, onSucce
           username: formData.username,
           email: formData.email,
           role: formData.role,
-          allowedAppIds: formData.allowedAppIds
+          allowedAppIds: formData.role === 'SuperAdmin' ? [] : formData.allowedAppIds
         });
         toast.success('Yönetici başarıyla güncellendi');
       } else {
@@ -62,7 +62,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose, onSucce
           email: formData.email,
           role: formData.role,
           password: formData.password,
-          allowedAppIds: formData.allowedAppIds
+          allowedAppIds: formData.role === 'SuperAdmin' ? [] : formData.allowedAppIds
         });
         toast.success('Yeni yönetici oluşturuldu');
       }
@@ -149,11 +149,15 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose, onSucce
             <select
               value={formData.role}
               onChange={e => setFormData({ ...formData, role: e.target.value })}
-              className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all appearance-none cursor-pointer"
+              disabled={!!admin}
+              className={`w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all appearance-none ${!!admin ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
             >
               <option value="Admin" className="bg-[#1A1A1E] text-white">Admin (Sınırlı Erişim)</option>
               <option value="SuperAdmin" className="bg-[#1A1A1E] text-white">SuperAdmin (Tam Erişim)</option>
             </select>
+            {admin && (
+              <p className="text-[10px] text-slate-500 px-1 italic">Mevcut yöneticinin rolü güvenlik nedeniyle değiştirilemez.</p>
+            )}
           </div>
 
           {!admin && (
@@ -170,71 +174,85 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose, onSucce
             </div>
           )}
 
-          <div className="space-y-4">
-            <div className="flex items-center justify-between px-1">
-              <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Yetkili Olduğu Uygulamalar</label>
-              <span className="text-[10px] font-bold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-full border border-indigo-500/20">
-                {formData.allowedAppIds.length} Aktif Yetki
-              </span>
-            </div>
-            
-            <div className="space-y-4 max-h-64 overflow-y-auto custom-scrollbar pr-2">
-              {/* GRUP 1: HALİHAZIRDA YETKİLİ OLANLAR */}
-              {availableApps.filter(app => formData.allowedAppIds.includes(app.id)).length > 0 && (
-                <div className="space-y-2">
+          {formData.role !== 'SuperAdmin' ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between px-1">
+                <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Yetkili Olduğu Uygulamalar</label>
+                <span className="text-[10px] font-bold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-full border border-indigo-500/20">
+                  {formData.allowedAppIds.length} Aktif Yetki
+                </span>
+              </div>
+              
+              <div className="space-y-4 max-h-64 overflow-y-auto custom-scrollbar pr-2">
+                {/* GRUP 1: HALİHAZIRDA YETKİLİ OLANLAR */}
+                {availableApps.filter(app => formData.allowedAppIds.includes(app.id)).length > 0 && (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-1 gap-2">
+                      {availableApps.filter(app => formData.allowedAppIds.includes(app.id)).map(app => (
+                        <button
+                          key={app.id}
+                          type="button"
+                          onClick={() => toggleApp(app.id)}
+                          className="group flex items-center justify-between p-3 bg-indigo-500/5 border border-indigo-500/20 rounded-xl hover:bg-indigo-500/10 transition-all text-left"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-5 h-5 rounded-md bg-indigo-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
+                              <Check size={12} strokeWidth={4} />
+                            </div>
+                            <span className="text-xs font-bold text-indigo-100">{app.name}</span>
+                          </div>
+                          <span className="text-[9px] font-black text-indigo-500/60 group-hover:text-rose-500 transition-colors">KALDIR</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* GRUP 2: YENİ EKLEBİLECEKLERİ */}
+                <div className="space-y-3 pt-2 border-t border-white/5">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                    <Plus size={12} className="text-indigo-500" />
+                    Yeni Uygulama Ekle
+                  </label>
                   <div className="grid grid-cols-1 gap-2">
-                    {availableApps.filter(app => formData.allowedAppIds.includes(app.id)).map(app => (
+                    {availableApps.filter(app => !formData.allowedAppIds.includes(app.id)).map(app => (
                       <button
                         key={app.id}
                         type="button"
                         onClick={() => toggleApp(app.id)}
-                        className="group flex items-center justify-between p-3 bg-indigo-500/5 border border-indigo-500/20 rounded-xl hover:bg-indigo-500/10 transition-all text-left"
+                        className="group flex items-center justify-between p-3 bg-white/[0.03] border border-white/10 rounded-xl hover:bg-white/5 hover:border-indigo-500/30 transition-all text-left"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-5 h-5 rounded-md bg-indigo-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
-                            <Check size={12} strokeWidth={4} />
+                          <div className="shrink-0 w-5 h-5 rounded-md bg-white/10 border border-white/10 flex items-center justify-center group-hover:bg-indigo-500/20 group-hover:border-indigo-500/50 transition-all">
+                            <Plus size={12} className="text-slate-400 group-hover:text-indigo-400" />
                           </div>
-                          <span className="text-xs font-bold text-indigo-100">{app.name}</span>
+                          <span className="text-xs font-bold text-slate-400 group-hover:text-slate-200 transition-colors">{app.name}</span>
                         </div>
-                        <span className="text-[9px] font-black text-indigo-500/60 group-hover:text-rose-500 transition-colors">KALDIR</span>
+                        <span className="text-[9px] font-black text-slate-600 group-hover:text-indigo-400 transition-colors uppercase tracking-widest">EKLE</span>
                       </button>
                     ))}
                   </div>
                 </div>
-              )}
+              </div>
 
-              {/* GRUP 2: YENİ EKLEBİLECEKLERİ */}
-              <div className="space-y-3 pt-2 border-t border-white/5">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
-                  <Plus size={12} className="text-indigo-500" />
-                  Yeni Uygulama Ekle
-                </label>
-                <div className="grid grid-cols-1 gap-2">
-                  {availableApps.filter(app => !formData.allowedAppIds.includes(app.id)).map(app => (
-                    <button
-                      key={app.id}
-                      type="button"
-                      onClick={() => toggleApp(app.id)}
-                      className="group flex items-center justify-between p-3 bg-white/[0.03] border border-white/10 rounded-xl hover:bg-white/5 hover:border-indigo-500/30 transition-all text-left"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="shrink-0 w-5 h-5 rounded-md bg-white/10 border border-white/10 flex items-center justify-center group-hover:bg-indigo-500/20 group-hover:border-indigo-500/50 transition-all">
-                          <Plus size={12} className="text-slate-400 group-hover:text-indigo-400" />
-                        </div>
-                        <span className="text-xs font-bold text-slate-400 group-hover:text-slate-200 transition-colors">{app.name}</span>
-                      </div>
-                      <span className="text-[9px] font-black text-slate-600 group-hover:text-indigo-400 transition-colors uppercase tracking-widest">EKLE</span>
-                    </button>
-                  ))}
-                </div>
+              <p className="text-[10px] text-slate-500 px-2 flex items-center gap-1.5 italic">
+                <span className="w-1 h-1 rounded-full bg-indigo-500"></span>
+                Seçilen uygulamalar bu yöneticinin gözetim paneline anında eklenecektir.
+              </p>
+            </div>
+          ) : (
+            <div className="p-5 bg-indigo-500/5 border border-indigo-500/10 rounded-2xl flex items-start gap-3">
+              <div className="mt-0.5 p-1 bg-indigo-500/20 rounded-md text-indigo-400">
+                <Shield size={16} />
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-bold text-indigo-200 uppercase tracking-wider">Tam Sistem Erişimi</p>
+                <p className="text-[10px] text-slate-500 leading-relaxed italic">
+                  SuperAdmin rolü tüm uygulamaları otomatik olarak izleme yetkisine sahiptir. Bu kullanıcıya manuel uygulama ataması yapılamaz.
+                </p>
               </div>
             </div>
-
-            <p className="text-[10px] text-slate-500 px-2 flex items-center gap-1.5 italic">
-              <span className="w-1 h-1 rounded-full bg-indigo-500"></span>
-              Seçilen uygulamalar bu yöneticinin gözetim paneline anında eklenecektir.
-            </p>
-          </div>
+          )}
 
           <div className="pt-4 border-t border-white/5 flex justify-end gap-3 bg-white/5 -mx-6 -mb-6 p-6 mt-4">
             <button

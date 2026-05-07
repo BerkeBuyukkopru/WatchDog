@@ -58,8 +58,7 @@ const Incidents: React.FC<IncidentsProps> = ({ appId, readOnly = false }) => {
     if (!connection || !isConnected) return;
 
     const handleNewIncident = (newIncident: IncidentDto) => {
-      // Filtreleme: Eğer appId gelmişse sadece o uygulamaya ait olayları ekle
-      if (appId && newIncident.appId !== appId) return;
+      // Filtreleme KALDIRILDI: Sistem uyarıları ortak alan olduğu için tüm olaylar eklenmeli
 
       setIncidents(prev => {
         if (prev.some(i => i.id === newIncident.id)) return prev;

@@ -85,13 +85,15 @@ export const AdminTable: React.FC<AdminTableProps> = ({
                     <div className="flex justify-end gap-2">
                       {activeTab === 'active' ? (
                         <>
-                          <button 
-                            onClick={() => onShowApps(admin)}
-                            className="p-2 hover:bg-white/10 rounded-lg text-slate-400 hover:text-indigo-400 transition-all opacity-70 hover:opacity-100" 
-                            title="Yetkili Uygulamalar"
-                          >
-                            <Key size={16} />
-                          </button>
+                          {admin.role !== 'SuperAdmin' && (
+                            <button 
+                              onClick={() => onShowApps(admin)}
+                              className="p-2 hover:bg-white/10 rounded-lg text-slate-400 hover:text-indigo-400 transition-all opacity-70 hover:opacity-100" 
+                              title="Yetkili Uygulamalar"
+                            >
+                              <Key size={16} />
+                            </button>
+                          )}
                           <button 
                             onClick={() => onEdit(admin)}
                             className="p-2 hover:bg-white/10 rounded-lg text-slate-400 hover:text-emerald-400 transition-all opacity-70 hover:opacity-100" 

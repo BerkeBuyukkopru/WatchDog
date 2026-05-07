@@ -100,15 +100,15 @@ const HealthTable: React.FC<HealthTableProps> = ({
   return (
     <div className="flex flex-col flex-1 overflow-hidden min-h-[400px]">
       {/* Table Header Controls */}
-      <div className="p-4 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/5">
-        <div className="flex flex-wrap items-center gap-6">
+      <div className="p-4 border-b border-white/10 flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white/5">
+        <div className="flex flex-wrap items-center gap-4 sm:gap-6">
           <div className="flex items-center gap-3">
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Uygulama</span>
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest whitespace-nowrap">Uygulama</span>
             <div className="relative">
               <select 
                 value={selectedAppId} 
                 onChange={handleAppSelect}
-                className="appearance-none bg-black/20 border border-white/10 text-slate-200 text-xs font-bold rounded-xl pl-4 pr-10 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 cursor-pointer transition-all hover:bg-black/40"
+                className="appearance-none bg-black/20 border border-white/10 text-slate-200 text-xs font-bold rounded-xl pl-4 pr-10 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 cursor-pointer transition-all hover:bg-black/40 w-full sm:w-auto min-w-[140px]"
               >
                 {apps.length === 0 && <option value="">Uygulama Yok</option>}
                 {apps.map(app => (
@@ -120,7 +120,7 @@ const HealthTable: React.FC<HealthTableProps> = ({
           </div>
           
           <div className="flex items-center gap-3">
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Kayıt Sayısı</span>
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest whitespace-nowrap">Kayıt</span>
             <div className="relative">
               <select 
                 value={logCount}
@@ -134,21 +134,21 @@ const HealthTable: React.FC<HealthTableProps> = ({
               <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
             </div>
           </div>
+        </div>
 
-          <div className="flex items-center gap-4">
-            {lastUpdateText && (
-              <span className="text-slate-500 text-[10px] font-bold uppercase tracking-widest hidden md:inline-block">
-                {lastUpdateText}
-              </span>
-            )}
-            <button 
-              onClick={handleRefresh}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-indigo-600/20 active:scale-95"
-            >
-              <RefreshCw size={14} />
-              <span>Yenile</span>
-            </button>
-          </div>
+        <div className="flex items-center justify-between sm:justify-end gap-4 w-full lg:w-auto pt-2 lg:pt-0 border-t lg:border-t-0 border-white/5">
+          {lastUpdateText && (
+            <span className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">
+              {lastUpdateText}
+            </span>
+          )}
+          <button 
+            onClick={handleRefresh}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-indigo-600/20 active:scale-95"
+          >
+            <RefreshCw size={14} />
+            <span>Yenile</span>
+          </button>
         </div>
       </div>
 
