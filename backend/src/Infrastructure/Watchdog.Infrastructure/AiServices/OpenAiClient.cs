@@ -48,7 +48,7 @@ namespace Watchdog.Infrastructure.AiServices
                 string cloudPrompt = "You MUST output your final diagnostic report strictly in professional Turkish. Do not use English.\n\n" + prompt;
 
                 using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                cts.CancelAfter(TimeSpan.FromSeconds(150));
+                cts.CancelAfter(TimeSpan.FromSeconds(90));
 
                 var response = await _chatClient.GetResponseAsync(cloudPrompt, cancellationToken: cts.Token);
 
@@ -63,7 +63,7 @@ namespace Watchdog.Infrastructure.AiServices
             catch (OperationCanceledException)
             {
                 var duration = DateTime.Now - startTime;
-                throw new Exception($"Bulut AI isteği {duration.TotalSeconds:N1} saniye sonra zaman aşımına uğradı (Timeout 150s).");
+                throw new Exception($"Bulut AI isteği {duration.TotalSeconds:N1} saniye sonra zaman aşımına uğradı (Timeout 90s).");
             }
             catch (Exception ex)
             {
