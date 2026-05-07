@@ -2,9 +2,11 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Text;
 using System.Text.Json;
-using System.Linq; // .Select() ve .ToArray() için gerekli
+using System.Linq;
 using Watchdog.Domain.Entities;
 using Watchdog.Application.Interfaces.ExternalClients;
+using MailKit.Net.Smtp;
+using MimeKit;
 
 namespace Watchdog.Infrastructure.Notifications
 {
@@ -12,48 +14,25 @@ namespace Watchdog.Infrastructure.Notifications
     {
         private readonly ILogger<MailSender> _logger;
         private readonly MailSettings _settings;
-        private readonly HttpClient _httpClient;
 
         public MailSender(ILogger<MailSender> logger, IOptions<MailSettings> settings)
         {
             _logger = logger;
             _settings = settings.Value;
-            _httpClient = new HttpClient();
         }
 
-        // === 1. SİSTEM ÇÖKTÜĞÜNDE ÇALIŞAN METOT (DOWNTIME) ===
         public async Task SendDowntimeAlertAsync(Incident incident, MonitoredApp app)
         {
-            _logger.LogWarning("===> [API] {AppName} için HTTP üzerinden DOWNTIME maili hazırlanıyor...", app.Name);
-
-            // Alıcı yönetimi (Sadece varsayılan yöneticiye gönderilir)
-            var targetEmails = new[] { _settings.ToEmail };
-
-            // Mailtrap API beklediği JSON formatı
-            var emailData = new
-            {
-                from = new { email = _settings.From, name = _settings.DisplayName },
-                to = targetEmails.Select(e => new { email = e }).ToArray(),
-                subject = $"🚨 KRİTİK KESİNTİ: {app.Name}",
-                html = $"<h3>Sistem Çöktü!</h3><p><b>Uygulama:</b> {app.Name}</p><p><b>Hata:</b> {incident.ErrorMessage}</p><p><b>Zaman:</b> {incident.StartedAt:dd.MM.yyyy HH:mm:ss} (UTC)</p>"
-            };
-
-            await SendViaApiAsync(emailData, app.Name);
+            await SendEmailAsync(_settings.ToEmail, 
+                $"🚨 KRİTİK KESİNTİ: {app.Name}", 
+                $"<h3>Sistem Çöktü!</h3><p><b>Uygulama:</b> {app.Name}</p><p><b>Hata:</b> {incident.ErrorMessage}</p><p><b>Zaman:</b> {incident.StartedAt:dd.MM.yyyy HH:mm:ss} (UTC)</p>");
         }
 
-        // === 2. SİSTEM DÜZELDİĞİNDE ÇALIŞAN METOT (RECOVERY) ===
         public async Task SendRecoveryAlertAsync(Incident incident, MonitoredApp app)
         {
-            _logger.LogWarning("===> [API] {AppName} için HTTP üzerinden KURTARMA maili hazırlanıyor...", app.Name);
-
-            var targetEmails = new[] { _settings.ToEmail };
-
-            var emailData = new
-            {
-                from = new { email = _settings.From, name = _settings.DisplayName },
-                to = targetEmails.Select(e => new { email = e }).ToArray(),
-                subject = $"✅ SİSTEM KURTARILDI: {app.Name}",
-                html = $@"
+            await SendEmailAsync(_settings.ToEmail, 
+                $"✅ SİSTEM KURTARILDI: {app.Name}", 
+                $@"
                     <div style='font-family: Arial, sans-serif; padding: 20px; border: 1px solid #dff0d8; border-radius: 10px;'>
                         <h3 style='color: #3c763d;'>Sistem Tekrar Ayakta!</h3>
                         <p><b>Uygulama:</b> {app.Name}</p>
@@ -61,72 +40,44 @@ namespace Watchdog.Infrastructure.Notifications
                         <p>Sistem şu an sağlıklı yanıt veriyor.</p>
                         <hr style='border: 0; border-top: 1px solid #dff0d8;'>
                         <p style='font-size: 11px; color: #999;'>WatchDog Otomatik Bildirim Sistemi</p>
-                    </div>"
-            };
-
-            await SendViaApiAsync(emailData, app.Name);
+                    </div>");
         }
 
-        // === 3. GENEL MAİL GÖNDERİM METODU (Şifre Sıfırlama vb. için) ===
         public async Task SendEmailAsync(string toEmail, string subject, string htmlMessage)
         {
-            _logger.LogInformation("===> [API] {Email} adresi için özel mail (Örn: Şifre Sıfırlama) hazırlanıyor...", toEmail);
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress(_settings.DisplayName, _settings.From));
+            message.To.Add(new MailboxAddress("", toEmail));
+            message.Subject = subject;
 
-            // Mailtrap API'nin beklediği JSON formatı
-            var emailData = new
-            {
-                from = new { email = _settings.From, name = _settings.DisplayName },
-                to = new[] { new { email = toEmail } }, // Sadece parametreden gelen kişiye atar
-                subject = subject,
-                html = htmlMessage
-            };
+            var bodyBuilder = new BodyBuilder { HtmlBody = htmlMessage };
+            message.Body = bodyBuilder.ToMessageBody();
 
-            // Mevcut motorunu kullanarak maili API'ye yolla
-            await SendViaApiAsync(emailData, "Auth System");
-        }
-
-        // === 4. ORTAK API GÖNDERİM MOTORU ===
-        private async Task SendViaApiAsync(object payload, string appName)
-        {
             try
             {
-                var json = JsonSerializer.Serialize(payload);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                using var client = new SmtpClient();
+                // MailHog veya yerel sunucularda SSL genellikle kapalıdır (false).
+                await client.ConnectAsync(_settings.Host, _settings.Port, _settings.UseSsl);
 
-                // Mailtrap API Endpoint (InboxID appsettings'ten okunuyor)
-                var request = new HttpRequestMessage(HttpMethod.Post, $"https://sandbox.api.mailtrap.io/api/send/{_settings.InboxId}");
+                // Eğer kullanıcı adı/şifre gerekliyse buraya eklenebilir. 
+                // MailHog auth istemez.
+                // await client.AuthenticateAsync(_settings.Username, _settings.Password);
 
-                // Hazırladığımız içeriği request'e bağlıyoruz
-                request.Content = content;
+                await client.SendAsync(message);
+                await client.DisconnectAsync(true);
 
-                // API Token'ı header'a ekliyoruz (appsettings'ten okunuyor)
-                request.Headers.Add("Api-Token", _settings.ApiToken);
-
-                var response = await _httpClient.SendAsync(request);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    _logger.LogInformation(">>> E-POSTA API ÜZERİNDEN BAŞARIYLA GÖNDERİLDİ: {AppName}", appName);
-                }
-                else if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
-                {
-                    _logger.LogWarning("⚠️ MAILTRAP KOTA DOLDU: Günlük/Aylık mail gönderim limitine ulaştınız.");
-                    // Kota dolduğunda en azından loglarda mailin ne olduğunu görelim:
-                    Console.WriteLine("\n" + new string('=', 50));
-                    Console.WriteLine($"[KOTA DOLU - GÖNDERİLEMEYEN MAİL]");
-                    Console.WriteLine($"Uygulama: {appName}");
-                    Console.WriteLine($"Payload: {json}");
-                    Console.WriteLine(new string('=', 50) + "\n");
-                }
-                else
-                {
-                    var errorDetail = await response.Content.ReadAsStringAsync();
-                    _logger.LogCritical("!!! API HATASI: {Code} | Detay: {Detail}", response.StatusCode, errorDetail);
-                }
+                _logger.LogInformation(">>> E-POSTA SMTP (MailKit) ÜZERİNDEN BAŞARIYLA GÖNDERİLDİ: {To}", toEmail);
             }
             catch (Exception ex)
             {
-                _logger.LogCritical("!!! HTTP GÖNDERİM HATASI: {Message}", ex.Message);
+                _logger.LogError("!!! SMTP GÖNDERİM HATASI: {Message}", ex.Message);
+                
+                // Hata durumunda loglarda içeriği görelim (Fallback)
+                Console.WriteLine("\n" + new string('=', 50));
+                Console.WriteLine($"[GÖNDERİLEMEYEN MAİL]");
+                Console.WriteLine($"Alıcı: {toEmail}");
+                Console.WriteLine($"Konu: {subject}");
+                Console.WriteLine(new string('=', 50) + "\n");
             }
         }
     }
