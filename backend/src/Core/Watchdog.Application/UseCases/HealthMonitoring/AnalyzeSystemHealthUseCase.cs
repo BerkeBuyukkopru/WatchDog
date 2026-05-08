@@ -418,10 +418,13 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                     return;
                 }
 
-                var prompt = promptBuilder.BuildRootCausePrompt(recentSnapshots, localApp.Name);
-
                 Console.WriteLine($">>>> [RCA-REQUEST] {providerToUse.Name} motoruna istek atılıyor...");
                 var aiClient = await aiClientFactory.CreateClientAsync(providerToUse.Id);
+
+                // Yerel model kontrolü ve dil optimizasyonu
+                bool isLocal = aiClient.GetType().Name.Contains("LocalOllamaClient");
+                var prompt = promptBuilder.BuildRootCausePrompt(recentSnapshots, localApp.Name, isLocal);
+
                 var aiResponse = await aiClient.AnalyzeAsync(prompt);
 
                 if (string.IsNullOrEmpty(aiResponse))

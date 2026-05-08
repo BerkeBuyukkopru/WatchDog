@@ -91,13 +91,18 @@ namespace Watchdog.Application.UseCases.AI
             string targetErrors = targetDay.TopErrors.Any() ? string.Join(", ", targetDay.TopErrors) : "None";
             string baselineErrors = baselineDay.TopErrors.Any() ? string.Join(", ", baselineDay.TopErrors) : "None";
 
+            // --- FACTORY'E UYGULAMANIN KENDİ AI ID'SİNİ GÖNDERİYORUZ ---
+            var aiClient = await _aiClientFactory.CreateClientAsync(app.ActiveAiProviderId);
+
+            // Eğer yerel model (Ollama) kullanılıyorsa, promptu İngilizce hazırlatıyoruz
+            bool isLocal = aiClient.GetType().Name.Contains("LocalOllamaClient");
+
             string aiPrompt = _promptBuilder.BuildStrategicPrompt(
                 app, baselineDay, targetDay,
                 weeklyAvgCpu, weeklyAvgRam,
-                baselineErrors, targetErrors);
+                baselineErrors, targetErrors,
+                isLocal);
 
-            // --- FACTORY'E UYGULAMANIN KENDİ AI ID'SİNİ GÖNDERİYORUZ ---
-            var aiClient = await _aiClientFactory.CreateClientAsync(app.ActiveAiProviderId);
             var aiResponseText = await aiClient.AnalyzeAsync(aiPrompt);
 
             var insight = new AiInsight

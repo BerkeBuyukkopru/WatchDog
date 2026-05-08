@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Watchdog.Application.DTOs.AI;
@@ -12,7 +12,8 @@ namespace Watchdog.Application.Interfaces.Common
         // Kriz Anı (Event-Driven) Promptu
         string BuildRootCausePrompt(
             List<HealthSnapshot> recentSnapshots,
-            string appName);
+            string appName,
+            bool isLocal = false);
 
         // Saatlik Rutin Kapasite Promptu
         string BuildRoutinePrompt(
@@ -22,7 +23,8 @@ namespace Watchdog.Application.Interfaces.Common
             double avgCpu2h, double avgRam2h, double avgLatency2h,
             double maxCpu2h, double maxRam2h, double maxLatency2h,
             string peakCpuTime, string dependencyContext,
-            int outageCount);
+            int outageCount,
+            bool isLocal = false);
 
         // Haftalık Stratejik Tahmin Promptu
         string BuildStrategicPrompt(
@@ -30,6 +32,7 @@ namespace Watchdog.Application.Interfaces.Common
             DailyEnrichedSnapshotDto baselineDay,
             DailyEnrichedSnapshotDto targetDay,
             double weeklyAvgCpu, double weeklyAvgRam,
-            string baselineErrors, string targetErrors);
+            string baselineErrors, string targetErrors,
+            bool isLocal = false);
     }
 }

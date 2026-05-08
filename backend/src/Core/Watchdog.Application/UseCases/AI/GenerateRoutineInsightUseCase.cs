@@ -134,16 +134,21 @@ namespace Watchdog.Application.UseCases.AI
                             ? "STATUS: DEGRADED | ERRORS: " + string.Join(", ", dependencyIssues)
                             : "STATUS: HEALTHY | ALL SUB-SERVICES OPERATIONAL";
 
+            // 3. FACTORY'E UYGULAMANIN KENDİ AI TERCİHİNİ GÖNDERİYORUZ
+            var aiClient = await _aiClientFactory.CreateClientAsync(app.ActiveAiProviderId);
+            
+            // Eğer yerel model (Ollama) kullanılıyorsa, promptu İngilizce hazırlatıyoruz (Zeka optimizasyonu)
+            bool isLocal = aiClient.GetType().Name.Contains("LocalOllamaClient");
+
             string aiPrompt = _promptBuilder.BuildRoutinePrompt(
                 app, cpuLimit, ramLimit, latencyLimit,
                 avgCpu24h, avgRam24h, avgLatency24h,
                 avgCpu2h, avgRam2h, avgLatency2h,
                 maxCpu2h, maxRam2h, maxLatency2h,
                 peakCpuTime, dependencyContext,
-                outageCount);
+                outageCount,
+                isLocal);
 
-            // 3. FACTORY'E UYGULAMANIN KENDİ AI TERCİHİNİ GÖNDERİYORUZ
-            var aiClient = await _aiClientFactory.CreateClientAsync(app.ActiveAiProviderId);
             var aiResponseText = await aiClient.AnalyzeAsync(aiPrompt);
 
             var insight = new AiInsight

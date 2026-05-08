@@ -66,7 +66,7 @@ namespace Watchdog.Infrastructure.Persistence
                 {
                     Id = ollamaId,
                     Name = "Ollama",
-                    ModelName = "phi3",
+                    ModelName = "llama3.2:1b",
                     ApiUrl = "http://host.docker.internal:11434",
                     IsActive = true, // İlk kurulumda tek motor olduğu için varsayılan aktif
                     CreatedAt = DateTime.UtcNow,

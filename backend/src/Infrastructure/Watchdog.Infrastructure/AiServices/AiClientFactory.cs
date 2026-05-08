@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Watchdog.Application.Interfaces.ExternalClients;
 using Watchdog.Application.Interfaces.Repositories;
@@ -35,27 +37,36 @@ namespace Watchdog.Infrastructure.AiServices
                 targetProvider = await _providerRepository.GetActiveProviderAsync();
             }
 
-
+            // --- DİNAMİK FALLBACK HAZIRLIĞI ---
+            // Veritabanından Ollama ayarlarını çekiyoruz. Eğer bulunamazsa güvenli varsayılanları kullanıyoruz.
+            var allProviders = await _providerRepository.GetAllAsync();
+            var ollamaProvider = allProviders.FirstOrDefault(p => p.Name.Contains("Ollama", StringComparison.OrdinalIgnoreCase));
+            
+            string fallbackUrl = ollamaProvider?.ApiUrl ?? "http://localhost:11434";
+            string fallbackModel = ollamaProvider?.ModelName ?? "llama3.2:1b";
+            var localFallback = new LocalOllamaClient(fallbackUrl, fallbackModel);
 
             // 3. KRİTİK KONTROL: Veritabanında hiçbir sağlayıcı yoksa veya seçilen sağlayıcı AKTİF değilse Ollama'ya dön.
             if (targetProvider == null || (!targetProvider.IsActive && !targetProvider.Name.Contains("Ollama", StringComparison.OrdinalIgnoreCase)))
             {
                 string reason = targetProvider == null ? "Bulunamadı" : "Pasif Durumda";
-                throw new Exception($"WatchDog: Seçilen AI sağlayıcısı ({reason})! Lütfen yapılandırmayı kontrol edin.");
+                _logger.LogWarning("WatchDog: AI sağlayıcısı ({Reason})! Varsayılan olarak Yerel Ollama ({Model}) başlatılıyor.", reason, fallbackModel);
+                return localFallback;
             }
 
             // 4. API KEY KONTROLÜ: Ollama dışındaki sağlayıcılarda anahtar yoksa Ollama'ya dön.
             bool isOllama = targetProvider.Name.Contains("Ollama", StringComparison.OrdinalIgnoreCase);
             if (!isOllama && string.IsNullOrWhiteSpace(targetProvider.ApiKey))
             {
-                throw new Exception($"WatchDog: {targetProvider.Name} için API Anahtarı eksik! Bağlantı kurulamıyor.");
+                _logger.LogWarning("WatchDog: {ProviderName} için API Anahtarı eksik! Otomatik olarak Ollama'ya ({Model}) geçiliyor.", targetProvider.Name, fallbackModel);
+                return localFallback;
             }
 
             _logger.LogInformation("WatchDog: '{ProviderName}' ({ModelName}) sağlayıcısı üzerinden bağlantı kuruluyor...", targetProvider.Name, targetProvider.ModelName);
 
             if (isOllama)
             {
-                return new LocalOllamaClient(targetProvider.ApiUrl ?? "http://localhost:11434", targetProvider.ModelName);
+                return new LocalOllamaClient(targetProvider.ApiUrl ?? fallbackUrl, targetProvider.ModelName);
             }
             else
             {

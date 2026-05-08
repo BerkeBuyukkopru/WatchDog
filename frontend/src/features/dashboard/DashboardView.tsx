@@ -24,8 +24,12 @@ const DashboardView: React.FC = () => {
   const [config, setConfig] = useState<SystemConfigDto | null>(null);
   const [isExporting, setIsExporting] = useState<boolean>(false);
 
-  const context = useOutletContext<{ setApiError: (val: boolean) => void } | null>();
+  const context = useOutletContext<{ 
+    setApiError: (val: boolean) => void,
+    setSelectedAppName: (val: string) => void 
+  } | null>();
   const setApiError = context?.setApiError || (() => { });
+  const setSelectedAppName = context?.setSelectedAppName || (() => { });
 
   const { connection, isConnected } = useSignalR();
 
@@ -177,6 +181,14 @@ const DashboardView: React.FC = () => {
   const selectedApp = apps.find(a => a.id === selectedAppId);
   const isAppPaused = selectedApp && !selectedApp.isActive;
 
+  // Header'daki uygulama ismini güncelle (TS Fix: Declaration sonrası kullanım)
+  useEffect(() => {
+    if (selectedApp) {
+      setSelectedAppName(selectedApp.name);
+    }
+    return () => setSelectedAppName('');
+  }, [selectedApp, setSelectedAppName]);
+
   const isAppDown = latestLog?.status === 'Unhealthy' &&
     (latestLog.dependencyDetails?.includes('Network is unreachable') ||
       latestLog.dependencyDetails?.includes('Kritik Ağ Hatası') ||
@@ -189,30 +201,6 @@ const DashboardView: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-4 sm:gap-6 animate-in fade-in duration-500">
-      {/* Dashboard Top Bar: App Info & Export Controls */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-background-light p-4 sm:p-6 rounded-2xl border border-white/5 shadow-xl">
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-3">
-            <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-              {selectedApp?.name || 'Uygulama Seçiniz'}
-            </h1>
-            <div className={`flex items-center gap-2 px-2 sm:px-3 py-1 rounded-full border ${isAppDown ? 'bg-rose-500/10 border-rose-500/20 text-rose-500' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'}`}>
-              <div className={`w-1.5 h-1.5 rounded-full ${isAppDown ? 'bg-rose-500' : 'bg-emerald-500 animate-pulse'}`}></div>
-              <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest">
-                {isAppDown ? 'ÇEVRİMDIŞI' : 'CANLI VERİ AKIŞI'}
-              </span>
-            </div>
-          </div>
-          <p className="text-slate-500 text-[10px] sm:text-xs font-medium uppercase tracking-widest">
-            {selectedApp?.id || 'Analiz paneli hazırlanıyor...'}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-4">
-          {/* Export butonu veya diğer kontroller buraya gelebilir */}
-        </div>
-      </div>
-
       {/* Kritik Uyarı Bantları */}
       {(isWorkerDead || (!isWorkerDead && !isAppPaused && (isAppDown || isInvalidJson))) && (
         <div className="flex flex-col gap-4 px-1">

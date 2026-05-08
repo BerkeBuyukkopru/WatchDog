@@ -27,8 +27,8 @@ namespace Watchdog.Infrastructure.AiServices
                 Timeout = Timeout.InfiniteTimeSpan
             };
 
-            // Eğer veritabanından gelen modelName boşsa, güvende kalmak adına varsayılan olarak "phi3" kullanıyoruz.
-            string activeModel = string.IsNullOrWhiteSpace(modelName) ? "phi3:mini" : modelName;
+            // Eğer veritabanından gelen modelName boşsa, güvende kalmak adına varsayılan olarak "llama3.2:1b" kullanıyoruz.
+            string activeModel = string.IsNullOrWhiteSpace(modelName) ? "llama3.2:1b" : modelName;
             _chatClient = new OllamaApiClient(customHttpClient, activeModel);
         }
 
