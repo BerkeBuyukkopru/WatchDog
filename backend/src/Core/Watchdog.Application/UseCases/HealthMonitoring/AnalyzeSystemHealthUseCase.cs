@@ -165,8 +165,7 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                             StartedAt = newIncident.StartedAt
                         });
 
-                        await SendAlertToResponsibleAdminsAsync(app, $"🚨 KESİNTİ: {componentName}", 
-                            $"{app.Name} uygulamasında {componentName} bileşeni çöktü.\nDetay: {latestSnapshot.DependencyDetails}");
+                        await SendAlertToResponsibleAdminsAsync(app, newIncident);
 
                         // Yapay Zeka Analizini (RCA) tetikle
                         _ = Task.Run(async () => await TriggerRootCauseAnalysisAsync(app, recentSnapshots));
@@ -203,17 +202,9 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                             ResolvedAt = incidentToResolve.ResolvedAt
                         });
 
-                        // 🧠 AI AUTO-RESOLVE: (İptal Edildi)
-                        // Artık analizler sistem düzelince otomatik kapanmıyor. 
-                        // Kullanıcı manuel "Anladım" diyene kadar Dashboard'da kalacak.
-                        
-                        // await insightRepository.ResolveAllActiveInsightsForAppAsync(app.Id);
-                        // await _statusBroadcaster.BroadcastAllInsightsResolvedAsync(app.Id);
-
                         Console.WriteLine($">>>> [RECOVERY] {app.Name} için AI önerileri artık manuel kapatılmak üzere korundu.");
 
-                        await SendAlertToResponsibleAdminsAsync(app, $"✅ DÜZELDİ: {componentName}", 
-                            $"{app.Name} uygulamasında {componentName} bileşeni tekrar sağlıklı.");
+                        await SendAlertToResponsibleAdminsAsync(app, incidentToResolve, isRecovery: true);
                     }
                 }
             }
@@ -313,7 +304,7 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
         }
 
         // Kodu kirletmemek için mail gönderme işini küçük bir metoda aldık:
-        private async Task SendAlertToResponsibleAdminsAsync(MonitoredApp app, string subject, string message)
+        private async Task SendAlertToResponsibleAdminsAsync(MonitoredApp app, Incident incident, bool isRecovery = false)
         {
             var responsibleAdmins = await _authRepository.GetAdminsByAppIdAsync(app.Id);
 
@@ -324,12 +315,13 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
 
             if (adminEmails.Any())
             {
-                // Bazı mail servisleri virgül yerine noktalı virgül bekler veya liste ister. 
-                // Bizim sistem virgülle ayrılmış string bekliyor gibi görünüyor.
                 foreach (var email in adminEmails)
                 {
                     try {
-                        await _notificationSender.SendEmailAsync(email, subject, message);
+                        if (isRecovery)
+                            await _notificationSender.SendRecoveryAlertAsync(email, incident, app);
+                        else
+                            await _notificationSender.SendDowntimeAlertAsync(email, incident, app);
                     } catch (Exception ex) {
                         Console.WriteLine($">>>> [MAIL-ERROR] {email} adresine mail gönderilemedi: {ex.Message}");
                     }

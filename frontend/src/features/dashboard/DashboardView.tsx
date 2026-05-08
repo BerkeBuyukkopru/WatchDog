@@ -158,11 +158,12 @@ const DashboardView: React.FC = () => {
       const logTime = new Date(ts).getTime();
       const diff = now - logTime;
 
-      if (diff > 5 * 60 * 1000) { // 5 dakika
-        setIsWorkerDead(true);
-      } else {
-        setIsWorkerDead(false);
-      }
+      // 2 DAKİKA EŞİĞİ: Worker ölümü veya veri bayatlaması kontrolü
+      const deadThreshold = 2 * 60 * 1000; 
+      const isDead = diff > deadThreshold;
+
+      setIsWorkerDead(isDead);
+      setApiError(isDead); // Header'daki ONLINE/OFFLINE badge'ini tetikle
 
       const diffSec = Math.floor(diff / 1000);
       if (diffSec < 60) {
@@ -175,8 +176,11 @@ const DashboardView: React.FC = () => {
 
     checkTime(); // İlk hesaplama
     const interval = setInterval(checkTime, 1000);
-    return () => clearInterval(interval);
-  }, [latestLog]);
+    return () => {
+      clearInterval(interval);
+      setApiError(false); // Component kapanırken temizle
+    };
+  }, [latestLog, setApiError]);
 
   const selectedApp = apps.find(a => a.id === selectedAppId);
   const isAppPaused = selectedApp && !selectedApp.isActive;
