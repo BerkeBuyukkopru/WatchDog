@@ -76,7 +76,6 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
 
             // Sistem donanım sınırlarını Config'den okuyalım (yoksa fallback)
             double totalRamMb = Convert.ToDouble(_configuration["SystemMetrics:TotalRamMb"] ?? "16384");
-            double totalDiskGb = Convert.ToDouble(_configuration["SystemMetrics:TotalDiskGb"] ?? "500");
             double totalCpuPercentage = Convert.ToDouble(_configuration["SystemMetrics:TotalCpuPercentage"] ?? "100");
             int totalCpuCores = Convert.ToInt32(_configuration["SystemMetrics:TotalCpuCores"] ?? "16");
 
@@ -97,7 +96,7 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                 DependencyDetails = x.DependencyDetails,
                 TotalRamMb = totalRamMb,
                 TotalCpuPercentage = totalCpuPercentage,
-                TotalDiskGb = totalDiskGb,
+                TotalDiskGb = x.TotalDiskGb > 0 ? x.TotalDiskGb : 500, // DB'de henüz yoksa veya 0 ise 500 dön
                 TotalCpuCores = totalCpuCores
             })
             .OrderBy(x => x.Timestamp)

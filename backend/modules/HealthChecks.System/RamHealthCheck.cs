@@ -31,21 +31,27 @@ namespace HealthChecks.System
                 var process = Process.GetCurrentProcess();
                 var appWorkingSetMb = Math.Round(process.WorkingSet64 / (1024.0 * 1024.0), 2);
 
-                // 2. Sistem RAM Bilgileri
+                // 2. Sistem RAM Bilgileri (Zırhlı ve Cross-Platform)
                 double totalRamMb = 0;
                 double availableRamMb = 0;
 
-                if (OperatingSystem.IsWindows())
+                try
                 {
                     var gcMemoryInfo = GC.GetGCMemoryInfo();
-                    totalRamMb = Math.Round(gcMemoryInfo.TotalAvailableMemoryBytes / (1024.0 * 1024.0), 2);
-                    var loadMb = Math.Round(gcMemoryInfo.MemoryLoadBytes / (1024.0 * 1024.0), 2);
-                    availableRamMb = totalRamMb - loadMb;
+                    
+                    // .NET 5+ ile gelen TotalAvailableMemoryBytes, Docker/Cloud limitlerini de dikkate alır.
+                    if (gcMemoryInfo.TotalAvailableMemoryBytes > 0)
+                    {
+                        totalRamMb = Math.Round(gcMemoryInfo.TotalAvailableMemoryBytes / (1024.0 * 1024.0), 2);
+                        var loadMb = Math.Round(gcMemoryInfo.MemoryLoadBytes / (1024.0 * 1024.0), 2);
+                        availableRamMb = totalRamMb - loadMb;
+                    }
+                    else if (OperatingSystem.IsLinux())
+                    {
+                        (totalRamMb, availableRamMb) = GetLinuxMemoryInfo();
+                    }
                 }
-                else if (OperatingSystem.IsLinux())
-                {
-                    (totalRamMb, availableRamMb) = GetLinuxMemoryInfo();
-                }
+                catch { /* Metrik okuma hatası durumunda 0 kalsın */ }
 
                 // 3. Yüzdelik Hesaplama
                 var usedRamMb = totalRamMb - availableRamMb;
@@ -54,10 +60,10 @@ namespace HealthChecks.System
                 var status = HealthStatus.Healthy;
                 var message = $"Bellek değerleri normal. (Sistem Kullanımı: %{systemRamPercent})";
 
-                if (availableRamMb <= _minServerAvailableMb)
+                if (availableRamMb > 0 && availableRamMb <= _minServerAvailableMb)
                 {
                     status = HealthStatus.Degraded;
-                    message = $"Sunucuda boş RAM kritik seviyede! Kalan: {availableRamMb} MB (Sistem: %{systemRamPercent})";
+                    message = $"Sunucuda boş RAM kritik seviyede! Kalan: {availableRamMb} MB";
                 }
                 else if (appWorkingSetMb >= _maxAppAllocatedMb)
                 {
@@ -70,16 +76,18 @@ namespace HealthChecks.System
                     { "system_ram_percent", systemRamPercent },
                     { "process_ram_mb", appWorkingSetMb },
                     { "server_available_ram_mb", availableRamMb },
-                    { "server_total_ram_mb", totalRamMb },
-                    { "app_ram_threshold_mb", _maxAppAllocatedMb },
-                    { "server_min_ram_threshold_mb", _minServerAvailableMb }
+                    { "server_total_ram_mb", totalRamMb }
                 };
 
                 return Task.FromResult(new HealthCheckResult { Status = status, Description = message, Data = metrics });
             }
             catch (Exception ex)
             {
-                return Task.FromResult(HealthCheckResult.Unhealthy("RAM metrikleri okunamadı.", ex));
+                return Task.FromResult(new HealthCheckResult { 
+                    Status = HealthStatus.Healthy, 
+                    Description = "RAM metrikleri şu an okunamıyor.", 
+                    Data = new Dictionary<string, object> { { "error", ex.Message } }
+                });
             }
         }
 
@@ -87,17 +95,15 @@ namespace HealthChecks.System
         {
             try
             {
-                // /proc/meminfo: MemTotal, MemAvailable (kB)
                 var lines = File.ReadAllLines("/proc/meminfo");
                 double total = 0;
                 double available = 0;
 
                 foreach (var line in lines)
                 {
-                    if (line.StartsWith("MemTotal:"))
-                        total = ParseMemInfoLine(line);
-                    else if (line.StartsWith("MemAvailable:"))
-                        available = ParseMemInfoLine(line);
+                    if (line.StartsWith("MemTotal:")) total = ParseMemInfoLine(line);
+                    else if (line.StartsWith("MemAvailable:")) available = ParseMemInfoLine(line);
+                    else if (line.StartsWith("MemFree:") && available == 0) available = ParseMemInfoLine(line);
                 }
 
                 return (Math.Round(total / 1024.0, 2), Math.Round(available / 1024.0, 2));

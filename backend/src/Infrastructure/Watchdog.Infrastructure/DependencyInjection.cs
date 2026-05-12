@@ -1,4 +1,3 @@
-using HealthChecks.System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -48,14 +47,9 @@ namespace Watchdog.Infrastructure
             // Canlı yayın servisini tekilleştirilmiş (Singleton) olarak ekliyoruz
             services.AddSingleton<IStatusBroadcaster, SignalRStatusBroadcaster>();
 
-            // === 4. Sistem Sensörleri ===
-            services.AddSystemHealthChecks(
-                serverCpuThreshold: 90.0,
-                appCpuThreshold: 90.0,
-                minServerAvailableMb: 512f,
-                maxAppAllocatedMb: 1024f,
-                minFreeSpaceGb: 5f
-            );
+            // === 4. Merkezi Kasa ve Sensör (Bağımsız Backend Mimarisi) ===
+            services.AddSingleton<Watchdog.Infrastructure.Monitoring.ILocalHostMonitor, Watchdog.Infrastructure.Monitoring.LocalHostMonitor>();
+            services.AddSingleton<Watchdog.Application.Interfaces.Monitoring.ICentralMetricsProvider, Watchdog.Infrastructure.Monitoring.CentralMetricsProvider>();
 
             // === Yapay Zeka (AI) Servisleri ===
             // Fabrikamızı kaydediyoruz. UseCase IAiClientFactory istediğinde AiClientFactory verilecek.

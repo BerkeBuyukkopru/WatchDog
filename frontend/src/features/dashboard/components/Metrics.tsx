@@ -26,7 +26,7 @@ const Metrics: React.FC<MetricsProps> = ({ latestLog }) => {
           <div className="space-y-3">
             <div>
               <div className="flex justify-between text-[10px] sm:text-xs mb-1">
-                <span className="text-slate-400 truncate mr-2">Sistem CPU <span className="hidden xs:inline">Kullanımı</span></span>
+                <span className="text-slate-400 truncate mr-2">Sistem CPU Kullanımı</span>
                 <span className="text-slate-200 font-bold shrink-0">%{sysCpu.toFixed(1)}</span>
               </div>
               <div className="w-full bg-slate-800 rounded-full h-1.5">
@@ -35,7 +35,7 @@ const Metrics: React.FC<MetricsProps> = ({ latestLog }) => {
             </div>
             <div>
               <div className="flex justify-between text-[10px] sm:text-xs mb-1">
-                <span className="text-slate-400 truncate mr-2">Uygulama CPU <span className="hidden xs:inline">Kullanımı</span></span>
+                <span className="text-slate-400 truncate mr-2">Uygulama CPU Kullanımı</span>
                 <span className="text-slate-200 font-bold shrink-0">%{appCpu.toFixed(1)}</span>
               </div>
               <div className="w-full bg-slate-800 rounded-full h-1.5">
@@ -51,7 +51,7 @@ const Metrics: React.FC<MetricsProps> = ({ latestLog }) => {
           <div className="space-y-3">
             <div>
               <div className="flex justify-between text-[10px] sm:text-xs mb-1">
-                <span className="text-slate-400 truncate mr-2">Sistem RAM <span className="hidden xs:inline">Kullanımı</span></span>
+                <span className="text-slate-400 truncate mr-2">Sistem RAM Kullanımı</span>
                 <span className="text-slate-200 font-bold shrink-0">%{sysRam.toFixed(1)}</span>
               </div>
               <div className="w-full bg-slate-800 rounded-full h-1.5">
@@ -60,7 +60,7 @@ const Metrics: React.FC<MetricsProps> = ({ latestLog }) => {
             </div>
             <div>
               <div className="flex justify-between text-[10px] sm:text-xs mb-1">
-                <span className="text-slate-400 truncate mr-2">Uygulama RAM <span className="hidden xs:inline">Kullanımı</span></span>
+                <span className="text-slate-400 truncate mr-2">Uygulama RAM Kullanımı</span>
                 <span className="text-slate-200 font-bold shrink-0">{appRam.toFixed(0)} MB</span>
               </div>
               <div className="w-full bg-slate-800 rounded-full h-1.5">
@@ -83,8 +83,8 @@ const Metrics: React.FC<MetricsProps> = ({ latestLog }) => {
                 <div className="bg-emerald-500 h-1.5 rounded-full transition-all duration-1000" style={{ width: `${Math.min(100, diskUsagePercent)}%` }}></div>
               </div>
               <div className="mt-2 text-[9px] sm:text-[10px] text-slate-500 flex justify-between gap-2">
-                <span className="truncate">Boş: {freeDisk.toFixed(1)}G</span>
-                <span className="truncate">Top: {totalDisk.toFixed(0)}G</span>
+                <span className="truncate">Boş: {freeDisk.toFixed(1)} GB</span>
+                <span className="truncate">Top: {totalDisk.toFixed(1)} GB</span>
               </div>
             </div>
           </div>

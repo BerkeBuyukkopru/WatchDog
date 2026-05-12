@@ -14,6 +14,7 @@ builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddScoped<ICurrentUserService, WorkerCurrentUserService>();
 
 // === 2. Worker Servis Kayıtları ===
+builder.Services.AddHostedService<CentralMetricsCollectorWorker>(); // Merkez Sistem Metrik Toplayıcısı
 builder.Services.AddHostedService<HealthPollingWorker>();             // Temel Sağlık Taraması (Health Polling)
 builder.Services.AddHostedService<AiAnalyzerWorker>();   // Geliştirici 1: Yapay Zeka Kapasite İşçisi
 

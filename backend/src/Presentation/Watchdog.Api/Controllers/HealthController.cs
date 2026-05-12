@@ -1,5 +1,4 @@
-using HealthChecks.Abstractions;
-using HealthChecks.Abstractions.Enums;
+using Watchdog.Infrastructure.Monitoring;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Watchdog.Application.Interfaces.Repositories;
@@ -14,14 +13,14 @@ namespace Watchdog.Api.Controllers
     [Authorize]
     public class HealthController : ControllerBase
     {
-        private readonly IEnumerable<IHealthCheck> _healthChecks;
+        private readonly ILocalHostMonitor _hostMonitor;
         private readonly ISystemConfigurationRepository _configRepository;
 
         public HealthController(
-            IEnumerable<IHealthCheck> healthChecks,
+            ILocalHostMonitor hostMonitor,
             ISystemConfigurationRepository configRepository)
         {
-            _healthChecks = healthChecks;
+            _hostMonitor = hostMonitor;
             _configRepository = configRepository;
         }
 
@@ -37,35 +36,21 @@ namespace Watchdog.Api.Controllers
             var cpuThreshold = config?.CriticalCpuThreshold ?? 90.0;
             var ramThreshold = config?.CriticalRamThreshold ?? 90.0;
 
-            foreach (var check in _healthChecks)
-            {
-                var result = await check.CheckHealthAsync();
+            // Sensörden güncel donanım verisini çek (Backend'in yeni bağımsız servisi)
+            var currentMetrics = _hostMonitor.GetCurrentHostMetrics();
 
-                // Sensörün kendi içindeki statik eşiği yerine DB'deki dinamik eşiğe göre değerlendir
-                var currentStatus = result.Status;
+            metrics["system_cpu_percent"] = currentMetrics.SystemCpu;
+            metrics["system_ram_percent"] = currentMetrics.SystemRam;
+            metrics["free_disk_gb"] = currentMetrics.FreeDiskGb;
+            metrics["total_disk_gb"] = currentMetrics.TotalDiskGb;
 
-                if (result.Data != null)
-                {
-                    foreach (var item in result.Data) metrics[item.Key] = item.Value;
+            // Dinamik Eşik Kontrolleri (DB'den gelen)
+            if (currentMetrics.SystemCpu >= cpuThreshold) isHealthy = false;
+            if (currentMetrics.SystemRam >= ramThreshold) isHealthy = false;
 
-                    // Dinamik CPU Kontrolü
-                    if (result.Data.TryGetValue("system_cpu_percent", out var cpuVal))
-                    {
-                        var cpu = Convert.ToDouble(cpuVal);
-                        if (cpu >= cpuThreshold) currentStatus = HealthStatus.Degraded;
-                    }
-                    
-                    // Dinamik RAM Kontrolü
-                    if (result.Data.TryGetValue("system_ram_percent", out var ramVal))
-                    {
-                        var ram = Convert.ToDouble(ramVal);
-                        if (ram >= ramThreshold) currentStatus = HealthStatus.Degraded;
-                    }
-                }
-
-                if (currentStatus != HealthStatus.Healthy) isHealthy = false;
-                checkResults[check.Name] = currentStatus.ToString();
-            }
+            checkResults["System.CPU"] = currentMetrics.SystemCpu >= cpuThreshold ? "Degraded" : "Healthy";
+            checkResults["System.RAM"] = currentMetrics.SystemRam >= ramThreshold ? "Degraded" : "Healthy";
+            checkResults["System.Storage"] = currentMetrics.FreeDiskGb <= 5.0 ? "Degraded" : "Healthy";
 
             var response = new
             {

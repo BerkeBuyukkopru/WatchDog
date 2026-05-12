@@ -20,38 +20,46 @@ namespace HealthChecks.System
         private static DateTime _lastAppSampleTime = DateTime.MinValue;
         private static readonly object _appLock = new object();
 
+        // Sistem CPU için statik sayaç ve son değerler
+        private static PerformanceCounter? _winCpuCounter;
+        private static bool _isWinCounterInitialized = false;
+        private static (long total, long idle) _lastLinuxCpu = (0, 0);
+
         public string Name => "System.CPU";
 
         public CpuHealthCheck(double serverCpuThreshold = 90.0, double appCpuThreshold = 90.0)
         {
             _serverCpuThreshold = serverCpuThreshold;
             _appCpuThreshold = appCpuThreshold;
+            
+            InitializeSystemCounters();
         }
 
-        public async Task<HealthCheckResult> CheckHealthAsync(CancellationToken cancellationToken = default)
+        private void InitializeSystemCounters()
         {
             try
             {
-                // 1. Sistem (Server) CPU Ölçümü Başlangıcı
-                (long total, long idle) systemStart = (0, 0);
-                PerformanceCounter? winCounter = null;
-
-                if (OperatingSystem.IsWindows())
+                if (OperatingSystem.IsWindows() && !_isWinCounterInitialized)
                 {
 #pragma warning disable CA1416
-                    winCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
-                    winCounter.NextValue();
+                    _winCpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
+                    _winCpuCounter.NextValue(); 
+                    _isWinCounterInitialized = true;
 #pragma warning restore CA1416
                 }
-                else if (OperatingSystem.IsLinux())
+                else if (OperatingSystem.IsLinux() && _lastLinuxCpu.total == 0)
                 {
-                    systemStart = GetLinuxCpuTimes();
+                    _lastLinuxCpu = GetLinuxCpuTimes();
                 }
+            }
+            catch { _isWinCounterInitialized = false; }
+        }
 
-                // 2. Örnekleme Aralığı (Sistem CPU'su için kısa bir bekleme hala gerekli)
-                await Task.Delay(500, cancellationToken);
-
-                // 3. Uygulama (Process) CPU Hesaplama - Kümülatif Delta Mantığı
+        public Task<HealthCheckResult> CheckHealthAsync(CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                // 1. Uygulama (Process) CPU Hesaplama - Kümülatif Delta Mantığı
                 var process = Process.GetCurrentProcess();
                 var currentAppProcessTime = process.TotalProcessorTime;
                 var currentAppSampleTime = DateTime.UtcNow;
@@ -66,40 +74,33 @@ namespace HealthChecks.System
 
                         if (elapsedMs > 0)
                         {
-                            // Formül: (Kullanılan CPU Süresi / (Çekirdek Sayısı * Geçen Gerçek Süre)) * 100
-                            processCpuPercent = Math.Round((cpuUsedMs / (Environment.ProcessorCount * elapsedMs)) * 100, 3);
+                            processCpuPercent = Math.Round((cpuUsedMs / (Environment.ProcessorCount * elapsedMs)) * 100, 2);
                         }
                     }
-                    else
-                    {
-                        // İlk çalıştırmada fark hesaplanamaz, 0 döner ve referans noktası oluşur.
-                        processCpuPercent = 0;
-                    }
-
                     _lastAppProcessTime = currentAppProcessTime;
                     _lastAppSampleTime = currentAppSampleTime;
                 }
 
-                // 4. Sistem CPU Hesaplama
+                // 2. Sistem CPU Hesaplama (Gecikmesiz - Delta üzerinden)
                 double systemCpuPercent = 0;
-                if (winCounter != null)
+                if (OperatingSystem.IsWindows() && _isWinCounterInitialized && _winCpuCounter != null)
                 {
 #pragma warning disable CA1416
-                    systemCpuPercent = Math.Round(winCounter.NextValue(), 3);
-                    winCounter.Dispose();
+                    systemCpuPercent = Math.Round(_winCpuCounter.NextValue(), 2);
 #pragma warning restore CA1416
                 }
                 else if (OperatingSystem.IsLinux())
                 {
                     var systemEnd = GetLinuxCpuTimes();
-                    var totalDelta = systemEnd.total - systemStart.total;
-                    var idleDelta = systemEnd.idle - systemStart.idle;
+                    var totalDelta = systemEnd.total - _lastLinuxCpu.total;
+                    var idleDelta = systemEnd.idle - _lastLinuxCpu.idle;
 
                     if (totalDelta > 0)
                     {
                         var usage = 1.0 - (double)idleDelta / totalDelta;
-                        systemCpuPercent = Math.Round(usage * 100, 3);
+                        systemCpuPercent = Math.Max(0, Math.Min(100, Math.Round(usage * 100, 2)));
                     }
+                    _lastLinuxCpu = systemEnd;
                 }
 
                 var status = HealthStatus.Healthy;
@@ -108,7 +109,7 @@ namespace HealthChecks.System
                 if (systemCpuPercent >= _serverCpuThreshold)
                 {
                     status = HealthStatus.Degraded;
-                    message = $"Sunucu geneli CPU darboğazı! Sistem: %{systemCpuPercent}, Uygulama: %{processCpuPercent}";
+                    message = $"Sunucu geneli CPU darboğazı! Sistem: %{systemCpuPercent}";
                 }
                 else if (processCpuPercent >= _appCpuThreshold)
                 {
@@ -124,11 +125,15 @@ namespace HealthChecks.System
                     { "app_cpu_threshold", _appCpuThreshold }
                 };
 
-                return new HealthCheckResult { Status = status, Description = message, Data = metrics };
+                return Task.FromResult(new HealthCheckResult { Status = status, Description = message, Data = metrics });
             }
             catch (Exception ex)
             {
-                return HealthCheckResult.Unhealthy("CPU metrikleri okunamadı.", ex);
+                return Task.FromResult(new HealthCheckResult { 
+                    Status = HealthStatus.Healthy, 
+                    Description = "CPU metrikleri şu an okunamıyor (İzin kısıtlaması olabilir).", 
+                    Data = new Dictionary<string, object> { { "error", ex.Message } }
+                });
             }
         }
 

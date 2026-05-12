@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<ItemGroup>
 	  <Compile Remove="Persistence\Migrations\**" />
@@ -21,13 +21,12 @@
 		<PackageReference Include="Polly" Version="8.6.6" />
 		<PackageReference Include="Microsoft.Extensions.Http" Version="10.0.5" />
 		<PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.5" />
+		<PackageReference Include="System.Diagnostics.PerformanceCounter" Version="10.0.7" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\Core\Watchdog.Application\Watchdog.Application.csproj" />
 		<ProjectReference Include="..\..\Core\Watchdog.Domain\Watchdog.Domain.csproj" />
-		<ProjectReference Include="..\..\..\modules\HealthChecks.Abstractions\HealthChecks.Abstractions.csproj" />
-		<ProjectReference Include="..\..\..\modules\HealthChecks.System\HealthChecks.System.csproj" />
 	</ItemGroup>
 
 	<PropertyGroup>

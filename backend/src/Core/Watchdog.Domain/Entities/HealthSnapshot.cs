@@ -18,6 +18,7 @@ namespace Watchdog.Domain.Entities
         public double AppRamUsage { get; set; }
         public double SystemRamUsage { get; set; }
         public double FreeDiskGb { get; set; }
+        public double TotalDiskGb { get; set; }
         public string? DependencyDetails { get; set; }
     }
 }

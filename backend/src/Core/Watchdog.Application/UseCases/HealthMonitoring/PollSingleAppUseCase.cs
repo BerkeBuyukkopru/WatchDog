@@ -7,6 +7,7 @@ using Watchdog.Application.Interfaces.ExternalClients;
 using Watchdog.Application.Interfaces.Repositories;
 using Watchdog.Domain.Entities;
 using Watchdog.Domain.Enums;
+using Watchdog.Application.Interfaces.Monitoring;
 
 namespace Watchdog.Application.UseCases.HealthMonitoring
 {
@@ -18,19 +19,22 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
         private readonly ISnapshotRepository _snapshotRepository;
         private readonly IUseCaseAsync<HealthSnapshot> _analyzeUseCase;
         private readonly ISystemConfigurationRepository _sysConfigRepository;
+        private readonly ICentralMetricsProvider _centralMetricsProvider;
 
         public PollSingleAppUseCase(
             IMonitoredAppRepository appRepository,
             IHealthProbeClient probeClient,
             ISnapshotRepository snapshotRepository,
             IUseCaseAsync<HealthSnapshot> analyzeUseCase,
-            ISystemConfigurationRepository sysConfigRepository) // UC-5 Kural Motoru
+            ISystemConfigurationRepository sysConfigRepository,
+            ICentralMetricsProvider centralMetricsProvider) // UC-5 Kural Motoru
         {
             _appRepository = appRepository;
             _probeClient = probeClient;
             _snapshotRepository = snapshotRepository;
             _analyzeUseCase = analyzeUseCase;
             _sysConfigRepository = sysConfigRepository;
+            _centralMetricsProvider = centralMetricsProvider;
         }
 
         public async Task<HealthSnapshot?> ExecuteAsync(PollSingleAppRequest request)
@@ -42,7 +46,7 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
             HealthStatus finalStatus = HealthStatus.Unhealthy;
             long finalDuration = 0;
             string errorOrJson = "";
-            double appCpu = 0, sysCpu = 0, appRam = 0, sysRam = 0, realDisk = 0;
+            double appCpu = 0, sysCpu = 0, appRam = 0, sysRam = 0, realDisk = 0, totalDisk = 0;
 
             try
             {
@@ -78,10 +82,9 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                         if (root.TryGetProperty("metrics", out var metricsProp))
                         {
                             if (metricsProp.TryGetProperty("process_cpu_percent", out var aC)) appCpu = aC.GetDouble();
-                            if (metricsProp.TryGetProperty("system_cpu_percent", out var sC)) sysCpu = sC.GetDouble();
+                            // JSON'dan gelen system_cpu_percent artık yoksayılıyor (Merkez Kasa kullanılacak)
                             if (metricsProp.TryGetProperty("process_ram_mb", out var aR)) appRam = aR.GetDouble();
-                            if (metricsProp.TryGetProperty("system_ram_percent", out var sR)) sysRam = sR.GetDouble();
-                            if (metricsProp.TryGetProperty("free_disk_gb", out var d)) realDisk = d.GetDouble();
+                            // JSON'dan gelen system_ram_percent ve free_disk_gb yoksayılıyor
                         }
 
                         // Sadece alt detayları (SQL vb.) AI analizi için sakla
@@ -120,6 +123,14 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                 Console.WriteLine($">>>> [NETWORK FAIL] {app.Name} pinglenemedi! Hata yutuldu ve AI'a paslanacak.");
             }
 
+            // === MİMARİ GEÇİŞ (MERKEZİ SİSTEM İZLEME) ===
+            // Sistem metriklerini uzaktaki JSON'dan değil, ana sunucumuzdaki Kasadan çekiyoruz!
+            var centralMetrics = _centralMetricsProvider.GetLatestMetrics();
+            sysCpu = centralMetrics.SystemCpu;
+            sysRam = centralMetrics.SystemRam;
+            realDisk = centralMetrics.FreeDiskGb;
+            totalDisk = centralMetrics.TotalDiskGb;
+
             // 3.5 Global Eşikleri (Thresholds) Uygula (UI ve DB tutarlılığı için)
             var sysConfig = await _sysConfigRepository.GetAsync();
             if (sysConfig != null)
@@ -156,6 +167,7 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                 AppRamUsage = appRam,           // Ayrıştırıldı!
                 SystemRamUsage = sysRam,        // Ayrıştırıldı!
                 FreeDiskGb = realDisk,
+                TotalDiskGb = totalDisk,
                 DependencyDetails = errorOrJson // Yapay Zeka buradaki hatayı okuyup yorumlayacak!
             };
 

@@ -78,7 +78,7 @@ namespace Watchdog.Application.UseCases.HealthMonitoring
                 DependencyDetails = latestSnapshot.DependencyDetails,
                 TotalRamMb = Convert.ToDouble(_configuration["SystemMetrics:TotalRamMb"] ?? "16384"),
                 TotalCpuPercentage = Convert.ToDouble(_configuration["SystemMetrics:TotalCpuPercentage"] ?? "100"),
-                TotalDiskGb = Convert.ToDouble(_configuration["SystemMetrics:TotalDiskGb"] ?? "500"),
+                TotalDiskGb = latestSnapshot.TotalDiskGb > 0 ? latestSnapshot.TotalDiskGb : 500,
                 TotalCpuCores = Convert.ToInt32(_configuration["SystemMetrics:TotalCpuCores"] ?? "16")
             };
 
