@@ -34,7 +34,7 @@ WatchDog is a full-stack application monitoring platform that tracks system heal
 
 WatchDog is a full-stack application health monitoring platform built to help teams observe application availability, detect incidents, and understand failures faster.
 
-The platform continuously monitors registered applications and their dependencies through modular health probes, stores historical health snapshots, evaluates failures through rule-based incident logic, and displays live operational status on a real-time dashboard.
+The platform continuously monitors registered applications and their dependencies through WatchDog-compatible health endpoints, stores historical health snapshots, evaluates failures through rule-based incident logic, and displays live operational status on a real-time dashboard.
 
 When an incident is confirmed, WatchDog can enrich the event with AI-assisted analysis using either a cloud-based OpenAI provider or a local Ollama model. This allows teams to generate contextual root cause insights without leaving the monitoring workflow.
 
@@ -110,7 +110,7 @@ WatchDog is powered by background-driven workflows that continuously collect hea
 
 WatchDog periodically checks registered applications based on their configured polling intervals. Each cycle collects application availability, dependency health and host resource metrics, then stores the result as a historical health snapshot.
 
-> Health Polling Worker → Target Application (via Probes) → Health Snapshot → Dashboard
+> Health Polling Worker → Target Application Health Endpoint → Health Snapshot → Dashboard
 
 This workflow keeps application status, dependency health and system metrics continuously updated without requiring manual checks from administrators.
 
@@ -382,6 +382,326 @@ The repository is organized as a full-stack solution with a layered .NET backend
 │   └── vite.config.ts                        # Vite build configuration
 │
 └── docker-compose.yml                        # Multi-container orchestration file
+```
+
+---
+
+## 🧩 Target Application Health Check Integration
+
+WatchDog can monitor applications through HTTP-accessible health endpoints. The reusable packages under `backend/modules` are designed to be added to the applications that should be monitored.
+
+These packages are not directly loaded by `Watchdog.Worker`. Instead, the target application references the required health check packages, exposes a WatchDog-compatible health endpoint, and then WatchDog periodically polls that endpoint.
+
+```text
+Target Application
+        │
+        ├── References WatchDog HealthCheck Packages
+        ├── Registers Required Probes
+        └── Exposes /health Endpoint
+                    │
+                    ▼
+          Watchdog.Worker Polls Endpoint
+                    │
+                    ▼
+          Health Snapshot + Incident Evaluation
+```
+
+### Integration Flow
+
+The integration has two sides:
+
+| Side | Purpose |
+|---|---|
+| Producer | Package the reusable health check libraries from `backend/modules` as local NuGet packages. |
+| Consumer | Install those packages into the target application and expose a health endpoint for WatchDog. |
+
+---
+
+### 1. Prepare Health Check Package Metadata
+
+Each package under `backend/modules` can be packed as a NuGet package. Before packaging, make sure the `.csproj` file of the module contains package metadata such as version, author and description.
+
+Example package metadata:
+
+```xml
+<PropertyGroup>
+    <Version>1.0.0</Version>
+    <Authors>WatchDog Team</Authors>
+    <Description>WatchDog system metrics health check package.</Description>
+</PropertyGroup>
+```
+
+> Keep the existing target framework and build settings in the module project file. Add or update only the package metadata fields when needed.
+
+> The target application should use a compatible .NET version with the packaged health check libraries.
+
+---
+
+### 2. Package the Modules as Local NuGet Packages
+
+From the `backend/modules` directory, generate `.nupkg` files for all health check modules.
+
+PowerShell example:
+
+```powershell
+Get-ChildItem -Filter *.csproj -Recurse | ForEach-Object {
+    dotnet pack $_.FullName -c Release -o C:\LocalPackages\WatchDog
+}
+```
+
+This command recursively finds all module `.csproj` files, builds them in `Release` mode and outputs the generated NuGet packages into a local package folder.
+
+Example output folder:
+
+```text
+C:\LocalPackages\WatchDog
+```
+
+---
+
+### 3. Handle Package Versioning and Cache
+
+If you modify a health check package and pack it again with the same version, the target application may still restore the old cached package.
+
+Recommended approach:
+
+```xml
+<Version>1.0.1</Version>
+```
+
+Increase the package version whenever the package implementation changes.
+
+Alternative cache cleanup command:
+
+```bash
+dotnet nuget locals all --clear
+```
+
+---
+
+### 4. Add a Local NuGet Feed to the Target Application
+
+In the target application, create a `nuget.config` file next to the target `.csproj` file.
+
+Windows example:
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <packageSources>
+    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+    <add key="WatchDogLocalFeed" value="C:\LocalPackages\WatchDog" />
+  </packageSources>
+</configuration>
+```
+
+> Do not commit machine-specific local package paths if the target application is shared across multiple developers.
+
+---
+
+### 5. Install Required Health Check Packages
+
+Install only the health check packages required by the target application.
+
+Example:
+
+```bash
+dotnet add package HealthChecks.System --version 1.0.0
+dotnet add package HealthChecks.SqlServer --version 1.0.0
+```
+
+Depending on the application dependencies, other packages can also be installed:
+
+```bash
+dotnet add package HealthChecks.Redis --version 1.0.0
+dotnet add package HealthChecks.RabbitMQ --version 1.0.0
+dotnet add package HealthChecks.MongoDb --version 1.0.0
+dotnet add package HealthChecks.Http --version 1.0.0
+dotnet add package HealthChecks.Tcp --version 1.0.0
+dotnet add package HealthChecks.Ssl --version 1.0.0
+dotnet add package HealthChecks.Heartbeat --version 1.0.0
+```
+
+You can also add package references directly inside the target application's `.csproj` file:
+
+```xml
+<ItemGroup>
+  <PackageReference Include="HealthChecks.System" Version="1.0.0" />
+  <PackageReference Include="HealthChecks.SqlServer" Version="1.0.0" />
+</ItemGroup>
+```
+
+---
+
+### 6. Register Health Checks in the Target Application
+
+In the target application's `Program.cs`, register the required WatchDog health checks before `builder.Build()`.
+
+Example:
+
+```csharp
+builder.Services.AddSystemHealthChecks();
+
+builder.Services.AddSqlServerHealthCheck(
+    builder.Configuration.GetConnectionString("DefaultConnection")
+);
+```
+
+The exact registrations depend on which health check packages are installed in the target application.
+
+Example dependency mapping:
+
+| Package | Example Purpose |
+|---|---|
+| `HealthChecks.System` | Exposes CPU, RAM and disk metrics. |
+| `HealthChecks.SqlServer` | Checks SQL Server connectivity. |
+| `HealthChecks.Redis` | Checks Redis connectivity. |
+| `HealthChecks.RabbitMQ` | Checks RabbitMQ connectivity. |
+| `HealthChecks.MongoDb` | Checks MongoDB connectivity. |
+| `HealthChecks.Http` | Checks HTTP endpoint availability. |
+| `HealthChecks.Tcp` | Checks TCP port connectivity. |
+| `HealthChecks.Ssl` | Checks SSL certificate status. |
+| `HealthChecks.Heartbeat` | Exposes heartbeat-based availability. |
+
+> If you register the `HealthChecks.Heartbeat` package, make sure the target application updates its heartbeat state periodically, for example through a background worker or scheduled task. Otherwise, the heartbeat check may eventually report a timeout.
+
+---
+
+### 7. Expose a WatchDog-Compatible Health Endpoint
+
+After registering the health checks, expose the collected data through an HTTP endpoint.
+
+Add this before `app.Run()`:
+
+```csharp
+app.MapWatchdogHealthChecks("/health");
+```
+
+The target application will expose health information at:
+
+```text
+http://localhost:<PORT>/health
+```
+
+or in production-like environments:
+
+```text
+https://your-target-application.com/health
+```
+
+WatchDog can then poll this endpoint and collect health snapshots.
+
+---
+
+### 8. Optional CORS Configuration
+
+If the health endpoint will be accessed directly from a browser-based client during development, configure CORS in the target application.
+
+Add this before `builder.Build()`:
+
+```csharp
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowWatchDog", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+```
+
+Then enable the policy before mapping endpoints:
+
+```csharp
+app.UseCors("AllowWatchDog");
+```
+
+> `AllowAnyOrigin()` is convenient for local development. For production-like environments, restrict the allowed origins to the actual WatchDog frontend or API address.
+
+If the endpoint is only consumed by `Watchdog.Worker` through server-side HTTP polling, CORS is usually not required.
+
+---
+
+### 9. Minimal Target Application Example
+
+A simplified target application setup can look like this:
+
+```csharp
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddSystemHealthChecks();
+
+builder.Services.AddSqlServerHealthCheck(
+    builder.Configuration.GetConnectionString("DefaultConnection")
+);
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowWatchDog", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
+var app = builder.Build();
+
+app.UseCors("AllowWatchDog");
+
+app.MapWatchdogHealthChecks("/health");
+
+app.Run();
+```
+
+After starting the target application, verify the endpoint manually:
+
+```text
+http://localhost:<PORT>/health
+```
+
+---
+
+### 10. Register the Target Application in WatchDog
+
+After the target application exposes a health endpoint, add it from the WatchDog management panel.
+
+Example monitored endpoint:
+
+```text
+http://localhost:<PORT>/health
+```
+
+> If WatchDog is running inside Docker and the target application is running directly on your host machine, do not register the target as `localhost`. From inside a container, `localhost` points to the container itself. Use `http://host.docker.internal:<PORT>/health` or your host machine's local IP address instead.
+
+Once registered, WatchDog will:
+
+1. periodically poll the target application's health endpoint,
+2. store health snapshots,
+3. evaluate incident rules,
+4. send downtime or recovery notifications,
+5. update the real-time dashboard,
+6. enrich confirmed incidents with AI-assisted insights when configured.
+
+---
+
+### Integration Summary
+
+```text
+Package modules
+      ↓
+Create local NuGet feed
+      ↓
+Install packages in target application
+      ↓
+Register required health checks
+      ↓
+Expose /health endpoint
+      ↓
+Register endpoint in WatchDog
+      ↓
+Monitor application in real time
 ```
 
 ---
@@ -724,7 +1044,7 @@ WatchDog applies database migrations automatically when the API starts.
 
 The startup process runs the database seeder, which applies pending Entity Framework Core migrations and creates the initial configuration required to use the platform.
 
-Default SuperAdmin credentials:
+For local development and first-time setup, the seeder creates a default SuperAdmin account if no SuperAdmin exists:
 
 | Field | Value |
 |---|---|
@@ -829,6 +1149,8 @@ For local development, you can sign in with the default SuperAdmin account:
 Username: admin
 Password: Admin123!
 ```
+
+> Change this password immediately after the first login.
 
 ---
 
