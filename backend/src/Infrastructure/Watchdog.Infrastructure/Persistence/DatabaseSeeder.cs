@@ -26,17 +26,20 @@ namespace Watchdog.Infrastructure.Persistence
             // Docker ortamında manuel 'update-database' komutu ihtiyacını ortadan kaldırır.
             await _context.Database.MigrateAsync();
 
-            // 1. ADMİN TOHUMLAMA
-            if (!await _context.AdminUsers.AnyAsync())
+            // 1. ADMİN TOHUMLAMA (Sistemde hiç SuperAdmin yoksa tohumla)
+            if (!await _context.AdminUsers.AnyAsync(u => u.Role == RoleConstants.SuperAdmin))
             {
                 await _context.AdminUsers.AddAsync(new AdminUser
                 {
                     Id = Guid.NewGuid(),
                     Username = "admin",
+                    Email = "admin@watchdog.local",
                     PasswordHash = _passwordHasher.HashPassword("Admin123!"),
                     Role = RoleConstants.SuperAdmin,
                     CreatedAt = DateTime.UtcNow
                 });
+                
+                await _context.SaveChangesAsync();
             }
 
             // 2. SYSTEM CONFIGURATION TOHUMLAMA
