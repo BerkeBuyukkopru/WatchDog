@@ -939,9 +939,15 @@ Downtime, recovery and password reset emails can be inspected from the MailHog w
 
 ## 👥 Contributors
 
-WatchDog was developed by:
+WatchDog was collaboratively developed by:
 
 | Name | GitHub | LinkedIn |
 |---|---|---|
 | Berke Büyükköprü | [BerkeBuyukkopru](https://github.com/BerkeBuyukkopru) | [berke-buyukkopru](https://www.linkedin.com/in/berke-buyukkopru/) |
 | Furkan Acu | [Acufurkan](https://github.com/Acufurkan) | [furkan-acu](https://www.linkedin.com/in/furkan-acu-b22738298/) |
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License. See the `LICENSE` file for details.
