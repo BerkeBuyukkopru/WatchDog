@@ -1,166 +1,947 @@
 # 🛡️ WatchDog — AI-Powered Application Health & Incident Monitoring Platform
 
-> **AI-Driven Application Health & Predictive Incident Monitoring Platform**
+> **Real-time application health monitoring with AI-assisted incident intelligence.**
 
-WatchDog is a comprehensive, full-stack application health monitoring ecosystem designed to proactively track system vitality, automate incident detection with fault-tolerant rule engines, and perform instant automated Root Cause Analysis (RCA) using a hybrid AI architecture (Local LLM & Cloud AI). Built for modern distributed or monolithic infrastructures, WatchDog ensures high availability and deep observability without disrupting application layers.
+WatchDog is a full-stack application monitoring platform that tracks system health, detects incidents, reduces false positives, and provides AI-assisted root cause insights through a real-time dashboard. It combines modular health checks, background workers, rule-based incident detection, and hybrid AI providers to help teams understand application failures faster.
 
 ---
 
 ### 📊 Platform At A Glance
 
 ![.NET Version](https://img.shields.io/badge/.NET-10.0-512BD4?style=flat-square&logo=dotnet&logoColor=white)
-![React Version](https://img.shields.io/badge/React-18.x-20232A?style=flat-square&logo=react&logoColor=61DAFB)
-![TypeScript](https://img.shields.io/badge/TypeScript-Strict-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![React Version](https://img.shields.io/badge/React-19.2-20232A?style=flat-square&logo=react&logoColor=61DAFB)
+![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178C6?style=flat-square&logo=typescript&logoColor=white)
 ![Docker Ready](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)
-![Ollama Integration](https://img.shields.io/badge/Ollama-Llama_3.2-000000?style=flat-square&logo=ollama&logoColor=white)
-![Architecture](https://img.shields.io/badge/Architecture-Onion_%2B_FSD-FF4081?style=flat-square)
+![SignalR](https://img.shields.io/badge/SignalR-Realtime-512BD4?style=flat-square)
+![AI](https://img.shields.io/badge/AI-OpenAI%20%7C%20Ollama-111827?style=flat-square)
+![Architecture](https://img.shields.io/badge/Architecture-Clean%20%2F%20Onion%20%2B%20Feature--Driven-FF4081?style=flat-square)
 
 ---
 
 ### 👁️ Platform Preview
 
-<img width="1919" height="1079" alt="hero-dashboard" src="https://github.com/user-attachments/assets/38e8c747-07be-41ad-82b2-0b4cec14e4ce" />
+#### Real-Time Monitoring Dashboard
+
+<img width="1919" height="1079" alt="WatchDog Real-Time Monitoring Dashboard" src="https://github.com/user-attachments/assets/38e8c747-07be-41ad-82b2-0b4cec14e4ce" />
+
+#### Management Panel
+
+<img width="1919" height="1079" alt="WatchDog Management Panel" src="https://github.com/user-attachments/assets/71847e07-dd6c-47c3-a90e-f4e0bea2e013" />
 
 ---
 
-### 🎯 Why WatchDog?
+## 📌 Project Overview
 
-Traditional monitoring tools often adopt a reactive stance, simply notifying infrastructure teams when an application goes down, leaving engineers to sieve manually through millions of raw log entries. **WatchDog** bridges this operational gap by combining traditional polling mechanisms with automated artificial intelligence:
+WatchDog is a full-stack application health monitoring platform built to help teams observe application availability, detect incidents, and understand failures faster.
 
-* **Instant Diagnostics via Bespoke Probes:** Non-blocking asynchronous background workers routinely poll registered applications' `/health` endpoints, utilizing custom-built lightweight probing modules instead of heavy framework dependencies.
-* **Intelligent 3-Strike Incident Rule:** Eliminates network noise and transient flakiness (false-positives) through a strict, time-aware state machine evaluating multi-strike failures before escalating.
-* **AI-Powered Advisor Pipeline:** The millisecond an incident is confirmed, WatchDog passes enriched snapshot metadata (SQL Server, Redis, RabbitMQ, HTTP/TCP performance metrics) to the active AI engine (Ollama or OpenAI), delivering a comprehensive **Root Cause Analysis (RCA) Report** straight to the responsible administrators' inbox.
-* **Zero-Trust & Data Privacy:** Built with enterprise compliance in mind, the system integrates seamlessly with local runtime models via **Ollama (Llama 3.2)**, keeping sensitive system topology configurations completely isolated inside your corporate private network.
+The platform continuously monitors registered applications and their dependencies through modular health probes, stores historical health snapshots, evaluates failures through rule-based incident logic, and displays live operational status on a real-time dashboard.
+
+When an incident is confirmed, WatchDog can enrich the event with AI-assisted analysis using either a cloud-based OpenAI provider or a local Ollama model. This allows teams to generate contextual root cause insights without leaving the monitoring workflow.
+
+The system is designed around a clean separation of concerns: a .NET backend for monitoring, incident management, authentication, AI orchestration and background processing; and a React + TypeScript frontend for dashboards, administration panels, AI insights and system configuration.
 
 ---
 
-## 🏗️ Architectural Overview & Design Patterns
+## 🎯 Why WatchDog?
 
-WatchDog is engineered using highly decoupled, robust, and industry-standard structural patterns across both sides of the network boundary to ensure strict separation of concerns, enterprise-grade scalability, and predictable data flow.
+Many monitoring systems stop at basic uptime checks or raw alerts. In real-world applications, however, a temporary network issue, a slow dependency, or a short-lived service interruption can easily create noisy incidents and unnecessary investigation work.
 
-### 🎯 Backend Architecture: Onion Pattern & Tactical DDD
-The backend ecosystem strictly adheres to the **Onion Architecture** paradigm in combination with Domain-Driven Design (DDD) tactical patterns. By placing the core business logic at the absolute center, dependencies flow exclusively inward, protecting the enterprise rules from side effects caused by volatile external infrastructure or UI components.
+WatchDog focuses on reducing that noise by combining health polling, rule-based incident confirmation, real-time visibility and AI-assisted analysis in a single operational workflow.
 
-```text
-                  ┌─────────────────────────────────────────┐
-                  │            Presentation Layer           │
-                  │  (Watchdog.Api / Watchdog.Worker Hubs)  │
-                  └────────────────────┬────────────────────┘
-                                       │
-                                       ▼
-                  ┌─────────────────────────────────────────┐
-                  │          Infrastructure Layer           │
-                  │     (EF Core 10 / OpenAI / Ollama)      │
-                  └────────────────────┬────────────────────┘
-                                       │
-                                       ▼
-                  ┌─────────────────────────────────────────┐
-                  │            Application Core             │
-                  │      (Use Cases / CQRS Interfaces)      │
-                  └────────────────────┬────────────────────┘
-                                       │
-                                       ▼
-                  ┌─────────────────────────────────────────┐
-                  │               Domain Core               │
-                  │    (Pure Entities / Business Rules)     │
-                  └─────────────────────────────────────────┘
+### What makes WatchDog different?
+
+- **Modular health probing model:** HTTP, TCP, Redis, RabbitMQ, MongoDB, SQL Server, SSL, system metrics and heartbeat checks are organized as isolated reusable packages, while WatchDog collects health data through configured monitoring endpoints.
+- **Noise-resistant incident detection:** The incident engine evaluates repeated failures before escalation, helping reduce false positives caused by transient issues.
+- **AI-assisted root cause insights:** Confirmed incidents and collected health snapshots can be analyzed through OpenAI or Ollama to produce more contextual operational insights.
+- **Real-time dashboard experience:** SignalR-powered updates keep application status, incidents and system metrics synchronized without manual refreshes.
+- **Admin-focused access control:** Role-based access and application-level permissions help separate responsibilities between SuperAdmins and application admins.
+
+---
+
+## ✨ Key Features
+
+WatchDog combines application health monitoring, incident detection, AI-assisted diagnostics and real-time operational visibility in a single full-stack platform.
+
+### 🔍 Continuous Application Health Monitoring
+
+WatchDog periodically monitors registered applications based on their configured polling intervals. It collects health snapshots, evaluates application availability and tracks dependency-level status changes over time.
+
+### 🧩 Modular Health Probe System
+
+WatchDog includes isolated health probe packages for HTTP, TCP, Redis, RabbitMQ, MongoDB, SQL Server, SSL certificates, heartbeat checks and host system metrics. These packages are separated from the main WatchDog runtime and provide reusable probing building blocks for monitored target systems.
+
+WatchDog itself collects health data by polling configured application endpoints, keeping the core monitoring runtime decoupled from protocol-specific probe implementations.
+
+### 🛡️ Noise-Resistant Incident Detection
+
+Instead of creating incidents from every temporary failure, WatchDog uses a rule-based verification flow that evaluates repeated unhealthy states before escalating an issue. This helps reduce false positives caused by short-lived network interruptions or transient dependency failures.
+
+### 🤖 AI-Assisted Root Cause Insights
+
+When incidents are detected, WatchDog can enrich them with AI-generated operational insights. The platform supports both cloud-based OpenAI providers and local Ollama models, allowing teams to balance analysis quality, cost and data privacy requirements.
+
+### 📡 Real-Time Dashboard Updates
+
+Application status, incidents, system metrics and AI insights are synchronized through a SignalR-powered real-time dashboard. Operators can follow changes without manually refreshing the interface.
+
+### 🖥️ Host System Metrics Monitoring
+
+WatchDog collects CPU, RAM and disk usage from the host environment and uses these metrics as additional context during health evaluation and incident analysis. The collector is designed to work across Windows, Linux and Docker-based environments.
+
+### 🔐 Role-Based Administration
+
+The platform separates SuperAdmin and Admin responsibilities through JWT-based authentication, protected API endpoints and frontend route guards. Standard admins are limited to the applications assigned to them, helping preserve application-level data boundaries.
+
+### 📬 Incident Notification Workflow
+
+WatchDog supports email-based downtime and recovery notifications. Alert messages focus on failed components and recovery status, helping administrators quickly understand what changed and where attention is needed.
+
+### 🧹 Historical Data Archiving
+
+A background archiving process moves older health snapshot data into compressed archive files, helping preserve database performance while keeping historical monitoring records available outside the main operational tables.
+
+---
+
+## 🔄 Core Execution Workflows
+
+WatchDog is powered by background-driven workflows that continuously collect health data, evaluate incidents, notify administrators and enrich operational events with AI-assisted analysis.
+
+### Health Monitoring Workflow
+
+WatchDog periodically checks registered applications based on their configured polling intervals. Each cycle collects application availability, dependency health and host resource metrics, then stores the result as a historical health snapshot.
+
+> Health Polling Worker → Target Application (via Probes) → Health Snapshot → Dashboard
+
+This workflow keeps application status, dependency health and system metrics continuously updated without requiring manual checks from administrators.
+
+---
+
+### Incident Detection & Recovery Workflow
+
+WatchDog does not create incidents from every temporary failure. Instead, it evaluates repeated unhealthy states before opening an incident, helping reduce false positives caused by short-lived network interruptions or transient dependency issues.
+
+> Health Snapshot → Rule-Based Evaluation → Incident State Change (Open/Resolved) → Notification + Dashboard Update
+
+When an incident is confirmed, WatchDog stores its lifecycle, broadcasts the change to connected clients and notifies responsible administrators. When the affected component becomes healthy again, the active incident is resolved and recovery updates are sent through the same communication flow.
+
+---
+
+### AI Insight Workflow
+
+WatchDog can enrich confirmed incidents and scheduled monitoring routines with AI-assisted operational analysis. Depending on the active configuration, analysis can be generated through a cloud-based OpenAI provider or a local Ollama model.
+
+> Incident / Scheduled Routine → Snapshot Context → AI Provider → Operational Insight
+
+These insights help administrators understand possible root causes, scaling risks and long-term system behavior from collected monitoring data.
+
+---
+
+### Real-Time Update & Notification Workflow
+
+Important platform events are delivered through real-time dashboard updates and email notifications. SignalR keeps connected clients synchronized, while the notification service sends downtime and recovery emails to responsible administrators.
+
+> Monitoring Event → SignalR Broadcast + Email Notification → Dashboard / Administrators
+
+This allows operators to follow application health, incident changes and AI-generated insights without manually refreshing the dashboard.
+
+---
+
+## 🏗️ System Architecture
+
+WatchDog is designed with a layered full-stack architecture that separates application monitoring workflows, domain rules, infrastructure integrations, background processing and user-facing dashboards.
+
+The backend follows **Clean Architecture / Onion Architecture**, where dependencies point inward toward the core domain model. The frontend follows a **feature-driven structure** inspired by Feature-Sliced Design principles, keeping product areas such as dashboard, authentication, AI insights and system settings isolated from each other.
+
+### Runtime Communication Flow
+
+This diagram shows how the running system communicates at runtime.
+
+```mermaid
+flowchart TD
+    UI["React Dashboard SPA<br/>TypeScript + SignalR + Tailwind"]
+
+    subgraph WatchDogRuntime["WatchDog Runtime"]
+        API["Watchdog.Api<br/>REST Controllers + Auth + SignalR Hub"]
+        WORKER["Watchdog.Worker<br/>Health Polling + Metrics + AI Jobs + Archiving"]
+        DB[("SQL Server")]
+    end
+
+    subgraph TargetSystems["Monitored Target Systems"]
+        TARGET["Target Application<br/>Health Endpoint"]
+        MODULES["backend/modules/*<br/>Optional embedded health probe packages"]
+    end
+
+    UI -->|"HTTP requests"| API
+    UI -->|"SignalR WebSocket"| API
+
+    API -.->|"Reads / writes"| DB
+    WORKER -.->|"Reads / writes telemetry"| DB
+
+    WORKER -->|"Periodic HTTP probing"| TARGET
+    MODULES -.->|"Expose formatted health data"| TARGET
+
+    WORKER -.->|"Pushes live updates"| API
 ```
 
-* **Domain Core (`Watchdog.Domain`):** The foundational atomic heart of the platform. It encapsulates pure domain entities (`Incident`, `MonitoredApp`, `AiInsight`, `AdminUser`, `SystemConfiguration`), state-machine rule engines (`IncidentRules`), value objects (`DependencyCheckResult`), and core status definitions. It maintains **zero dependencies** on external frameworks, ORMs, or third-party NuGet packages.
-* **Application Core (`Watchdog.Application`):** The orchestration engine that defines the use-cases of the system. Implemented via a robust functional wrapper using the **CQRS-like Use Case Pattern** (`IUseCaseAsync<TRequest, TResponse>`), it declares system boundaries, cross-boundary data transfer structures (DTOs), abstract storage wrappers, and third-party communication contracts.
-* **Infrastructure Layer (`Watchdog.Infrastructure`):** Implements all specifications defined by the Application core. It acts as the technical bridge hosting **Entity Framework Core 10** configurations for SQL Server, advanced hybrid LLM orchestrations via **OllamaSharp** and **OpenAI SDK**, database-backed email routing with **MailKit**, OS-level native host performance metrics tracking, and concrete data access repositories.
-* **Presentation Layer:** The entry point execution pipelines divided across two major deployment runtimes:
-  * **`Watchdog.Api`:** High-performance ASP.NET Core REST web services enforcing role-based authentication policies, global custom middleware exception interception, and real-time push engines via **SignalR Status Hubs**.
-  * **`Watchdog.Worker`:** A collection of autonomous background engines (`IHostedService` / `BackgroundService`) running parallel execution loops dedicated to continuous health polling, scheduled routine AI advisory generations, strategic weekly baseline forecasting, and automated cold-storage data archiving.
-* **Bespoke Modularity (`backend/modules/*`):** To avoid heavy framework or vendor lock-in, WatchDog implements a completely bespoke, plugin-driven probing infrastructure. Each external technology dependency is treated as an isolated custom module extending a unified abstraction contract layer.
+> `backend/modules/*` packages are not directly referenced by `Watchdog.Worker`. They represent optional modular health probe packages that can be used by monitored target systems to expose structured health data. WatchDog collects that data by probing target application endpoints.
 
-### 🎨 Frontend Architecture: Feature-Sliced Design (FSD)
-The client application is organized around the **Feature-Sliced Design (FSD)** framework, mapping structural front-end components into predictable domain slices. This shields the frontend from turning into a monolithic tangle of scripts as features scale:
-* **Layouts:** High-level compositional navigation wrappers (`SuperAdminLayout`, `AdminLayout`) defining responsive UI scaffolding and workspace partitions based on user privileges.
-* **Features:** Independent, self-contained domain matrices (`auth`, `dashboard`, `apps`, `ai-providers`, `ai-tower`, `admin-management`, `system-settings`) bundling their own feature-specific sub-components, custom Axios service hooks, lifecycle states, and forms validations.
-* **Context / Shared Components:** Root-level providers acting as cross-cutting reactive pipelines (`SignalRContext`, `AuthContext`) for ambient WebSocket telemetry tracking and global session state mutations.
+### Backend Project Dependency Graph
+
+This diagram shows compile-time `.csproj` dependencies. It does not represent network communication.
+
+```mermaid
+flowchart TD
+    subgraph Presentation["Presentation Layer"]
+        API["Watchdog.Api"]
+        WORKER["Watchdog.Worker"]
+    end
+
+    subgraph Infrastructure["Infrastructure Layer"]
+        INFRA["Watchdog.Infrastructure"]
+    end
+
+    subgraph Core["Core Application & Domain"]
+        APP["Watchdog.Application"]
+        DOMAIN["Watchdog.Domain"]
+    end
+
+    API -->|"references"| APP
+    API -->|"references"| INFRA
+
+    WORKER -->|"references"| APP
+    WORKER -->|"references"| INFRA
+
+    INFRA -->|"references"| APP
+    INFRA -->|"references"| DOMAIN
+
+    APP -->|"references"| DOMAIN
+```
+
+> The **Domain layer has no project dependencies**. Infrastructure depends inward on Application and Domain contracts; Domain does not depend on Infrastructure.
+
+### Backend Architecture
+
+The backend is organized under `backend/src` and follows a clear separation between core business logic, application workflows, infrastructure implementations and runtime entry points.
+
+| Layer | Project | Responsibility |
+|---|---|---|
+| Domain | `Watchdog.Domain` | Contains core entities, enums, value objects and business rules such as incident evaluation logic. |
+| Application | `Watchdog.Application` | Coordinates business workflows through use cases, DTOs and interface contracts for repositories, AI clients and notifications. |
+| Infrastructure | `Watchdog.Infrastructure` | Implements database persistence, AI providers, notification services, authentication utilities, host monitoring and external integrations. |
+| Presentation | `Watchdog.Api` | Exposes REST endpoints, authentication flows, middleware and SignalR hubs for the frontend. |
+| Worker Runtime | `Watchdog.Worker` | Runs background services for health polling, system metrics collection, AI analysis and data archiving. |
+
+This structure keeps the core monitoring and incident logic independent from database access, HTTP transport, AI provider SDKs, email delivery and UI concerns.
+
+### API and Worker Runtime Separation
+
+WatchDog separates request/response operations from continuous background processing.
+
+- `Watchdog.Api` handles REST requests, authentication, authorization, SignalR hubs and frontend communication.
+- `Watchdog.Worker` runs long-running background workflows such as health polling, metrics collection, AI analysis and historical data archiving.
+
+This separation helps prevent scheduled monitoring workloads from interfering with API responsiveness.
+
+### Modular Health Check Packages
+
+WatchDog includes isolated health check packages under `backend/modules`. These packages are separated from the main backend runtime and focus on reusable probing concerns.
+
+```text
+backend/modules/
+├── HealthChecks.Abstractions
+├── HealthChecks.Http
+├── HealthChecks.Tcp
+├── HealthChecks.SqlServer
+├── HealthChecks.Redis
+├── HealthChecks.RabbitMQ
+├── HealthChecks.MongoDb
+├── HealthChecks.Ssl
+├── HealthChecks.System
+└── HealthChecks.Heartbeat
+```
+
+They are not directly referenced by `Watchdog.Api`, `Watchdog.Worker` or `Watchdog.Infrastructure`. Instead, they represent reusable health check building blocks that can be used by monitored target systems to expose structured health information, while WatchDog probes those systems through HTTP endpoints.
+
+### Frontend Architecture
+
+The frontend is organized around product features under `frontend/src/features`, supported by shared API clients, route guards, contexts, layouts and TypeScript types.
+
+```text
+frontend/src/
+├── api
+├── components
+├── context
+├── features
+│   ├── admin-management
+│   ├── ai-providers
+│   ├── ai-tower
+│   ├── apps
+│   ├── auth
+│   ├── dashboard
+│   └── system-settings
+├── layouts
+├── routes
+└── types
+```
+
+This feature-driven structure keeps dashboard, authentication, monitored apps, AI provider management, AI insights and system settings separated while still sharing common infrastructure where needed.
+
+### Key Architectural Decisions
+
+- **Clean dependency direction:** Domain logic remains isolated from frameworks, databases, AI providers and transport details.
+- **Use case based application flow:** Business workflows are implemented as focused use case classes instead of being placed directly inside controllers or background workers.
+- **Separate API and Worker runtimes:** HTTP-facing operations and background monitoring jobs run in separate executables.
+- **Decoupled modular health packages:** Health check packages are isolated from the WatchDog runtime and can be used as reusable probing libraries for target systems.
+- **Provider-based AI integration:** OpenAI and Ollama integrations are resolved behind AI client abstractions.
+- **Real-time synchronization boundary:** SignalR broadcasting is handled outside the domain model, keeping UI synchronization separate from core business rules.
 
 ---
 
 ## 📁 Repository Structure
 
+The repository is organized as a full-stack solution with a layered .NET backend, modular health check packages, a React + TypeScript frontend and Docker-based deployment support.
+
 ```text
 ├── backend/
-│   ├── modules/                            # Bespoke Plugin-Driven Probing Engines
-│   │   ├── HealthChecks.Abstractions/      # Common validation contracts, results & status enums
-│   │   ├── HealthChecks.Heartbeat/         # Application lifeline heartbeat verifiers
-│   │   ├── HealthChecks.Http/              # Non-blocking async HTTP endpoint network verifiers
-│   │   ├── HealthChecks.MongoDb/           # MongoDB database connectivity state probes
-│   │   ├── HealthChecks.RabbitMQ/          # RabbitMQ message broker topology and queue probers
-│   │   ├── HealthChecks.Redis/             # Redis caching transactional check matrices
-│   │   ├── HealthChecks.SqlServer/         # Microsoft SQL Server operational state engines
-│   │   ├── HealthChecks.Ssl/               # Cryptographic SSL certificate expiration counters
-│   │   ├── HealthChecks.System/            # Host hardware metrics (Cpu, Ram, Storage probes)
-│   │   └── HealthChecks.Tcp/               # Raw TCP network port connectivity verifiers
+│   ├── WatchDog.slnx                         # Backend solution file
+│   ├── modules/                              # Isolated health check packages
+│   │   ├── HealthChecks.Abstractions/        # Shared contracts, results and status models
+│   │   ├── HealthChecks.Heartbeat/           # Heartbeat-based availability checks
+│   │   ├── HealthChecks.Http/                # HTTP endpoint health checks
+│   │   ├── HealthChecks.MongoDb/             # MongoDB connectivity checks
+│   │   ├── HealthChecks.RabbitMQ/            # RabbitMQ connectivity checks
+│   │   ├── HealthChecks.Redis/               # Redis connectivity checks
+│   │   ├── HealthChecks.SqlServer/           # SQL Server connectivity checks
+│   │   ├── HealthChecks.Ssl/                 # SSL certificate validation checks
+│   │   ├── HealthChecks.System/              # CPU, memory and disk usage checks
+│   │   └── HealthChecks.Tcp/                 # TCP port connectivity checks
 │   │
 │   └── src/
 │       ├── Core/
-│       │   ├── Watchdog.Domain/            # Domain Layer (Zero-Dependency Core)
-│       │   │   ├── Common/                 # Audit trail base entities (BaseEntity, SimpleBaseEntity)
-│       │   │   ├── Constants/              # Enterprise role boundary definitions (RoleConstants)
-│       │   │   ├── Entities/               # DB-mapped domain models (Incident, HealthSnapshot, etc.)
-│       │   │   ├── Enums/                  # Core domain status definitions & types
-│       │   │   ├── Rules/                  # State-machine evaluation tables (IncidentRules)
-│       │   │   └── ValueObjects/           # Immutable domain concepts (DependencyCheckResult)
+│       │   ├── Watchdog.Domain/              # Domain entities, enums, rules and value objects
+│       │   │   ├── Common/
+│       │   │   ├── Constants/
+│       │   │   ├── Entities/
+│       │   │   ├── Enums/
+│       │   │   ├── Rules/
+│       │   │   └── ValueObjects/
 │       │   │
-│       │   └── Watchdog.Application/       # Application Layer (Orchestration & Contracts)
-│       │       ├── Attributes/             # Custom structural request validation attributes
-│       │       ├── DTOs/                   # Data transfer frames (AI, Apps, Auth, Monitoring, SystemConfig)
-│       │       ├── Enums/                  # Application specific bounded system error codes
-│       │       ├── Interfaces/             # Core boundaries, repositories, and client abstractions
-│       │       └── UseCases/               # CQRS Use Case execution models (AI, Apps, Auth, HealthMonitoring)
+│       │   └── Watchdog.Application/         # Use cases, DTOs, interfaces and application contracts
+│       │       ├── Attributes/
+│       │       ├── DTOs/
+│       │       ├── Enums/
+│       │       ├── Interfaces/
+│       │       └── UseCases/
 │       │
 │       ├── Infrastructure/
-│       │   └── Watchdog.Infrastructure/    # Infrastructure Layer (External Integrations)
-│       │       ├── AiServices/             # Hybrid LLM engine clients factory (Ollama, OpenAI)
-│       │       ├── Auth/                   # Secure cryptographic JWT & BCrypt utilities
-│       │       ├── Migrations/             # EF Core incremental database schema timelines
-│       │       ├── Monitoring/             # Native OS low-level resource telemetry providers
-│       │       ├── Notifications/          # Distribution channels (MailKit SMTP, SignalR Broadcaster)
-│       │       ├── Persistence/            # WatchdogDbContext configurations & concrete repositories
-│       │       └── Probing/                # Concrete HTTP network probing execution clients
+│       │   └── Watchdog.Infrastructure/      # External integrations and concrete implementations
+│       │       ├── AiServices/               # OpenAI, Ollama and AI client factory implementations
+│       │       ├── Auth/                     # JWT and password hashing utilities
+│       │       ├── Migrations/               # Entity Framework Core migrations
+│       │       ├── Monitoring/               # Local host resource monitoring
+│       │       ├── Notifications/            # Email and real-time notification services
+│       │       ├── Persistence/              # DbContext, repositories and EF Core configurations
+│       │       └── Probing/                  # Health probing client implementations
 │       │
 │       └── Presentation/
-│           ├── Watchdog.Api/               # Presentation Layer: REST API Runtime
-│           │   ├── Controllers/            # Versioned REST API endpoints separating role privileges
-│           │   ├── Hubs/                   # Real-time WebSocket synchronization nodes (StatusHub)
-│           │   ├── Middlewares/            # Global exception interception & translation layers
-│           │   └── Services/               # Ambient identity query providers (CurrentUserService)
+│           ├── Watchdog.Api/                 # ASP.NET Core REST API runtime
+│           │   ├── Controllers/
+│           │   ├── Hubs/
+│           │   ├── Middlewares/
+│           │   └── Services/
 │           │
-│           └── Watchdog.Worker/            # Presentation Layer: Autonomous Background Services
-│               └── BackgroundServices/     # Managed async background loop hosted engines
-│                   ├── AiAnalyzerWorker.cs             # Scheduled Routine AI Analysis Engine
-│                   ├── CentralMetricsCollectorWorker.cs# System Resource Telemetry Aggregator
-│                   ├── DataArchiverWorker.cs           # Automated Cold-Storage JSON.GZ Archiver
-│                   ├── HealthPollingWorker.cs          # Continuous Application Polling Loop
-│                   ├── StrategicAnalyzerWorker.cs      # Weekly/Monthly Baseline Forecaster
-│                   └── WorkerCurrentUserService.cs     # Synthetic service context identity provider
+│           └── Watchdog.Worker/              # Background worker runtime
+│               └── BackgroundServices/
+│                   ├── AiAnalyzerWorker.cs
+│                   ├── CentralMetricsCollectorWorker.cs
+│                   ├── DataArchiverWorker.cs
+│                   ├── HealthPollingWorker.cs
+│                   ├── StrategicAnalyzerWorker.cs
+│                   └── WorkerCurrentUserService.cs
 │
 ├── frontend/
 │   ├── src/
-│   │   ├── api/                            # Centralized Axios engine clients & endpoint services
-│   │   ├── components/                     # Shared global presentation atoms & ProtectedRoute Guard
-│   │   ├── context/                        # Root reactive state providers (SignalR WebSocket, Auth)
-│   │   ├── features/                       # Feature-Sliced Application Domains
-│   │   │   ├── admin-management/           # Access privileges control panels & user matrices
-│   │   │   ├── ai-providers/               # Core LLM engine registration, toggle & threshold fields
-│   │   │   ├── ai-tower/                   # AI advisory insights & interactive Root Cause Analysis logs
-│   │   │   ├── apps/                       # Registry dashboards for target platform scopes
-│   │   │   ├── auth/                       # Secure entry gates, identity recovery & password tokens
-│   │   │   ├── dashboard/                  # Live telemetry grids, incident histories & metric widgets
-│   │   │   └── system-settings/            # Global system alerting threshold parameter fields
-│   │   ├── layouts/                        # Compositional dashboard views based on custom roles
-│   │   ├── routes/                         # Explicit React Router v6 path mapping tables
-│   │   └── types/                          # Strict TypeScript component communication contracts
+│   │   ├── api/                              # Axios clients and API service wrappers
+│   │   ├── components/                       # Shared UI components
+│   │   ├── context/                          # Auth and SignalR context providers
+│   │   ├── features/                         # Feature-driven product modules
+│   │   │   ├── admin-management/
+│   │   │   ├── ai-providers/
+│   │   │   ├── ai-tower/
+│   │   │   ├── apps/
+│   │   │   ├── auth/
+│   │   │   ├── dashboard/
+│   │   │   └── system-settings/
+│   │   ├── layouts/                          # Application layout components
+│   │   ├── routes/                           # Routing and protected route definitions
+│   │   └── types/                            # Shared TypeScript types
 │   │
-│   ├── Dockerfile                          # Nginx compositional client-side build manifest
-│   ├── nginx.conf                          # Single Page Application (SPA) reverse routing engine configuration
-│   ├── tailwind.config.js                  # Atomic style design definitions
-│   └── vite.config.ts                      # Frontend bundling parameters
+│   ├── Dockerfile                            # Frontend container build definition
+│   ├── nginx.conf                            # Nginx configuration for the SPA
+│   ├── tailwind.config.js                    # Tailwind CSS configuration
+│   └── vite.config.ts                        # Vite build configuration
 │
-└── docker-compose.yml                      # Orchestrated Multi-Container Production Manifest Layout
+└── docker-compose.yml                        # Multi-container orchestration file
+```
+
+---
+
+## 🤖 Hybrid AI Architecture
+
+WatchDog uses a hybrid AI architecture that supports both cloud-based and local AI providers. Instead of coupling the monitoring workflow directly to a single AI service, the system resolves AI clients through a provider abstraction.
+
+This allows WatchDog to generate operational insights using OpenAI when cloud analysis is configured, or fall back to a local Ollama model when a cloud provider is not available.
+
+```text
+Incident / Scheduled Analysis
+        │
+        ▼
+AI Client Factory
+        │
+        ├── OpenAI Provider
+        │
+        └── Local Ollama Provider
+        │
+        ▼
+AI Insight
+        │
+        ├── Save to Database
+        └── Broadcast to Dashboard
+```
+
+### Provider Resolution & Fallback
+
+AI providers are resolved through `AiClientFactory`, which selects the requested provider or the globally active provider from the database.
+
+If no active provider is configured, or if the selected cloud provider is missing an API key, WatchDog automatically falls back to a local Ollama client.
+
+| Provider | Purpose |
+|---|---|
+| OpenAI | Cloud-based AI analysis for richer diagnostic reports. |
+| Ollama | Local AI analysis for offline/private environments and fallback scenarios. |
+
+The local fallback targets an Ollama instance running with the `llama3.2:1b` model. In native local development this is typically `http://localhost:11434`, while Docker-based execution may use `http://host.docker.internal:11434` so containers can reach the host machine's Ollama runtime.
+
+### AI Insight Pipelines
+
+WatchDog generates AI insights through both event-driven and scheduled workflows.
+
+| Pipeline | Trigger | Output |
+|---|---|---|
+| Event-driven RCA | A confirmed incident is opened | `CrashWarning` |
+| Routine analysis | Hourly background analysis over recent telemetry | `ScalingAdvice` or `SystemStable` |
+| Strategic analysis | Daily background analysis comparing recent behavior with baseline data | `StrategicForecast` |
+
+### Event-Driven Root Cause Analysis
+
+When an incident is confirmed, WatchDog starts an asynchronous root cause analysis workflow without blocking the main health polling loop.
+
+The workflow collects recent health snapshots and incident context, builds a provider-specific prompt, sends it to the active AI client, stores the generated insight and broadcasts the result to connected dashboard clients.
+
+To reduce unnecessary API usage and dashboard noise, WatchDog applies a cooldown window before generating repeated crash analysis for the same application, unless a new failed component is detected.
+
+### Scheduled AI Analysis
+
+In addition to incident-based analysis, WatchDog runs scheduled AI workflows:
+
+- **Routine analysis:** evaluates recent telemetry and generates scaling advice when abnormal behavior is detected.
+- **Strategic analysis:** compares recent system behavior with historical baseline data to produce longer-term capacity and reliability insights.
+- **Stable system reporting:** skips unnecessary AI calls when the collected metrics indicate a stable system state.
+
+### Prompt Strategy
+
+WatchDog adjusts prompt behavior based on the selected provider.
+
+- Local Ollama prompts are optimized in English to improve consistency with smaller local models.
+- OpenAI prompts are optimized for richer Turkish operational reports.
+- Prompt outputs are cleaned to render properly inside dashboard widgets and AI insight panels.
+
+### AI Tower & Real-Time Delivery
+
+Generated insights are stored in the database and delivered to the frontend through SignalR. Users can review AI-generated diagnostics inside the dashboard and the dedicated AI Tower page.
+
+The AI layer is designed as a diagnostic advisor. It helps administrators understand possible root causes, scaling risks and system behavior, but it does not automatically resolve incidents or modify application code.
+
+---
+
+## 🔐 Security & Access Control
+
+WatchDog uses role-based access control and application-level data boundaries to separate system administration responsibilities from day-to-day monitoring access.
+
+The security model is built around JWT authentication, protected backend endpoints, frontend route guards and use case level authorization checks.
+
+### Authentication
+
+Authentication is handled through a stateless JWT-based login flow.
+
+When a user signs in, the backend validates the credentials and issues a signed JWT containing identity and role information.
+
+| Security Area | Implementation |
+|---|---|
+| Token type | Stateless JWT |
+| Token lifetime | 12 hours |
+| Signing algorithm | HMAC SHA-256 |
+| Main claims | User ID, username, email, role and token identifier |
+
+Passwords are stored as one-way SHA-256 hashes. During login, the incoming password is hashed with the same algorithm and compared against the stored password hash.
+
+### Role-Based Access Control
+
+WatchDog defines two main roles:
+
+| Role | Responsibility |
+|---|---|
+| `SuperAdmin` | Manages monitored applications, admin accounts, AI providers and global system settings. |
+| `Admin` | Monitors assigned applications, views dashboards, follows incidents and reviews operational insights. |
+
+Backend endpoints are protected with authorization attributes, while the frontend uses route guards to redirect unauthenticated or unauthorized users to the appropriate pages.
+
+### Application-Level Access Isolation
+
+Standard admins are restricted to the applications assigned to them.
+
+WatchDog stores allowed application identifiers for each admin user and applies this boundary inside application use cases. This prevents standard admins from discovering or accessing monitoring data that belongs to applications outside their assigned scope.
+
+```text
+Admin User → AllowedAppIds → Filtered Application Access
+```
+
+This check is enforced on the backend, so access control does not rely only on hidden frontend routes.
+
+### Protected Operations
+
+Sensitive operations are limited to higher-privilege users.
+
+Examples include:
+
+- creating, updating or deleting monitored applications,
+- managing admin accounts,
+- configuring AI providers,
+- changing global system thresholds,
+- accessing system-level administration pages.
+
+This separation keeps operational monitoring access distinct from system configuration authority.
+
+### Account Recovery
+
+WatchDog includes a password recovery flow through forgot-password and reset-password endpoints.
+
+The recovery process generates a reset code, applies expiration rules and delivers the code through the configured email notification service. When a valid code is submitted, the password is replaced with a newly hashed value.
+
+### Security Scope
+
+WatchDog focuses on practical application-level security controls such as authentication, authorization, role separation and scoped data access.
+
+It does not claim to provide intrusion prevention, automatic threat detection or advanced encryption beyond the implemented access control and hashing mechanisms.
+
+---
+
+## 🧰 Tech Stack
+
+WatchDog is built with a modern full-stack technology stack covering backend services, background workers, real-time communication, AI integrations, frontend dashboards and containerized deployment.
+
+### Backend
+
+| Area | Technology |
+|---|---|
+| Runtime | .NET 10 |
+| API Framework | ASP.NET Core Web API |
+| Background Processing | ASP.NET Core Hosted Services / BackgroundService |
+| Persistence | Entity Framework Core 10 |
+| Database | Microsoft SQL Server |
+| Resilience | Polly |
+| Authentication | JWT Authentication |
+| Email Delivery | MailKit / MimeKit |
+| Real-Time Communication | ASP.NET Core SignalR |
+
+### Frontend
+
+| Area | Technology |
+|---|---|
+| Framework | React 19 |
+| Language | TypeScript 6 |
+| Build Tool | Vite 8 |
+| Styling | Tailwind CSS |
+| Routing | React Router DOM |
+| HTTP Client | Axios |
+| Forms | React Hook Form |
+| Validation | Zod |
+| Notifications | Sonner |
+| Icons | Lucide React |
+| Real-Time Client | Microsoft SignalR Client |
+
+### AI & Monitoring
+
+| Area | Technology |
+|---|---|
+| Cloud AI Provider | OpenAI |
+| Local AI Provider | Ollama |
+| AI Abstraction | Microsoft.Extensions.AI |
+| Local Model SDK | OllamaSharp |
+| Health Probing | HTTP-based monitoring endpoints and reusable modular health check packages |
+| Host Metrics | Windows Performance Counters, Linux `/proc` readers and Docker-aware memory detection |
+
+### Infrastructure & Deployment
+
+| Area | Technology |
+|---|---|
+| Containerization | Docker |
+| Orchestration | Docker Compose |
+| Frontend Runtime | Nginx |
+| Local SMTP Testing | MailHog |
+| Database Container | SQL Server 2022 |
+| Archive Storage | Mounted Docker volume for compressed historical snapshots |
+
+---
+
+## ⚙️ Configuration & Environment Variables
+
+WatchDog uses configuration values from `appsettings.json`, Docker environment variables, frontend Vite environment files and database-backed AI provider settings.
+
+Sensitive values such as JWT secrets, database passwords and cloud AI API keys should always be replaced with secure values before running the project outside local development.
+
+> The password, JWT secret and API key values shown in this section are placeholders. Real production secrets should never be written in the README or committed to the repository.
+
+### Backend Configuration
+
+| Key | Description | Example / Placeholder |
+|---|---|---|
+| `ConnectionStrings:DefaultConnection` | SQL Server connection string used by the API and Worker. | `Server=localhost,1433;Database=WatchdogDb;User Id=sa;Password=YOUR_DB_PASSWORD;TrustServerCertificate=True;` |
+| `JwtSettings:SecretKey` | Secret key used to sign JWT tokens. | `YOUR_SUPER_SECURE_JWT_SECRET_KEY_MIN_32_CHARS` |
+| `JwtSettings:Issuer` | JWT issuer value. | `Watchdog.Api` |
+| `JwtSettings:Audience` | JWT audience value. | `Watchdog.UI` |
+
+### Mail Configuration
+
+| Key | Description | Example / Placeholder |
+|---|---|---|
+| `MailSettings:DisplayName` | Display name used in notification emails. | `WatchDog Monitoring` |
+| `MailSettings:From` | Sender email address. | `no-reply@watchdog.app` |
+| `MailSettings:ToEmail` | Default fallback recipient address. | `admin@example.com` |
+| `MailSettings:Host` | SMTP host address. | `watchdog-mail` or `localhost` |
+| `MailSettings:Port` | SMTP server port. | `1025` for MailHog |
+| `MailSettings:UseSsl` | Enables or disables SSL/TLS for SMTP. | `false` for MailHog |
+
+### Frontend Configuration
+
+| Key | Description | Example |
+|---|---|---|
+| `VITE_API_URL` | Base URL used by the React frontend for API and SignalR communication. | `http://localhost:5226` |
+
+Example `frontend/.env`:
+
+```env
+VITE_API_URL=http://localhost:5226
+```
+
+### Docker Environment
+
+| Key / Mapping | Description | Example |
+|---|---|---|
+| `SQL_SA_PASSWORD` | SQL Server `sa` password used by the database container. | `YOUR_STRONG_SQL_PASSWORD` |
+| `API_PORT` | Local host port mapped to the API container. | `5226` |
+| `DB_NAME` | SQL Server database name. | `WatchdogDb` |
+| `./archives:/app/WatchDogArchives` | Mounted archive directory used by the Worker for compressed historical snapshot exports. | `./archives` |
+
+### AI Provider Configuration
+
+AI providers are configured through the application database and management UI instead of static environment variables.
+
+| Field | Description | Example |
+|---|---|---|
+| `ApiKey` | Cloud provider API key used for OpenAI-based analysis. | `YOUR_OPENAI_API_KEY` |
+| `ModelName` | Model name used by the selected AI provider. | `gpt-4o-mini` or `llama3.2:1b` |
+| `Endpoint` | AI provider endpoint. | `http://localhost:11434` for Ollama |
+
+If no active cloud provider is configured, or if the selected provider does not have a valid API key, WatchDog can fall back to the local Ollama provider.
+
+### Production Notes
+
+- Replace all local development passwords and secrets before deployment.
+- Prefer Docker environment overrides or secret managers for production values.
+- Do not commit real JWT secrets, database passwords or AI API keys.
+- Ensure the Worker container has write access to the mounted archive directory.
+- Use MailHog only for local email testing; configure a real SMTP provider for production-like environments.
+
+---
+
+## 🚀 Getting Started & Installation
+
+The recommended way to run WatchDog locally is through Docker Compose. This starts the database, API, background worker, React dashboard and MailHog SMTP testing service together.
+
+### Prerequisites
+
+Make sure the following tools are installed:
+
+| Tool | Purpose |
+|---|---|
+| .NET 10 SDK | Backend API and Worker development |
+| Node.js 18+ / npm | Frontend development |
+| Docker & Docker Compose | Recommended full-stack local runtime |
+| SQL Server | Optional, only required for non-Docker local development |
+| Ollama | Optional, required for local AI analysis with the default `llama3.2:1b` model |
+
+---
+
+### Run with Docker Compose
+
+Create a `.env` file in the repository root, next to `docker-compose.yml`:
+
+```env
+SQL_SA_PASSWORD=YOUR_STRONG_SQL_PASSWORD
+API_PORT=5226
+DB_NAME=WatchdogDb
+```
+
+> Replace `YOUR_STRONG_SQL_PASSWORD` with your own local development password. Do not use real production credentials in this file.
+
+Start the full stack:
+
+```bash
+docker compose up --build -d
+```
+
+After the containers start, the services will be available at:
+
+| Service | URL / Port | Description |
+|---|---|---|
+| React Dashboard | `http://localhost:5174` | WatchDog web interface |
+| REST API | `http://localhost:5226` | ASP.NET Core API |
+| SQL Server | `localhost:1433` | Database container |
+| MailHog UI | `http://localhost:8025` | Local SMTP inbox |
+| MailHog SMTP | `1025` | SMTP capture port |
+| Worker | Internal container | Background polling, AI analysis and archiving |
+
+The Worker does not expose a public port. It runs in the background and writes compressed archive files to the mounted `./archives` directory.
+
+> If you change `API_PORT`, make sure `VITE_API_URL` points to the same API address before rebuilding the frontend container.
+
+---
+
+### Database Migration & Seed Data
+
+WatchDog applies database migrations automatically when the API starts.
+
+The startup process runs the database seeder, which applies pending Entity Framework Core migrations and creates the initial configuration required to use the platform.
+
+Default SuperAdmin credentials:
+
+| Field | Value |
+|---|---|
+| Username | `admin` |
+| Password | `Admin123!` |
+
+The seeder also creates default system threshold settings and registers a local Ollama AI provider using the `llama3.2:1b` model.
+
+To use the default local AI provider, make sure Ollama is installed, running, and the required model is available:
+
+```bash
+ollama pull llama3.2:1b
+```
+
+If you are not using Ollama Desktop, start the Ollama runtime manually:
+
+```bash
+ollama serve
+```
+
+> This default account is intended only for local development and first-time setup. Change the default admin password immediately after the first login.
+
+---
+
+### Run Locally Without Docker
+
+If you prefer to debug each project separately, you can run the API, Worker and frontend manually.
+
+#### 1. Prepare SQL Server and SMTP
+
+Make sure SQL Server is running locally on port `1433`.
+
+For local email testing, you can start MailHog separately:
+
+```bash
+docker run -d -p 1025:1025 -p 8025:8025 mailhog/mailhog
+```
+
+#### 2. Start the Backend API
+
+Update the connection string in:
+
+```text
+backend/src/Presentation/Watchdog.Api/appsettings.json
+```
+
+Then run:
+
+```bash
+cd backend/src/Presentation/Watchdog.Api
+dotnet run
+```
+
+The API will start on:
+
+```text
+http://localhost:5226
+```
+
+#### 3. Start the Background Worker
+
+Open a new terminal and run:
+
+```bash
+cd backend/src/Presentation/Watchdog.Worker
+dotnet run
+```
+
+The Worker will connect to the database and start background jobs such as health polling, metrics collection, AI analysis and data archiving.
+
+#### 4. Start the React Frontend
+
+Update the frontend environment file:
+
+```env
+VITE_API_URL=http://localhost:5226
+```
+
+Then run:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The frontend will start on Vite’s local development port, usually:
+
+```text
+http://localhost:5173
+```
+
+or the configured Docker/local port:
+
+```text
+http://localhost:5174
+```
+
+For local development, you can sign in with the default SuperAdmin account:
+
+```text
+Username: admin
+Password: Admin123!
+```
+
+---
+
+## 🐳 Docker Deployment
+
+WatchDog includes a Docker Compose setup for running the full platform as a multi-container local environment.
+
+The Compose stack starts the database, API, background worker, frontend dashboard and local SMTP testing service together.
+
+```text
+┌──────────────────────┐
+│     watchdog-ui      │
+│ React + Nginx        │
+│ http://localhost:5174│
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│     watchdog-api     │
+│ ASP.NET Core Web API │
+│ http://localhost:5226│
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│     watchdog-db      │
+│ SQL Server 2022      │
+│ localhost:1433       │
+└──────────────────────┘
+
+┌──────────────────────┐
+│   watchdog-worker    │
+│ Background Services  │
+│ Internal container   │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│    Archive Volume    │
+│ ./archives           │
+└──────────────────────┘
+
+┌──────────────────────┐
+│    watchdog-mail     │
+│ MailHog SMTP Testing │
+│ http://localhost:8025│
+└──────────────────────┘
+```
+
+### Services
+
+| Service | Purpose | Exposed Port |
+|---|---|---|
+| `watchdog-ui` | Serves the compiled React dashboard through Nginx. | `5174:80` |
+| `watchdog-api` | Hosts the ASP.NET Core REST API and SignalR hub. | `5226:8080` |
+| `watchdog-worker` | Runs health polling, metrics collection, AI analysis and data archiving jobs. | Internal only |
+| `watchdog-db` | Stores application data in SQL Server 2022. | `1433:1433` |
+| `watchdog-mail` | Captures local SMTP emails through MailHog. | `1025`, `8025` |
+
+### Start the Stack
+
+From the repository root:
+
+```bash
+docker compose up --build -d
+```
+
+### Stop the Stack
+
+```bash
+docker compose down
+```
+
+### View Logs
+
+```bash
+docker compose logs -f
+```
+
+To inspect a specific service:
+
+```bash
+docker compose logs -f watchdog-api
+docker compose logs -f watchdog-worker
+docker compose logs -f watchdog-ui
+```
+
+### Archive Volume
+
+The Worker container writes compressed historical snapshot archives to a mounted local directory:
+
+```text
+./archives:/app/WatchDogArchives
+```
+
+Make sure the `archives` directory is writable by Docker, especially when running the stack on Linux or inside restricted environments.
+
+### Local SMTP Testing
+
+MailHog is included for local email testing.
+
+- SMTP server: `watchdog-mail:1025`
+- Web inbox: `http://localhost:8025`
+
+Downtime, recovery and password reset emails can be inspected from the MailHog web interface during development.
+
+---
+
+## 👥 Contributors
+
+WatchDog was developed by:
+
+| Name | GitHub | LinkedIn |
+|---|---|---|
+| Berke Büyükköprü | [BerkeBuyukkopru](https://github.com/BerkeBuyukkopru) | [berke-buyukkopru](https://www.linkedin.com/in/berke-buyukkopru/) |
+| Furkan Acu | [Acufurkan](https://github.com/Acufurkan) | [furkan-acu](https://www.linkedin.com/in/furkan-acu-b22738298/) |
