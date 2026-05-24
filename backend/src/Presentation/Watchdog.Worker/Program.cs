@@ -5,6 +5,10 @@ using Watchdog.Application.Interfaces.Common;
 
 var builder = Host.CreateApplicationBuilder(args);
 
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+
 // === 1. Katman Kayıtları (Yeni Mimari) ===
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);

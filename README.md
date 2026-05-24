@@ -961,6 +961,8 @@ VITE_API_URL=http://localhost:5226
 | `SQL_SA_PASSWORD` | SQL Server `sa` password used by the database container. | `YOUR_STRONG_SQL_PASSWORD` |
 | `API_PORT` | Local host port mapped to the API container. | `5226` |
 | `DB_NAME` | SQL Server database name. | `WatchdogDb` |
+| `JWT_SECRET` | Secret key injected into the API container for JWT signing. | `YOUR_SUPER_SECURE_JWT_SECRET_KEY_MIN_32_CHARS` |
+| `MAIL_TO_EMAIL` | Default fallback email recipient for local notifications. | `admin@example.com` |
 | `./archives:/app/WatchDogArchives` | Mounted archive directory used by the Worker for compressed historical snapshot exports. | `./archives` |
 
 ### AI Provider Configuration
@@ -1005,15 +1007,17 @@ Make sure the following tools are installed:
 
 ### Run with Docker Compose
 
-Create a `.env` file in the repository root, next to `docker-compose.yml`:
+Create a `.env` file in the repository root, next to `docker-compose.yml`. You can copy `.env.example` and replace the placeholder values:
 
 ```env
 SQL_SA_PASSWORD=YOUR_STRONG_SQL_PASSWORD
 API_PORT=5226
 DB_NAME=WatchdogDb
+JWT_SECRET=YOUR_SUPER_SECURE_JWT_SECRET_KEY_MIN_32_CHARS
+MAIL_TO_EMAIL=admin@example.com
 ```
 
-> Replace `YOUR_STRONG_SQL_PASSWORD` with your own local development password. Do not use real production credentials in this file.
+> Replace the placeholder values with your own local development values. Do not use real production credentials in this file.
 
 Start the full stack:
 
@@ -1073,9 +1077,19 @@ ollama serve
 
 If you prefer to debug each project separately, you can run the API, Worker and frontend manually.
 
+Docker and local runs can use different databases and secrets. Docker reads values from the repository root `.env` file, while local `dotnet run` should read private values from user-secrets or machine environment variables. This keeps committed config files safe while still allowing both environments to work.
+
+> If you run Docker API and local API at the same time, they cannot both use port `5226`. Change either `API_PORT` in the Docker `.env` file or the local API URL in `launchSettings.json`.
+
 #### 1. Prepare SQL Server and SMTP
 
-Make sure SQL Server is running locally on port `1433`.
+Make sure SQL Server is available for the local API and Worker. To keep local data separate from Docker data, use a different database name or a different SQL Server instance.
+
+Example local database name:
+
+```text
+WatchdogLocalDb
+```
 
 For local email testing, you can start MailHog separately:
 
@@ -1085,10 +1099,20 @@ docker run -d -p 1025:1025 -p 8025:8025 mailhog/mailhog
 
 #### 2. Start the Backend API
 
-Update the connection string in:
+Configure the API connection string and JWT secret through user-secrets or environment variables. The committed `appsettings.json` file intentionally contains placeholders only:
 
 ```text
 backend/src/Presentation/Watchdog.Api/appsettings.json
+```
+
+Example user-secrets setup:
+
+```bash
+cd backend/src/Presentation/Watchdog.Api
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost,1433;Database=WatchdogLocalDb;User Id=sa;Password=YOUR_DB_PASSWORD;TrustServerCertificate=True;Encrypt=False"
+dotnet user-secrets set "JwtSettings:SecretKey" "YOUR_SUPER_SECURE_JWT_SECRET_KEY_MIN_32_CHARS"
+dotnet user-secrets set "MailSettings:Host" "localhost"
+dotnet user-secrets set "MailSettings:ToEmail" "admin@example.com"
 ```
 
 Then run:
@@ -1106,14 +1130,22 @@ http://localhost:5226
 
 #### 3. Start the Background Worker
 
-Open a new terminal and run:
+The Worker uses the same connection string configuration pattern as the API. Set its local values separately before running it because the Worker is a different project:
 
 ```bash
 cd backend/src/Presentation/Watchdog.Worker
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost,1433;Database=WatchdogLocalDb;User Id=sa;Password=YOUR_DB_PASSWORD;TrustServerCertificate=True;Encrypt=False"
+dotnet user-secrets set "MailSettings:Host" "localhost"
+dotnet user-secrets set "MailSettings:ToEmail" "admin@example.com"
+```
+
+Then run:
+
+```bash
 dotnet run
 ```
 
-The Worker will connect to the database and start background jobs such as health polling, metrics collection, AI analysis and data archiving.
+When the API and Worker point to `WatchdogLocalDb`, local data stays separate from the Docker database configured through root `.env`.
 
 #### 4. Start the React Frontend
 
