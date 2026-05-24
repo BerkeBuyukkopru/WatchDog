@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Shield, Mail, User, Loader2, Check, Plus } from 'lucide-react';
 import { adminService } from '../../../api/adminService';
+import { getApiErrorMessage } from '../../../api/apiError';
 import type { AdminUser, MonitoredApp } from '../../../types/admin.types';
 import { toast } from 'sonner';
 
@@ -68,8 +69,8 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose, onSucce
       }
       onSuccess();
       onClose();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Bir hata oluştu');
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Bir hata oluştu'));
     } finally {
       setLoading(false);
     }
@@ -149,8 +150,8 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose, onSucce
             <select
               value={formData.role}
               onChange={e => setFormData({ ...formData, role: e.target.value })}
-              disabled={!!admin}
-              className={`w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all appearance-none ${!!admin ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+              disabled={Boolean(admin)}
+              className={`w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all appearance-none ${admin ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
             >
               <option value="Admin" className="bg-[#1A1A1E] text-white">Admin (Sınırlı Erişim)</option>
               <option value="SuperAdmin" className="bg-[#1A1A1E] text-white">SuperAdmin (Tam Erişim)</option>

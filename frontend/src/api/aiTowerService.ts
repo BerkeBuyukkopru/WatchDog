@@ -1,5 +1,5 @@
 import axiosClient from './axiosClient';
-import type { AiInsight, AiProvider } from '../types/ai-tower.types';
+import type { AiInsight, AiProvider, MonitoredApp } from '../types/ai-tower.types';
 
 export const aiTowerService = {
   getInsights: async (appId?: string, limit: number = 5): Promise<AiInsight[]> => {
@@ -27,8 +27,8 @@ export const aiTowerService = {
     await axiosClient.patch(`/api/AiProviders/${id}/set-active`);
   },
 
-  getApps: async (): Promise<any[]> => {
-    const response = await axiosClient.get<any[]>('/api/Apps');
+  getApps: async (): Promise<MonitoredApp[]> => {
+    const response = await axiosClient.get<MonitoredApp[]>('/api/Apps');
     return response.data;
   },
 

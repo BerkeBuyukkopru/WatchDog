@@ -15,7 +15,7 @@ export interface AppDto {
 }
 
 export interface DependencyDetail {
-  status: string;
+  status: string | number | { name?: string; value?: string | number };
   description?: string;
   durationMs?: number;
 }

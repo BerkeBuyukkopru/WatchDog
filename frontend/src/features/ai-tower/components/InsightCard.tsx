@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Check, Info, Zap, Maximize2, BrainCircuit } from 'lucide-react';
+import { Check, Info, Zap, Maximize2, BrainCircuit, type LucideIcon } from 'lucide-react';
 import type { AiInsight } from '../../../types/ai-tower.types';
 
 interface InsightCardProps {
@@ -9,7 +9,7 @@ interface InsightCardProps {
   readOnly?: boolean;
 }
 
-const typeConfig: Record<string, { title: string; color: string; icon: any; bg: string; border: string }> = {
+const typeConfig: Record<string, { title: string; color: string; icon: LucideIcon; bg: string; border: string }> = {
   'CrashWarning': { 
     title: 'Hata Analizi', 
     color: 'text-rose-400', 

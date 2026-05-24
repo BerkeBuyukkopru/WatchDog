@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import MonitoredAppsTable, { type AppListItem } from './components/MonitoredAppsTable';
 import AppFormModal, { type AppFormData } from './components/AppFormModal';
 import { appsService } from '../../api/appsService';
+import { getApiErrorMessage } from '../../api/apiError';
 import { LayoutGrid, Loader2, Trash2, CheckCircle2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import ConfirmModal from '../../components/common/ConfirmModal';
@@ -91,9 +92,8 @@ const AppsManagementPage: React.FC = () => {
       await appsService.deleteApp(confirmDelete.id);
       setApps(prev => prev.filter(a => a.id !== confirmDelete.id));
       toast.success('Uygulama silindi (Çöp kutusuna taşındı).');
-    } catch (error: any) {
-      const msg = error.response?.data?.message || 'Silme işlemi başarısız oldu.';
-      toast.error(msg);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Silme işlemi başarısız oldu.'));
     } finally {
       setConfirmDelete({ isOpen: false, id: null });
     }
@@ -104,9 +104,8 @@ const AppsManagementPage: React.FC = () => {
       await appsService.restoreApp(id);
       setApps(prev => prev.filter(a => a.id !== id));
       toast.success('Uygulama başarıyla geri yüklendi.');
-    } catch (error: any) {
-      const msg = error.response?.data?.message || 'Geri yükleme işlemi başarısız oldu.';
-      toast.error(msg);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Geri yükleme işlemi başarısız oldu.'));
     }
   };
 
@@ -142,9 +141,8 @@ const AppsManagementPage: React.FC = () => {
       }
       setIsModalOpen(false);
       fetchApps(); // Listeyi yenile
-    } catch (error: any) {
-      const msg = error.response?.data?.message || 'Kayıt işlemi sırasında bir hata oluştu.';
-      toast.error(msg);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Kayıt işlemi sırasında bir hata oluştu.'));
     }
   };
 
@@ -223,7 +221,7 @@ const AppsManagementPage: React.FC = () => {
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleModalSubmit}
         initialData={editingApp}
-        isEdit={!!editingAppId}
+        isEdit={Boolean(editingAppId)}
       />
 
       <ConfirmModal

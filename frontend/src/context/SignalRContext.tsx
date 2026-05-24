@@ -57,9 +57,9 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({ children }) =>
         await newConnection.start();
         console.log('>>>> [SIGNALR] Merkezi Hub Bağlantısı Başarılı.');
         setIsConnected(true);
-      } catch (err: any) {
-        const errorMsg = err?.toString() || "";
-        const errorName = err?.name || "";
+      } catch (err) {
+        const errorMsg = String(err || "");
+        const errorName = err instanceof Error ? err.name : "";
         // React Strict Mode remount hatalarını sustur
         if (errorMsg.includes('AbortError') || errorName.includes('AbortError') || errorMsg.includes('stopped')) return;
         

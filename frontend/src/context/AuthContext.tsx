@@ -18,6 +18,20 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+interface WatchdogJwtPayload {
+  sub?: string;
+  nameid?: string;
+  unique_name?: string;
+  name?: string;
+  email?: string;
+  upn?: string;
+  exp?: number;
+  role?: string | string[];
+  roles?: string | string[];
+  'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'?: string | string[];
+  'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'?: string;
+}
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -29,7 +43,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const storedToken = sessionStorage.getItem('watchdog_token');
     if (storedToken) {
       try {
-        const decodedToken = jwtDecode<any>(storedToken);
+        const decodedToken = jwtDecode<WatchdogJwtPayload>(storedToken);
         
         // Basic check if token is expired
         const currentTime = Date.now() / 1000;
@@ -62,7 +76,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = (newToken: string) => {
     try {
-      const decodedToken = jwtDecode<any>(newToken);
+      const decodedToken = jwtDecode<WatchdogJwtPayload>(newToken);
       
       const rawRole = decodedToken.role || decodedToken.roles || decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || '';
       const role = Array.isArray(rawRole) ? rawRole[0] : rawRole;

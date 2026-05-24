@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { adminService } from '../../../api/adminService';
+import { getApiErrorMessage } from '../../../api/apiError';
 import type { AdminUser, MonitoredApp } from '../../../types/admin.types';
 import { toast } from 'sonner';
 
@@ -19,7 +20,7 @@ export const useAdminManagement = (activeTab: 'active' | 'deleted') => {
       
       setAdmins(activeTab === 'active' ? activeAdmins : deletedAdmins);
       setAvailableApps(appsData);
-    } catch (error) {
+    } catch {
       toast.error('Veriler yüklenirken bir hata oluştu');
     } finally {
       setLoading(false);
@@ -35,9 +36,8 @@ export const useAdminManagement = (activeTab: 'active' | 'deleted') => {
       await adminService.deleteAdmin(id);
       toast.success('Yönetici başarıyla silindi');
       loadData();
-    } catch (error: any) {
-      const errorMsg = error.response?.data?.message || error.response?.data?.Message || 'Silme işlemi başarısız';
-      toast.error(errorMsg);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Silme işlemi başarısız'));
     }
   };
 
@@ -46,7 +46,7 @@ export const useAdminManagement = (activeTab: 'active' | 'deleted') => {
       await adminService.restoreAdmin(id);
       toast.success('Yönetici başarıyla geri yüklendi');
       loadData();
-    } catch (error) {
+    } catch {
       toast.error('Geri yükleme başarısız');
     }
   };

@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Lock, KeyRound, Loader2, ArrowLeft, CheckCircle } from 'lucide-react';
 import { authService } from '../../../api/authService';
+import { getApiErrorMessage } from '../../../api/apiError';
 import { toast } from 'sonner';
 
 const resetPasswordSchema = z.object({
@@ -55,12 +56,8 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({ email, onB
         onBackToLogin();
       }, 1500);
       
-    } catch (error: any) {
-      if (error.response?.data?.message) {
-        setErrorMsg(error.response.data.message);
-      } else {
-        setErrorMsg('Şifre sıfırlanırken bir hata oluştu. Lütfen kodunuzu kontrol edip tekrar deneyin.');
-      }
+    } catch (error) {
+      setErrorMsg(getApiErrorMessage(error, 'Şifre sıfırlanırken bir hata oluştu. Lütfen kodunuzu kontrol edip tekrar deneyin.'));
     }
   };
 

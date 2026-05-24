@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Mail, ArrowLeft, Loader2, Send } from 'lucide-react';
 import { authService } from '../../../api/authService';
+import { getApiErrorMessage } from '../../../api/apiError';
 import { toast } from 'sonner';
 
 const forgotPasswordSchema = z.object({
@@ -36,12 +37,8 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onBackTo
         description: 'E-posta adresinize şifre sıfırlama kodu iletildi.',
       });
       onSuccess(data.email);
-    } catch (error: any) {
-      if (error.response?.data?.message) {
-        setErrorMsg(error.response.data.message);
-      } else {
-        setErrorMsg('İşlem sırasında bir hata oluştu. Lütfen tekrar deneyin.');
-      }
+    } catch (error) {
+      setErrorMsg(getApiErrorMessage(error, 'İşlem sırasında bir hata oluştu. Lütfen tekrar deneyin.'));
     }
   };
 

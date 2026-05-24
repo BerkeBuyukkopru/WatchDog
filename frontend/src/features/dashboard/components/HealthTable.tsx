@@ -17,7 +17,7 @@ interface HealthTableProps {
   latencyThreshold?: number;
 }
 
-const getStatusColor = (status: any) => {
+const getStatusColor = (status: unknown) => {
   const s = String(status || '').toLowerCase();
   if (s.includes('unhealthy') || s === '3') return 'text-rose-500 border-rose-500/20 bg-rose-500/5';
   if (s.includes('degraded') || s === '2') return 'text-amber-500 border-amber-500/20 bg-amber-500/5';
@@ -25,7 +25,7 @@ const getStatusColor = (status: any) => {
   return 'text-slate-500 border-white/10 bg-white/5';
 };
 
-const getStatusBg = (status: any) => {
+const getStatusBg = (status: unknown) => {
   const s = String(status || '').toLowerCase();
   if (s.includes('unhealthy') || s === '3') return 'bg-rose-500/10 text-rose-500 border-rose-500/20';
   if (s.includes('degraded') || s === '2') return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
@@ -33,7 +33,7 @@ const getStatusBg = (status: any) => {
   return 'bg-white/5 text-slate-500 border-white/10';
 };
 
-const getRowBg = (status: any) => {
+const getRowBg = (status: unknown) => {
   const s = String(status || '').toLowerCase();
   if (s.includes('unhealthy') || s === '3') return 'bg-rose-500/[0.03] hover:bg-rose-500/[0.05]';
   if (s.includes('degraded') || s === '2') return 'bg-amber-500/[0.02] hover:bg-amber-500/[0.04]';
@@ -94,7 +94,7 @@ const HealthTable: React.FC<HealthTableProps> = ({
       };
     }
     try {
-      return JSON.parse(trimmed);
+      return JSON.parse(trimmed) as { [key: string]: DependencyDetail };
     } catch (err) {
       console.error('Failed to parse dependencies', err);
       return {
@@ -234,10 +234,9 @@ const HealthTable: React.FC<HealthTableProps> = ({
                         ) : (
                           depKeys.map((key) => {
                             const dep = depsMap[key];
-                            let statusText = dep.status || 'Unknown';
-                            if (typeof dep.status === 'object' && dep.status !== null) {
-                              statusText = (dep.status as any).name || (dep.status as any).value || 'Unknown';
-                            }
+                            const statusText: string | number = typeof dep.status === 'object' && dep.status !== null
+                              ? dep.status.name || dep.status.value || 'Unknown'
+                              : dep.status || 'Unknown';
 
                             const displayKey = key
                               .replace(/\s*Monitor/gi, '')

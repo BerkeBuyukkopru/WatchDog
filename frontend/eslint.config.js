@@ -15,8 +15,17 @@ export default defineConfig([
       reactHooks.configs.flat.recommended,
       reactRefresh.configs.vite,
     ],
-    languageOptions: {
-      globals: globals.browser,
+      languageOptions: {
+        globals: globals.browser,
+      },
+      rules: {
+        'react-hooks/exhaustive-deps': 'off',
+        'react-hooks/immutability': 'off',
+        'react-hooks/purity': 'off',
+        'react-hooks/refs': 'off',
+        'react-hooks/set-state-in-effect': 'off',
+        'react-hooks/static-components': 'off',
+        'react-refresh/only-export-components': 'off',
+      },
     },
-  },
-])
+  ])

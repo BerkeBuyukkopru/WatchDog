@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, BrainCircuit, Globe, Lock, Loader2, Sparkles } from 'lucide-react';
 import { aiProviderService } from '../../../api/aiProviderService';
+import { getApiErrorMessage } from '../../../api/apiError';
 import type { AiProviderDetail } from '../../../types/ai-provider.types';
 import { toast } from 'sonner';
 
@@ -62,8 +63,8 @@ export const AiProviderModal: React.FC<AiProviderModalProps> = ({ isOpen, onClos
       }
       onSuccess();
       onClose();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Bir hata oluştu');
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Bir hata oluştu'));
     } finally {
       setLoading(false);
     }

@@ -91,11 +91,11 @@ const GlobalDashboard: React.FC = () => {
     };
   }, [connection, isConnected]);
 
-  const getTimeAgo = (timestamp?: string, _trigger?: number) => {
+  const getTimeAgo = (timestamp?: string, now = Date.now()) => {
     if (!timestamp) return 'Bilinmiyor';
     const ts = timestamp.endsWith('Z') ? timestamp : timestamp + 'Z';
     const logTime = new Date(ts).getTime();
-    const diff = Math.floor((Date.now() - logTime) / 1000);
+    const diff = Math.floor((now - logTime) / 1000);
     
     if (diff < 60) return `${diff} sn önce`;
     const diffMin = Math.floor(diff / 60);
@@ -107,18 +107,15 @@ const GlobalDashboard: React.FC = () => {
   // Convert to AppStatusData for the cards
   const displayApps: AppStatusData[] = apps.map(app => {
     const log = statusMap[app.id];
-    let status: 'healthy' | 'unhealthy' | 'degraded' | 'inactive' = 'unhealthy';
-
-    if (!app.isActive) {
-      status = 'inactive';
-    } else if (log) {
-      if (log.status === 'Healthy') status = 'healthy';
-      else if (log.status === 'Degraded') status = 'degraded';
-      else status = 'unhealthy';
-    } else {
-      // No log yet, fallback to active status
-      status = 'degraded';
-    }
+    const status: 'healthy' | 'unhealthy' | 'degraded' | 'inactive' = !app.isActive
+      ? 'inactive'
+      : log?.status === 'Healthy'
+        ? 'healthy'
+        : log?.status === 'Degraded'
+          ? 'degraded'
+          : log
+            ? 'unhealthy'
+            : 'degraded';
 
     return {
       id: app.id,

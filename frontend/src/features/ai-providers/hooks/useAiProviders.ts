@@ -14,7 +14,7 @@ export const useAiProviders = (activeTab: 'active' | 'deleted') => {
         ? await aiProviderService.getProviders()
         : await aiProviderService.getDeletedProviders();
       setProviders(data);
-    } catch (error) {
+    } catch {
       toast.error('Sağlayıcılar yüklenirken bir hata oluştu');
     } finally {
       setLoading(false);
@@ -30,7 +30,7 @@ export const useAiProviders = (activeTab: 'active' | 'deleted') => {
       await aiProviderService.toggleStatus(id);
       toast.success('Sağlayıcı durumu güncellendi');
       loadData();
-    } catch (error) {
+    } catch {
       toast.error('Durum güncellenemedi');
     }
   };
@@ -40,7 +40,7 @@ export const useAiProviders = (activeTab: 'active' | 'deleted') => {
       await aiProviderService.deleteProvider(id);
       toast.success('Sağlayıcı donduruldu (Silinenlere taşındı)');
       loadData();
-    } catch (error) {
+    } catch {
       toast.error('Silme işlemi başarısız');
     }
   };
@@ -50,7 +50,7 @@ export const useAiProviders = (activeTab: 'active' | 'deleted') => {
       await aiProviderService.restoreProvider(id);
       toast.success('Sağlayıcı başarıyla geri yüklendi');
       loadData();
-    } catch (error) {
+    } catch {
       toast.error('Geri yükleme işlemi başarısız');
     }
   };

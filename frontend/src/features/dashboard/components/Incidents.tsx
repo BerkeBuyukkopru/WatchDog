@@ -6,6 +6,7 @@ import { useSignalR } from '../../../context/SignalRContext';
 import type { IncidentDto } from '../../../types/dashboard.types';
 
 type TabType = 'active' | 'resolved';
+type ComponentStatusValue = string | { status?: string | number; description?: string };
 
 interface IncidentsProps {
   appId?: string;
@@ -23,15 +24,15 @@ const Incidents: React.FC<IncidentsProps> = ({ appId, readOnly = false }) => {
   const parseUnhealthyComponents = (errorMessage: string) => {
     try {
       if (!errorMessage.trim().startsWith('{')) return null;
-      const data = JSON.parse(errorMessage);
+      const data = JSON.parse(errorMessage) as Record<string, ComponentStatusValue>;
       const unhealthy: { name: string, description: string }[] = [];
 
-      Object.entries(data).forEach(([key, value]: [string, any]) => {
+      Object.entries(data).forEach(([key, value]) => {
         const status = (typeof value === 'string' ? value : value.status)?.toString() || '';
         if (status.includes('Unhealthy') || status === '3') {
           unhealthy.push({
             name: key,
-            description: value.description || 'Hata detayı belirtilmedi.'
+            description: typeof value === 'string' ? value : value.description || 'Hata detayı belirtilmedi.'
           });
         }
       });
@@ -95,7 +96,7 @@ const Incidents: React.FC<IncidentsProps> = ({ appId, readOnly = false }) => {
   };
 
   const activeIncidents = incidents.filter(i => !i.resolvedAt);
-  const resolvedIncidents = incidents.filter(i => !!i.resolvedAt);
+  const resolvedIncidents = incidents.filter(i => Boolean(i.resolvedAt));
 
   const displayList = activeTab === 'active' ? activeIncidents : resolvedIncidents;
 
