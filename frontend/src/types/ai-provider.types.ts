@@ -3,7 +3,8 @@ export interface AiProviderDetail {
   name: string;
   modelName: string;
   apiUrl: string;
-  apiKey?: string; // Masked on fetch, provided on create/update
+  maskedApiKey?: string;
+  hasApiKey: boolean;
   isActive: boolean;
   isDeleted: boolean;
   createdAt: string;

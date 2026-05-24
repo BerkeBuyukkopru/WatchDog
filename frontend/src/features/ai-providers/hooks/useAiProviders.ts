@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { aiProviderService } from '../../../api/aiProviderService';
+import { getApiErrorMessage } from '../../../api/apiError';
 import type { AiProviderDetail } from '../../../types/ai-provider.types';
 import { toast } from 'sonner';
 
@@ -55,12 +56,22 @@ export const useAiProviders = (activeTab: 'active' | 'deleted') => {
     }
   };
 
+  const revealSecret = async (id: string) => {
+    try {
+      return await aiProviderService.revealSecret(id);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'API anahtarı görüntülenemedi'));
+      return null;
+    }
+  };
+
   return {
     providers,
     loading,
     refresh: loadData,
     toggleStatus,
     deleteProvider,
-    restoreProvider
+    restoreProvider,
+    revealSecret
   };
 };

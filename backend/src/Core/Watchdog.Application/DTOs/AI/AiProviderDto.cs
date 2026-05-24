@@ -11,7 +11,7 @@ namespace Watchdog.Application.DTOs.AI
         public string Name { get; set; } = string.Empty;
         public string ModelName { get; set; } = string.Empty;
         public string? ApiUrl { get; set; } // Kullanıcı URL'i görüp düzenleyebilmeli
-        public string? ApiKey { get; set; } // SuperAdmin görebilsin diye eklendi
+        public string? MaskedApiKey { get; set; }
         public bool IsActive { get; set; }
         public bool HasApiKey { get; set; }
         public DateTime CreatedAt { get; set; }
@@ -20,5 +20,10 @@ namespace Watchdog.Application.DTOs.AI
         public string? ModifiedBy { get; set; }
         public DateTime? DeletedAt { get; set; }
         public string? DeletedBy { get; set; }
+    }
+
+    public class AiProviderSecretDto
+    {
+        public string? ApiKey { get; set; }
     }
 }

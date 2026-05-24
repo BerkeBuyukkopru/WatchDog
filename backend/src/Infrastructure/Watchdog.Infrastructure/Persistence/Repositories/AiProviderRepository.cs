@@ -41,6 +41,13 @@ namespace Watchdog.Infrastructure.Persistence.Repositories
                 .FirstOrDefaultAsync(p => p.Id == id && !p.IsDeleted);
         }
 
+        public async Task<AiProvider?> GetByIdIncludingDeletedAsync(Guid id)
+        {
+            return await _context.AiProviders
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(p => p.Id == id);
+        }
+
         public async Task<bool> SetActiveProviderAsync(Guid id)
         {
             var targetProvider = await _context.AiProviders

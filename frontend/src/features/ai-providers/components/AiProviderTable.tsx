@@ -10,6 +10,7 @@ interface AiProviderTableProps {
   onDelete: (id: string) => void;
   onRestore: (id: string) => void;
   onToggle: (id: string) => void;
+  onRevealSecret: (id: string) => Promise<string | null>;
 }
 
 export const AiProviderTable: React.FC<AiProviderTableProps> = ({
@@ -19,12 +20,41 @@ export const AiProviderTable: React.FC<AiProviderTableProps> = ({
   onEdit,
   onDelete,
   onRestore,
-  onToggle
+  onToggle,
+  onRevealSecret
 }) => {
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
+  const [revealedKeys, setRevealedKeys] = useState<Record<string, string | null>>({});
+  const [loadingKeys, setLoadingKeys] = useState<Record<string, boolean>>({});
 
-  const toggleKey = (id: string) => {
-    setShowKeys(prev => ({ ...prev, [id]: !prev[id] }));
+  const toggleKey = async (provider: AiProviderDetail) => {
+    if (showKeys[provider.id]) {
+      setShowKeys(prev => ({ ...prev, [provider.id]: false }));
+      return;
+    }
+
+    if (!provider.hasApiKey || provider.name.toLowerCase().includes('ollama')) {
+      setShowKeys(prev => ({ ...prev, [provider.id]: true }));
+      return;
+    }
+
+    if (!(provider.id in revealedKeys)) {
+      setLoadingKeys(prev => ({ ...prev, [provider.id]: true }));
+      const apiKey = await onRevealSecret(provider.id);
+      setRevealedKeys(prev => ({ ...prev, [provider.id]: apiKey }));
+      setLoadingKeys(prev => ({ ...prev, [provider.id]: false }));
+    }
+
+    setShowKeys(prev => ({ ...prev, [provider.id]: true }));
+  };
+
+  const getKeyDisplay = (provider: AiProviderDetail) => {
+    if (provider.name.toLowerCase().includes('ollama')) return 'Anahtar gerekmiyor';
+    if (!provider.hasApiKey) return 'API key yok';
+    if (loadingKeys[provider.id]) return 'Yükleniyor...';
+    if (showKeys[provider.id]) return revealedKeys[provider.id] || 'API key yok';
+
+    return provider.maskedApiKey || '••••••••••••••••';
   };
 
   return (
@@ -91,12 +121,14 @@ export const AiProviderTable: React.FC<AiProviderTableProps> = ({
                       <div className="flex items-center gap-2 px-2 py-1 bg-black/20 rounded-lg border border-white/5 min-w-[200px] w-[200px]">
                         <Lock size={12} className="text-slate-500 shrink-0" />
                         <span className="text-[11px] font-mono text-slate-400 truncate">
-                          {showKeys[provider.id] ? provider.apiKey : '••••••••••••••••'}
+                          {getKeyDisplay(provider)}
                         </span>
                       </div>
                       <button 
-                        onClick={() => toggleKey(provider.id)}
+                        onClick={() => toggleKey(provider)}
+                        disabled={loadingKeys[provider.id] || (!provider.hasApiKey && !provider.name.toLowerCase().includes('ollama'))}
                         className="p-1 hover:bg-white/10 rounded-md text-slate-500 hover:text-indigo-400 transition-all"
+                        title={showKeys[provider.id] ? 'Gizle' : 'Göster'}
                       >
                         {showKeys[provider.id] ? <Eye size={14} /> : <EyeOff size={14} />}
                       </button>

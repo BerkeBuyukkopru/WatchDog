@@ -14,6 +14,11 @@ export const aiProviderService = {
     return response.data;
   },
 
+  revealSecret: async (id: string): Promise<string | null> => {
+    const response = await axiosClient.get<{ apiKey?: string | null }>(`${BASE_URL}/${id}/secret`);
+    return response.data.apiKey ?? null;
+  },
+
   createProvider: async (provider: CreateAiProviderRequest): Promise<void> => {
     await axiosClient.post(BASE_URL, provider);
   },

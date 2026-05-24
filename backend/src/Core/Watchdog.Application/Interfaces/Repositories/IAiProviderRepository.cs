@@ -15,6 +15,7 @@ namespace Watchdog.Application.Interfaces.Repositories
         Task<AiProvider?> GetActiveProviderAsync();
 
         Task<AiProvider?> GetByIdAsync(Guid id);
+        Task<AiProvider?> GetByIdIncludingDeletedAsync(Guid id);
 
         // Bir sağlayıcıyı aktif yapar (Parametre tipi Guid olmalı!)
         Task<bool> SetActiveProviderAsync(Guid id);

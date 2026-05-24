@@ -20,14 +20,13 @@ namespace Watchdog.Application.UseCases.AI
         {
             var providers = await _repository.GetAllAsync();
 
-            // UI'da "Göz" ikonuna tıklandığında şifrenin görünebilmesi için ApiKey'i de dahil ediyoruz.
             return providers.Select(p => new AiProviderDto
             {
                 Id = p.Id,
                 Name = p.Name,
                 ModelName = p.ModelName,
                 ApiUrl = p.ApiUrl,
-                ApiKey = p.ApiKey, // Eklendi
+                MaskedApiKey = MaskApiKey(p.ApiKey),
                 IsActive = p.IsActive,
                 HasApiKey = !string.IsNullOrWhiteSpace(p.ApiKey) || p.Name.Contains("Ollama", StringComparison.OrdinalIgnoreCase),
                 CreatedAt = p.CreatedAt,
@@ -37,6 +36,14 @@ namespace Watchdog.Application.UseCases.AI
                 DeletedAt = p.DeletedAt,
                 DeletedBy = p.DeletedBy
             });
+        }
+
+        private static string? MaskApiKey(string? apiKey)
+        {
+            if (string.IsNullOrWhiteSpace(apiKey)) return null;
+            if (apiKey.Length <= 8) return "••••";
+
+            return $"{apiKey[..4]}••••{apiKey[^4..]}";
         }
     }
 }

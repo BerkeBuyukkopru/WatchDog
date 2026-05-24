@@ -23,6 +23,19 @@ namespace Watchdog.Api.Controllers
             return Ok(result);
         }
 
+        [HttpGet("{id}/secret")]
+        [Authorize(Roles = RoleConstants.SuperAdmin)]
+        public async Task<IActionResult> RevealSecret(Guid id, [FromServices] IAiProviderRepository repository)
+        {
+            var provider = await repository.GetByIdIncludingDeletedAsync(id);
+            if (provider == null)
+            {
+                return NotFound(new { message = "AI sağlayıcısı bulunamadı." });
+            }
+
+            return Ok(new AiProviderSecretDto { ApiKey = provider.ApiKey });
+        }
+
         // POST: Yeni sağlayıcı ekleme SADECE SuperAdmin yetkisindedir.
         [HttpPost]
         [Authorize(Roles = RoleConstants.SuperAdmin)]
@@ -111,7 +124,7 @@ namespace Watchdog.Api.Controllers
                 Name = p.Name,
                 ModelName = p.ModelName,
                 ApiUrl = p.ApiUrl,
-                ApiKey = p.ApiKey,
+                MaskedApiKey = MaskApiKey(p.ApiKey),
                 IsActive = p.IsActive,
                 HasApiKey = !string.IsNullOrWhiteSpace(p.ApiKey) || p.Name.Contains("Ollama", StringComparison.OrdinalIgnoreCase),
                 CreatedAt = p.CreatedAt,
@@ -122,6 +135,14 @@ namespace Watchdog.Api.Controllers
                 DeletedBy = p.DeletedBy
             });
             return Ok(response);
+        }
+
+        private static string? MaskApiKey(string? apiKey)
+        {
+            if (string.IsNullOrWhiteSpace(apiKey)) return null;
+            if (apiKey.Length <= 8) return "••••";
+
+            return $"{apiKey[..4]}••••{apiKey[^4..]}";
         }
 
         // POST: api/AiProviders/{id}/restore

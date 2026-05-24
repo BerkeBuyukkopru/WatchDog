@@ -8,7 +8,7 @@ import ConfirmModal from '../../components/common/ConfirmModal';
 
 export const AiProviderListView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'active' | 'deleted'>('active');
-  const { providers, loading, toggleStatus, deleteProvider, restoreProvider, refresh } = useAiProviders(activeTab);
+  const { providers, loading, toggleStatus, deleteProvider, restoreProvider, revealSecret, refresh } = useAiProviders(activeTab);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<AiProviderDetail | null>(null);
   
@@ -92,6 +92,7 @@ export const AiProviderListView: React.FC = () => {
         onDelete={handleDeleteClick}
         onRestore={restoreProvider}
         onToggle={toggleStatus}
+        onRevealSecret={revealSecret}
       />
 
       <AiProviderModal 
