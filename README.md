@@ -803,7 +803,7 @@ When a user signs in, the backend validates the credentials and issues a signed 
 | Signing algorithm | HMAC SHA-256 |
 | Main claims | User ID, username, email, role and token identifier |
 
-Passwords are stored as one-way SHA-256 hashes. During login, the incoming password is hashed with the same algorithm and compared against the stored password hash.
+Passwords are stored with ASP.NET Core's password hashing format. Existing legacy SHA-256 password hashes are migrated lazily: when a user signs in with a valid legacy password, the stored hash is automatically upgraded to the current secure format.
 
 ### Role-Based Access Control
 

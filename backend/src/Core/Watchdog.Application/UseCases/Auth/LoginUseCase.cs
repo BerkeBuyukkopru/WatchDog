@@ -1,7 +1,3 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Security.Cryptography;
-using System.Text;
 using Watchdog.Application.DTOs.Auth;
 using Watchdog.Application.Interfaces.Common;
 using Watchdog.Application.Interfaces.Repositories;
@@ -12,8 +8,6 @@ namespace Watchdog.Application.UseCases.Auth
     {
         private readonly IAuthRepository _authRepository;
         private readonly IJwtTokenGenerator _tokenGenerator;
-
-        // YENİ EKLENDİ: Merkezi şifreleme servisimizi Dependency Injection ile içeri alıyoruz
         private readonly IPasswordHasher _passwordHasher;
 
         public LoginUseCase(
@@ -35,16 +29,19 @@ namespace Watchdog.Application.UseCases.Auth
                 return new LoginResponse { IsSuccess = false, ErrorMessage = "Kullanıcı adı veya şifre hatalı." };
             }
 
-            // Eski kodda burada private bir metot vardı. Onu sildik.
-            // Artık kurumsal, merkezi _passwordHasher servisimizi kullanıyoruz.
-            var incomingHash = _passwordHasher.HashPassword(request.Password);
+            var passwordVerificationResult = _passwordHasher.VerifyPassword(user.PasswordHash, request.Password);
 
-            if (user.PasswordHash != incomingHash)
+            if (passwordVerificationResult == PasswordVerificationResult.Failed)
             {
                 return new LoginResponse { IsSuccess = false, ErrorMessage = "Kullanıcı adı veya şifre hatalı." };
             }
 
-            // Giriş başarılı, bileti kes!
+            if (passwordVerificationResult == PasswordVerificationResult.SuccessRehashNeeded)
+            {
+                user.PasswordHash = _passwordHasher.HashPassword(request.Password);
+                await _authRepository.UpdateUserAsync(user);
+            }
+
             var token = _tokenGenerator.GenerateToken(user);
             return new LoginResponse { IsSuccess = true, Token = token };
         }
