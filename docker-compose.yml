@@ -57,11 +57,11 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:${API_PORT}
     container_name: watchdog-ui
     ports:
       - "5174:80"
-    environment:
-      - VITE_API_URL=http://localhost:${API_PORT}
     depends_on:
       - watchdog-api
 

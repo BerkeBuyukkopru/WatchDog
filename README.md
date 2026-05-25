@@ -998,7 +998,7 @@ Make sure the following tools are installed:
 | Tool | Purpose |
 |---|---|
 | .NET 10 SDK | Backend API and Worker development |
-| Node.js 18+ / npm | Frontend development |
+| Node.js 20.19+ or 22.12+ / npm | Frontend development |
 | Docker & Docker Compose | Recommended full-stack local runtime |
 | SQL Server | Optional, only required for non-Docker local development |
 | Ollama | Optional, required for local AI analysis with the default `llama3.2:1b` model |
@@ -1038,7 +1038,7 @@ After the containers start, the services will be available at:
 
 The Worker does not expose a public port. It runs in the background and writes compressed archive files to the mounted `./archives` directory.
 
-> If you change `API_PORT`, make sure `VITE_API_URL` points to the same API address before rebuilding the frontend container.
+> If you change `API_PORT`, rebuild the frontend container with `docker compose up --build -d` so the Docker build argument updates the Vite API URL embedded in the static frontend bundle.
 
 ---
 
@@ -1149,7 +1149,7 @@ When the API and Worker point to `WatchdogLocalDb`, local data stays separate fr
 
 #### 4. Start the React Frontend
 
-Update the frontend environment file:
+The frontend uses `http://localhost:5226` as the default API URL. If your local API runs on a different port, create or update `frontend/.env`:
 
 ```env
 VITE_API_URL=http://localhost:5226
