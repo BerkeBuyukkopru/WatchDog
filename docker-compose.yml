@@ -41,6 +41,7 @@ services:
     environment:
       - ConnectionStrings__DefaultConnection=Server=watchdog-db;Database=${DB_NAME};User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;Encrypt=False
       - ASPNETCORE_ENVIRONMENT=Development
+      - DOTNET_ENVIRONMENT=Development
       - MailSettings__Host=watchdog-mail
       - MailSettings__ToEmail=${MAIL_TO_EMAIL:-admin@example.com}
     extra_hosts:
