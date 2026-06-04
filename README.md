@@ -1,8 +1,8 @@
-# 🛡️ WatchDog — AI-Powered Application Health & Incident Monitoring Platform
+# 🛡️ WatchDog Health Monitoring — AI-Powered Incident Intelligence & Observability Platform
 
-> **Real-time application health monitoring with AI-assisted incident intelligence.**
+> **Real-time application health monitoring with AI-powered incident intelligence, live observability and root cause insights.**
 
-WatchDog is a full-stack application monitoring platform that tracks system health, detects incidents, reduces false positives, and provides AI-assisted root cause insights through a real-time dashboard. It combines modular health checks, background workers, rule-based incident detection, and hybrid AI providers to help teams understand application failures faster.
+WatchDog Health Monitoring is a full-stack observability platform that tracks application health, detects incidents, reduces false positives, and provides AI-assisted root cause insights through a real-time dashboard. It combines modular health checks, background workers, rule-based incident detection, SignalR-powered live updates, and hybrid AI providers to help teams understand application failures faster.
 
 ---
 
@@ -32,7 +32,7 @@ WatchDog is a full-stack application monitoring platform that tracks system heal
 
 ## 📌 Project Overview
 
-WatchDog is a full-stack application health monitoring platform built to help teams observe application availability, detect incidents, and understand failures faster.
+WatchDog Health Monitoring is a full-stack application health monitoring and incident intelligence platform built to help teams observe application availability, detect incidents, and understand failures faster.
 
 The platform continuously monitors registered applications and their dependencies through WatchDog-compatible health endpoints, stores historical health snapshots, evaluates failures through rule-based incident logic, and displays live operational status on a real-time dashboard.
 
@@ -42,11 +42,11 @@ The system is designed around a clean separation of concerns: a .NET backend for
 
 ---
 
-## 🎯 Why WatchDog?
+## 🎯 Why WatchDog Health Monitoring?
 
 Many monitoring systems stop at basic uptime checks or raw alerts. In real-world applications, however, a temporary network issue, a slow dependency, or a short-lived service interruption can easily create noisy incidents and unnecessary investigation work.
 
-WatchDog focuses on reducing that noise by combining health polling, rule-based incident confirmation, real-time visibility and AI-assisted analysis in a single operational workflow.
+WatchDog Health Monitoring focuses on reducing that noise by combining health polling, rule-based incident confirmation, real-time visibility and AI-assisted analysis in a single operational workflow.
 
 ### What makes WatchDog different?
 
@@ -60,7 +60,7 @@ WatchDog focuses on reducing that noise by combining health polling, rule-based 
 
 ## ✨ Key Features
 
-WatchDog combines application health monitoring, incident detection, AI-assisted diagnostics and real-time operational visibility in a single full-stack platform.
+WatchDog Health Monitoring combines application health monitoring, incident detection, AI-assisted diagnostics and real-time operational visibility in a single full-stack platform.
 
 ### 🔍 Continuous Application Health Monitoring
 
@@ -104,7 +104,7 @@ A background archiving process moves older health snapshot data into compressed 
 
 ## 🔄 Core Execution Workflows
 
-WatchDog is powered by background-driven workflows that continuously collect health data, evaluate incidents, notify administrators and enrich operational events with AI-assisted analysis.
+WatchDog Health Monitoring is powered by background-driven workflows that continuously collect health data, evaluate incidents, notify administrators and enrich operational events with AI-assisted analysis.
 
 ### Health Monitoring Workflow
 
@@ -148,7 +148,7 @@ This allows operators to follow application health, incident changes and AI-gene
 
 ## 🏗️ System Architecture
 
-WatchDog is designed with a layered full-stack architecture that separates application monitoring workflows, domain rules, infrastructure integrations, background processing and user-facing dashboards.
+WatchDog Health Monitoring is designed with a layered full-stack architecture that separates application monitoring workflows, domain rules, infrastructure integrations, background processing and user-facing dashboards.
 
 The backend follows **Clean Architecture / Onion Architecture**, where dependencies point inward toward the core domain model. The frontend follows a **feature-driven structure** inspired by Feature-Sliced Design principles, keeping product areas such as dashboard, authentication, AI insights and system settings isolated from each other.
 
